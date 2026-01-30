@@ -17,6 +17,28 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <script>
+      // Đăng ký Service Worker để sửa lỗi MIME type octet-stream từ server
+      if ('serviceWorker' in navigator) {
+        const swCode = `
+          self.addEventListener('fetch', event => {
+            const url = event.request.url;
+            if (url.endsWith('.tsx') || url.endsWith('.ts')) {
+              event.respondWith(
+                fetch(event.request).then(response => {
+                  return new Response(response.body, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: { ...Object.fromEntries(response.headers), 'Content-Type': 'application/javascript' }
+                  });
+                })
+              );
+            }
+          });
+        `;
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(blob));
+      }
+
       tailwind.config = {
         theme: {
           extend: {
@@ -58,34 +80,12 @@
     <div id="root">
       <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f1f5f9;">
         <div style="width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
-        <p style="font-weight: bold; color: #64748b; font-size: 14px;">Đang khởi tạo Diticoms...</p>
+        <p style="font-weight: bold; color: #64748b; font-size: 14px;">Đang tải ứng dụng...</p>
       </div>
     </div>
 
-    <!-- Bộ nạp chuyên dụng để sửa lỗi MIME type octet-stream -->
-    <script type="module">
-      async function loadAndRun(url) {
-        try {
-          const response = await fetch(url);
-          const code = await response.text();
-          const transformed = Babel.transform(code, {
-            presets: ['react', ['typescript', { isTSX: true, allExtensions: true }]],
-            filename: url
-          }).code;
-          
-          // Chèn script đã chuyển đổi vào DOM dưới dạng module
-          const script = document.createElement('script');
-          script.type = 'module';
-          script.text = transformed;
-          document.body.appendChild(script);
-        } catch (e) {
-          console.error("Lỗi khi tải " + url + ":", e);
-        }
-      }
-
-      // Khởi chạy app
-      loadAndRun('./index.tsx');
-    </script>
+    <!-- Tải và biên dịch TSX trực tiếp để đảm bảo chạy được trên mọi server -->
+    <script type="text/babel" data-type="module" data-presets="react,typescript" src="index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
