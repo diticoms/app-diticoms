@@ -1,8 +1,7 @@
-
 import React from 'react';
-import { ServiceFormData, BankConfig } from '../types';
-import { formatCurrency, calculateTotalEstimate } from '../utils/helpers';
-import { Logo } from './Logo';
+import { ServiceFormData, BankConfig } from '../types.ts';
+import { formatCurrency, calculateTotalEstimate } from '../utils/helpers.ts';
+import { Logo } from './Logo.tsx';
 
 interface Props {
   formData: ServiceFormData;
@@ -11,7 +10,7 @@ interface Props {
 
 export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
   const total = calculateTotalEstimate(formData.workItems);
-  const qrUrl = bankInfo ? `https://img.vietqr.io/image/${bankInfo.bankId}-${bankInfo.accountNo}-compact2.png?amount=${total}&addInfo=DITICOMS SERVICE ${formData.customerName}&accountName=${encodeURIComponent(bankInfo.accountName)}` : '';
+  const qrUrl = bankInfo ? `https://img.vietqr.io/image/${bankInfo.bankId}-${bankInfo.accountNo}-compact2.png?amount=${total}&addInfo=DITICOMS SERVICE ${formData.customerName.toUpperCase()}&accountName=${encodeURIComponent(bankInfo.accountName)}` : '';
 
   return (
     <div className="w-[400px] bg-white p-8 space-y-8 font-sans">
@@ -37,53 +36,45 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 py-2 px-3 rounded-lg text-center">Nội dung sửa chữa</h3>
-        <table className="w-full text-xs">
-          <thead className="text-slate-400 font-bold border-b border-slate-100">
-            <tr>
-              <th className="text-left py-2">DỊCH VỤ</th>
-              <th className="text-right py-2">THÀNH TIỀN</th>
+      <div className="space-y-3">
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-l-2 border-blue-600 pl-2">Nội dung dịch vụ</div>
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="text-[10px] text-slate-400 uppercase">
+              <th className="pb-2">Mô tả</th>
+              <th className="pb-2 text-right">Thành tiền</th>
             </tr>
           </thead>
-          <tbody className="font-semibold text-slate-700">
-            {formData.workItems.map((item, i) => (
-              <tr key={i} className="border-b border-slate-50">
-                <td className="py-3 pr-4 leading-relaxed">{item.desc} (x{item.qty})</td>
-                <td className="py-3 text-right whitespace-nowrap">{formatCurrency(item.total)}đ</td>
+          <tbody className="divide-y divide-slate-50">
+            {formData.workItems.map((item, idx) => (
+              <tr key={idx}>
+                <td className="py-2 text-slate-700 font-medium">{item.desc} {Number(item.qty) > 1 ? `(x${item.qty})` : ''}</td>
+                <td className="py-2 text-right font-bold text-slate-900">{formatCurrency(item.total)}đ</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="space-y-3 pt-4">
-        <div className="flex justify-between items-center text-lg">
-          <span className="font-black text-slate-900 uppercase tracking-tight">Tổng thanh toán:</span>
-          <span className="font-black text-blue-600">{formatCurrency(total)}đ</span>
-        </div>
-        {Number(formData.debt) > 0 && (
-          <div className="flex justify-between items-center text-red-500 font-bold">
-            <span className="text-xs uppercase">Còn nợ:</span>
-            <span>{formatCurrency(formData.debt)}đ</span>
-          </div>
-        )}
+      <div className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center">
+        <span className="text-xs font-bold text-slate-500 uppercase">Tổng thanh toán:</span>
+        <span className="text-xl font-black text-blue-600">{formatCurrency(total)}đ</span>
       </div>
 
       {bankInfo && (
-        <div className="flex flex-col items-center bg-slate-50 p-6 rounded-3xl space-y-4 border border-slate-100">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Quét mã chuyển khoản</p>
-          <img src={qrUrl} className="w-48 h-48 shadow-lg rounded-2xl border-4 border-white" alt="QR Payment" />
-          <div className="text-center">
-             <div className="text-[10px] font-bold text-slate-500">{bankInfo.bankId} - {bankInfo.accountNo}</div>
-             <div className="text-xs font-black text-slate-900">{bankInfo.accountName}</div>
-          </div>
+        <div className="flex flex-col items-center space-y-4 pt-4 border-t border-dashed border-slate-200">
+           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thanh toán chuyển khoản</div>
+           <img src={qrUrl} alt="QR Thanh toán" className="w-48 h-48 border-4 border-white shadow-sm rounded-xl" />
+           <div className="text-center">
+              <div className="text-xs font-black text-slate-800 uppercase">{bankInfo.bankId} - {bankInfo.accountNo}</div>
+              <div className="text-[10px] font-bold text-slate-500">{bankInfo.accountName}</div>
+           </div>
         </div>
       )}
 
-      <div className="text-center pt-4 space-y-1">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cảm ơn quý khách đã tin tưởng!</p>
-        <p className="text-xs font-black text-slate-900 tracking-widest">HOTLINE: 0935.71.5151</p>
+      <div className="text-center pt-4">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ!</p>
+        <p className="text-[9px] text-slate-300 mt-1">Diticoms Service Manager v1.0.1</p>
       </div>
     </div>
   );

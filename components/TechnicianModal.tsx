@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { X, Plus, Trash2, Save, Users, Loader2 } from 'lucide-react';
-import { callSheetAPI } from '../services/api';
+import { callSheetAPI } from '../services/api.ts';
 
 interface Props {
   technicians: string[];

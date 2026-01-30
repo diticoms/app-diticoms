@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { X, Save, Server, CreditCard } from 'lucide-react';
-import { AppConfig } from '../types';
+import { AppConfig } from '../types.ts';
 
 interface Props {
   config: AppConfig;

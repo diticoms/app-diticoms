@@ -1,12 +1,11 @@
-
 import React from 'react';
 import { 
   Plus, Trash2, Save, RefreshCw, Activity, Share2, Clipboard, 
   Wrench, Users, User, Phone, MapPin, ListFilter, AlertTriangle 
 } from 'lucide-react';
-import { ServiceFormData, PriceItem, ServiceTicket } from '../types';
-import { STATUS_OPTIONS } from '../constants';
-import { formatCurrency, parseCurrency } from '../utils/helpers';
+import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
+import { STATUS_OPTIONS } from '../constants.ts';
+import { formatCurrency, parseCurrency } from '../utils/helpers.ts';
 
 interface Props {
   formData: ServiceFormData;

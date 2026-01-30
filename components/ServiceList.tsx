@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Search, Calendar, Filter, Loader2, ChevronRight } from 'lucide-react';
-import { ServiceTicket } from '../types';
-import { formatCurrency } from '../utils/helpers';
+import { ServiceTicket } from '../types.ts';
+import { formatCurrency } from '../utils/helpers.ts';
 
 interface Props {
   data: ServiceTicket[];
