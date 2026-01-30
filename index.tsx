@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 
-console.log("Diticoms Service Manager: Khởi chạy ứng dụng...");
+console.log("Diticoms Service Manager: Ứng dụng đang khởi chạy...");
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
@@ -13,5 +13,5 @@ if (rootElement) {
     </React.StrictMode>
   );
 } else {
-  console.error("Không tìm thấy phần tử root!");
+  console.error("Lỗi: Không tìm thấy phần tử #root");
 }
