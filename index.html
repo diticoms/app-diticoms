@@ -13,7 +13,11 @@
     <link rel="stylesheet" href="index.css" />
     <meta name="description" content="Diticoms Service Manager - Quản lý dịch vụ sửa chữa chuyên nghiệp" />
     <title>Diticoms Service Manager</title>
+    
+    <!-- Tailwind & Babel for on-the-fly TSX compilation -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <script>
       tailwind.config = {
         theme: {
@@ -26,6 +30,7 @@
         }
       }
     </script>
+    
     <style>
       :root {
         --primary: #1d4ed8;
@@ -33,7 +38,6 @@
       }
       * {
         -webkit-tap-highlight-color: transparent;
-        text-rendering: auto; 
         box-sizing: border-box;
         -webkit-font-smoothing: antialiased;
       }
@@ -45,40 +49,21 @@
         background-color: #f1f5f9;
         overflow: hidden;
         overscroll-behavior-y: none;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       }
       #root {
         height: 100%;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: env(safe-area-inset-bottom);
       }
       @keyframes spin { to { transform: rotate(360deg); } }
+      
+      /* Custom Scrollbar */
+      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
-    <script>
-      function showError(title, msg, detail = "") {
-        const root = document.getElementById('root');
-        if (root) {
-          root.innerHTML = `<div style="padding: 40px 20px; color: #ef4444; font-family: sans-serif; text-align: center; background: white; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            <div style="background: #fef2f2; padding: 24px; border-radius: 24px; border: 1px solid #fee2e2; max-width: 400px; width: 100%;">
-              <h2 style="margin:0 0 10px 0; color: #b91c1c; font-size: 18px; text-transform: uppercase;">${title}</h2>
-              <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">${msg}</p>
-              <button onclick="location.reload()" style="padding: 12px 24px; background: #1d4ed8; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%;">TẢI LẠI TRANG</button>
-              <div style="margin-top: 20px; font-size: 10px; color: #94a3b8; text-align: left; overflow: hidden; background: #fff; padding: 10px; border-radius: 8px;">
-                ${detail}
-              </div>
-            </div>
-          </div>`;
-        }
-      }
-      window.onerror = function(msg, url, lineNo, colNo, error) {
-        showError("Lỗi Hệ Thống", "Ứng dụng gặp sự cố khi tải mã nguồn.", `Error: ${msg}<br>At: ${lineNo}:${colNo}`);
-        return false;
-      };
-      window.onunhandledrejection = function(event) {
-        showError("Lỗi Kết Nối", "Không thể tải dữ liệu. Vui lòng kiểm tra mạng.", `Reason: ${event.reason}`);
-      };
-    </script>
+
     <script type="importmap">
 {
   "imports": {
@@ -100,11 +85,16 @@
       <div style="height: 100vh; display: flex; align-items: center; justify-content: center; background: #f1f5f9;">
         <div style="text-align: center;">
           <div style="width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
-          <p style="font-family: sans-serif; font-weight: bold; color: #64748b; font-size: 14px;">Đang tải Diticoms Service...</p>
+          <p style="font-weight: bold; color: #64748b; font-size: 14px;">Đang tải Diticoms Service...</p>
         </div>
       </div>
     </div>
-    <script type="module" src="index.tsx"></script>
+
+    <!-- 
+      Sử dụng type="text/babel" kết hợp với data-type="module" 
+      để Babel xử lý file .tsx và biến nó thành module JS hợp lệ 
+    -->
+    <script type="text/babel" data-type="module" src="index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
