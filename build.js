@@ -5,13 +5,15 @@ const path = require('path');
 const distDir = path.join(__dirname, 'dist');
 const publicDir = path.join(__dirname, 'public');
 
-// 1. Tạo thư mục dist nếu chưa có
-if (!fs.existsSync(distDir)) {
-    fs.mkdirSync(distDir, { recursive: true });
-    console.log('✅ Đã tạo thư mục dist/');
+// 1. Dọn dẹp dist cũ để đảm bảo build sạch
+if (fs.existsSync(distDir)) {
+    fs.rmSync(distDir, { recursive: true, force: true });
+    console.log('🧹 Đã dọn dẹp thư mục dist/');
 }
+fs.mkdirSync(distDir, { recursive: true });
+console.log('✅ Đã tạo mới thư mục dist/');
 
-// 2. Danh sách các file và thư mục cần copy vào bản build
+// 2. Danh sách các file và thư mục cần copy
 const itemsToCopy = [
     'index.html',
     'index.tsx',
@@ -45,7 +47,7 @@ itemsToCopy.forEach(item => {
     }
 });
 
-// 3. Bảo toàn CNAME cho GitHub Pages
+// 3. Bảo toàn CNAME
 if (!fs.existsSync(publicDir)) {
     fs.mkdirSync(publicDir, { recursive: true });
 }
@@ -59,4 +61,4 @@ publicFiles.forEach(file => {
     fs.copyFileSync(path.join(publicDir, file), path.join(distDir, file));
 });
 
-console.log('🚀 Build hoàn tất thành công!');
+console.log('🚀 Build thành công - Sẵn sàng cho Capacitor!');

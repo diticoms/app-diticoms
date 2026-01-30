@@ -9,7 +9,9 @@
     "version-up": "node -e \"const fs = require('fs'); const v = JSON.parse(fs.readFileSync('version.json')); const parts = v.version.split('.').map(Number); parts[2]++; v.version = parts.join('.'); fs.writeFileSync('version.json', JSON.stringify(v, null, 2)); console.log('Version: ' + v.version);\"",
     "deploy": "npm run build && npm run version-up && git add . && git commit -m \"Auto-deploy: Cập nhật hệ thống\" && git pull --rebase origin main && git push origin main",
     "mobile:init": "npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/ios",
-    "mobile:sync": "npx cap sync",
+    "mobile:sync": "npm run build && npx cap sync",
+    "android:open": "npx cap open android",
+    "android:prep": "npm run build && npx cap add android || npx cap sync android",
     "generate:icons": "npx @capacitor/assets generate --icon --android --ios"
   },
   "keywords": [

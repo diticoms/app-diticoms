@@ -3,9 +3,15 @@
   "appId": "vn.diticoms.service",
   "appName": "Diticoms Service",
   "webDir": "dist",
-  "bundledWebRuntime": false,
   "server": {
-    "url": "https://service.diticoms.vn",
-    "cleartext": true
+    "androidScheme": "https",
+    "allowNavigation": [
+      "service.diticoms.vn"
+    ]
+  },
+  "android": {
+    "buildOptions": {
+      "releaseType": "APK"
+    }
   }
 }
