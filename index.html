@@ -11,7 +11,6 @@
     <link rel="apple-touch-icon" href="logo.png" />
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" href="index.css" />
-    <meta name="description" content="Diticoms Service Manager - Quản lý dịch vụ sửa chữa chuyên nghiệp" />
     <title>Diticoms Service Manager</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,10 +20,7 @@
       tailwind.config = {
         theme: {
           extend: {
-            colors: {
-              primary: '#1d4ed8',
-              secondary: '#64748b',
-            }
+            colors: { primary: '#1d4ed8', secondary: '#64748b' }
           }
         }
       }
@@ -32,17 +28,14 @@
     
     <style>
       :root { --primary: #1d4ed8; --secondary: #64748b; }
-      * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+      * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
       html, body {
         height: 100%; width: 100%; margin: 0; padding: 0;
-        background-color: #f1f5f9; overflow: hidden; overscroll-behavior-y: none;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #f1f5f9; overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
-      #root { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+      #root { height: 100%; overflow-y: auto; }
       @keyframes spin { to { transform: rotate(360deg); } }
-      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 
     <script type="importmap">
@@ -63,15 +56,36 @@
 </head>
   <body>
     <div id="root">
-      <div style="height: 100vh; display: flex; align-items: center; justify-content: center; background: #f1f5f9;">
-        <div style="text-align: center;">
-          <div style="width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
-          <p style="font-weight: bold; color: #64748b; font-size: 14px; font-family: sans-serif;">Đang khởi tạo hệ thống...</p>
-        </div>
+      <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f1f5f9;">
+        <div style="width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
+        <p style="font-weight: bold; color: #64748b; font-size: 14px;">Đang khởi tạo Diticoms...</p>
       </div>
     </div>
-    <!-- Sử dụng Babel để xử lý TSX và tránh lỗi MIME type của trình duyệt -->
-    <script type="text/babel" data-type="module" src="index.tsx"></script>
+
+    <!-- Bộ nạp chuyên dụng để sửa lỗi MIME type octet-stream -->
+    <script type="module">
+      async function loadAndRun(url) {
+        try {
+          const response = await fetch(url);
+          const code = await response.text();
+          const transformed = Babel.transform(code, {
+            presets: ['react', ['typescript', { isTSX: true, allExtensions: true }]],
+            filename: url
+          }).code;
+          
+          // Chèn script đã chuyển đổi vào DOM dưới dạng module
+          const script = document.createElement('script');
+          script.type = 'module';
+          script.text = transformed;
+          document.body.appendChild(script);
+        } catch (e) {
+          console.error("Lỗi khi tải " + url + ":", e);
+        }
+      }
+
+      // Khởi chạy app
+      loadAndRun('./index.tsx');
+    </script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
