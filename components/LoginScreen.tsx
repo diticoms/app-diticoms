@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { User, Lock, Settings, Loader2 } from 'lucide-react';
-import { Logo } from './Logo';
+import { Logo } from './Logo.tsx';
 
 interface Props {
   onLogin: (u: string, p: string) => void;
