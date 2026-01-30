@@ -4,11 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#1d4ed8" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Diticoms" />
     <link rel="apple-touch-icon" href="logo.png" />
     <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="index.css" />
     <meta name="description" content="Diticoms Service Manager - Quản lý dịch vụ sửa chữa chuyên nghiệp" />
     <title>Diticoms Service Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -54,7 +56,6 @@
       @keyframes spin { to { transform: rotate(360deg); } }
     </style>
     <script>
-      // Hệ thống giám sát lỗi toàn cục
       function showError(title, msg, detail = "") {
         const root = document.getElementById('root');
         if (root) {
@@ -70,14 +71,12 @@
           </div>`;
         }
       }
-
       window.onerror = function(msg, url, lineNo, colNo, error) {
-        showError("Lỗi Hệ Thống", "Ứng dụng không thể khởi động do lỗi mã lệnh.", `Error: ${msg}<br>At: ${lineNo}:${colNo}`);
+        showError("Lỗi Hệ Thống", "Ứng dụng gặp sự cố khi tải mã nguồn.", `Error: ${msg}<br>At: ${lineNo}:${colNo}`);
         return false;
       };
-
       window.onunhandledrejection = function(event) {
-        showError("Lỗi Kết Nối", "Không thể tải dữ liệu từ Server. Vui lòng kiểm tra mạng.", `Reason: ${event.reason}`);
+        showError("Lỗi Kết Nối", "Không thể tải dữ liệu. Vui lòng kiểm tra mạng.", `Reason: ${event.reason}`);
       };
     </script>
     <script type="importmap">
@@ -101,7 +100,7 @@
       <div style="height: 100vh; display: flex; align-items: center; justify-content: center; background: #f1f5f9;">
         <div style="text-align: center;">
           <div style="width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
-          <p style="font-family: sans-serif; font-weight: bold; color: #64748b; font-size: 14px;">Đang khởi động hệ thống...</p>
+          <p style="font-family: sans-serif; font-weight: bold; color: #64748b; font-size: 14px;">Đang tải Diticoms Service...</p>
         </div>
       </div>
     </div>
