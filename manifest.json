@@ -1,0 +1,23 @@
+
+{
+  "name": "Diticoms Service",
+  "short_name": "Diticoms",
+  "description": "Quản lý dịch vụ sửa chữa chuyên nghiệp",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#1d4ed8",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

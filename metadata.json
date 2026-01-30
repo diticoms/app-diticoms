@@ -1,0 +1,8 @@
+
+{
+  "name": "Diticoms Service Manager",
+  "description": "Quản lý dịch vụ sửa chữa chuyên nghiệp - service.diticoms.vn",
+  "requestFramePermissions": [],
+  "homepage": "https://service.diticoms.vn",
+  "repository": "https://github.com/diticoms/diticoms-app.git"
+}
