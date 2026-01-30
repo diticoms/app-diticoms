@@ -2,8 +2,6 @@ const fs = require('fs');
 const path = require('path');
 
 const distDir = path.join(__dirname, 'dist');
-const publicDir = path.join(__dirname, 'public');
-const assetsDir = path.join(__dirname, 'assets');
 
 // 1. Dọn dẹp dist cũ
 if (fs.existsSync(distDir)) {
@@ -11,7 +9,7 @@ if (fs.existsSync(distDir)) {
 }
 fs.mkdirSync(distDir, { recursive: true });
 
-// 2. Các file cần thiết cho ứng dụng chạy module trực tiếp
+// 2. Các file cần thiết
 const itemsToCopy = [
     'index.html',
     'index.tsx',
@@ -22,6 +20,7 @@ const itemsToCopy = [
     'manifest.json',
     'logo.png',
     'version.json',
+    'index.css', // Đảm bảo copy file này
     'components',
     'services',
     'utils'
@@ -40,7 +39,7 @@ itemsToCopy.forEach(item => {
     }
 });
 
-// 3. Copy CNAME để giữ domain service.diticoms.vn
+// 3. CNAME
 const cnamePath = path.join(__dirname, 'CNAME');
 if (fs.existsSync(cnamePath)) {
     fs.copyFileSync(cnamePath, path.join(distDir, 'CNAME'));
@@ -48,9 +47,4 @@ if (fs.existsSync(cnamePath)) {
     fs.writeFileSync(path.join(distDir, 'CNAME'), 'service.diticoms.vn');
 }
 
-// 4. Copy assets
-if (fs.existsSync(assetsDir)) {
-    fs.cpSync(assetsDir, path.join(distDir, 'assets'), { recursive: true });
-}
-
-console.log('✅ Build thành công vào thư mục dist/');
+console.log('✅ Build hoàn tất! Vui lòng đẩy thư mục dist/ lên server.');
