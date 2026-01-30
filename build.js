@@ -35,10 +35,8 @@ itemsToCopy.forEach(item => {
     if (fs.existsSync(src)) {
         try {
             if (fs.lstatSync(src).isDirectory()) {
-                // Copy thư mục (Yêu cầu Node.js 16.7.0+)
                 fs.cpSync(src, dest, { recursive: true });
             } else {
-                // Copy file
                 fs.copyFileSync(src, dest);
             }
         } catch (err) {
@@ -47,13 +45,18 @@ itemsToCopy.forEach(item => {
     }
 });
 
-// 3. Copy file CNAME từ public/ vào gốc dist/
-if (fs.existsSync(publicDir)) {
-    const publicFiles = fs.readdirSync(publicDir);
-    publicFiles.forEach(file => {
-        fs.copyFileSync(path.join(publicDir, file), path.join(distDir, file));
-    });
-    console.log('✅ Đã bảo toàn Domain (CNAME) từ thư mục public/');
+// 3. Bảo toàn CNAME cho GitHub Pages
+if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
 }
+const cnamePath = path.join(publicDir, 'CNAME');
+if (!fs.existsSync(cnamePath)) {
+    fs.writeFileSync(cnamePath, 'service.diticoms.vn');
+}
+
+const publicFiles = fs.readdirSync(publicDir);
+publicFiles.forEach(file => {
+    fs.copyFileSync(path.join(publicDir, file), path.join(distDir, file));
+});
 
 console.log('🚀 Build hoàn tất thành công!');
