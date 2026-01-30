@@ -13,7 +13,7 @@
     "mobile:sync": "npm run assets && npm run build && npx cap sync",
     "android:open": "npx cap open android",
     "android:prep": "npm run assets && npm run build && npx cap add android || npx cap sync android",
-    "generate:icons": "npx @capacitor/assets generate --icon --android --ios"
+    "generate:icons": "npx @capacitor/assets generate --android --ios"
   },
   "keywords": [
     "diticoms",

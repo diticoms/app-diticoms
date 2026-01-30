@@ -4,6 +4,7 @@ const path = require('path');
 
 const distDir = path.join(__dirname, 'dist');
 const publicDir = path.join(__dirname, 'public');
+const assetsDir = path.join(__dirname, 'assets');
 
 // 1. Dọn dẹp dist cũ
 if (fs.existsSync(distDir)) {
@@ -12,7 +13,7 @@ if (fs.existsSync(distDir)) {
 }
 fs.mkdirSync(distDir, { recursive: true });
 
-// 2. Các file và thư mục cần copy
+// 2. Các file và thư mục mã nguồn cần copy
 const itemsToCopy = [
     'index.html',
     'index.tsx',
@@ -26,8 +27,7 @@ const itemsToCopy = [
     'deploy.sh',
     'components',
     'services',
-    'utils',
-    'assets'
+    'utils'
 ];
 
 itemsToCopy.forEach(item => {
@@ -47,7 +47,13 @@ itemsToCopy.forEach(item => {
     }
 });
 
-// 3. Bảo toàn CNAME
+// 3. Copy thư mục assets vào dist (Dành cho web truy cập ảnh)
+if (fs.existsSync(assetsDir)) {
+    fs.cpSync(assetsDir, path.join(distDir, 'assets'), { recursive: true });
+    console.log('📦 Đã copy thư mục assets/');
+}
+
+// 4. Bảo toàn CNAME và các file trong public
 if (!fs.existsSync(publicDir)) {
     fs.mkdirSync(publicDir, { recursive: true });
 }
@@ -56,11 +62,9 @@ if (!fs.existsSync(cnamePath)) {
     fs.writeFileSync(cnamePath, 'service.diticoms.vn');
 }
 
-if (fs.existsSync(publicDir)) {
-    const publicFiles = fs.readdirSync(publicDir);
-    publicFiles.forEach(file => {
-        fs.copyFileSync(path.join(publicDir, file), path.join(distDir, file));
-    });
-}
+const publicFiles = fs.readdirSync(publicDir);
+publicFiles.forEach(file => {
+    fs.copyFileSync(path.join(publicDir, file), path.join(distDir, file));
+});
 
 console.log('🚀 Build hoàn tất - Sẵn sàng cho Capacitor!');
