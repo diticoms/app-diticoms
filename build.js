@@ -1,4 +1,3 @@
-
 const fs = require('fs');
 const path = require('path');
 
@@ -9,11 +8,10 @@ const assetsDir = path.join(__dirname, 'assets');
 // 1. Dọn dẹp dist cũ
 if (fs.existsSync(distDir)) {
     fs.rmSync(distDir, { recursive: true, force: true });
-    console.log('🧹 Đã dọn dẹp thư mục dist/');
 }
 fs.mkdirSync(distDir, { recursive: true });
 
-// 2. Các file và thư mục mã nguồn cần copy
+// 2. Các file cần thiết cho ứng dụng chạy module trực tiếp
 const itemsToCopy = [
     'index.html',
     'index.tsx',
@@ -24,7 +22,6 @@ const itemsToCopy = [
     'manifest.json',
     'logo.png',
     'version.json',
-    'deploy.sh',
     'components',
     'services',
     'utils'
@@ -35,36 +32,25 @@ itemsToCopy.forEach(item => {
     const dest = path.join(distDir, item);
 
     if (fs.existsSync(src)) {
-        try {
-            if (fs.lstatSync(src).isDirectory()) {
-                fs.cpSync(src, dest, { recursive: true });
-            } else {
-                fs.copyFileSync(src, dest);
-            }
-        } catch (err) {
-            console.error(`❌ Lỗi khi copy ${item}:`, err.message);
+        if (fs.lstatSync(src).isDirectory()) {
+            fs.cpSync(src, dest, { recursive: true });
+        } else {
+            fs.copyFileSync(src, dest);
         }
     }
 });
 
-// 3. Copy thư mục assets vào dist (Dành cho web truy cập ảnh)
-if (fs.existsSync(assetsDir)) {
-    fs.cpSync(assetsDir, path.join(distDir, 'assets'), { recursive: true });
-    console.log('📦 Đã copy thư mục assets/');
-}
-
-// 4. Bảo toàn CNAME và các file trong public
-if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir, { recursive: true });
-}
+// 3. Copy CNAME từ public nếu có, nếu không thì tạo mới
+if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
 const cnamePath = path.join(publicDir, 'CNAME');
 if (!fs.existsSync(cnamePath)) {
     fs.writeFileSync(cnamePath, 'service.diticoms.vn');
 }
+fs.copyFileSync(cnamePath, path.join(distDir, 'CNAME'));
 
-const publicFiles = fs.readdirSync(publicDir);
-publicFiles.forEach(file => {
-    fs.copyFileSync(path.join(publicDir, file), path.join(distDir, file));
-});
+// 4. Copy assets
+if (fs.existsSync(assetsDir)) {
+    fs.cpSync(assetsDir, path.join(distDir, 'assets'), { recursive: true });
+}
 
-console.log('🚀 Build hoàn tất - Sẵn sàng cho Capacitor!');
+console.log('✅ Build thành công vào thư mục dist/');
