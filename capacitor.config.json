@@ -1,0 +1,11 @@
+
+{
+  "appId": "vn.diticoms.service",
+  "appName": "Diticoms Service",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://service.diticoms.vn",
+    "cleartext": true
+  }
+}
