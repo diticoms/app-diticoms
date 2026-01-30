@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   Settings, LogOut, Activity, Share2, 
@@ -76,12 +75,18 @@ export default function App() {
   useEffect(() => {
     try {
       const savedConfig = localStorage.getItem(CONFIG_STORAGE_KEY);
-      if (savedConfig) setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(savedConfig) });
+      if (savedConfig && savedConfig !== "undefined") {
+        setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(savedConfig) });
+      }
       const savedUser = localStorage.getItem('diti_user');
-      if (savedUser) setCurrentUser(JSON.parse(savedUser));
+      if (savedUser && savedUser !== "undefined") {
+        setCurrentUser(JSON.parse(savedUser));
+      }
       const savedTechs = localStorage.getItem('diti_techs');
-      if (savedTechs) setTechnicians(JSON.parse(savedTechs));
-    } catch (e) { console.error(e); }
+      if (savedTechs && savedTechs !== "undefined") {
+        setTechnicians(JSON.parse(savedTechs));
+      }
+    } catch (e) { console.error("Lỗi đọc Storage:", e); }
   }, []);
 
   const fetchGlobalSettings = useCallback(async (url: string) => {
