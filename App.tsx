@@ -12,6 +12,7 @@ import { ConfigModal } from './components/ConfigModal';
 import { TechnicianModal } from './components/TechnicianModal';
 import { InvoiceTemplate } from './components/InvoiceTemplate';
 import { LoginScreen } from './components/LoginScreen';
+import { Logo } from './components/Logo';
 
 import { callSheetAPI } from './services/api';
 import { ACCESS_CODE, DEFAULT_CONFIG, CURRENT_VERSION, GITHUB_REPO, VERSION_CHECK_URL } from './constants';
@@ -61,7 +62,7 @@ export default function App() {
   useEffect(() => {
     const checkUpdates = async () => {
       try {
-        const res = await fetch(`${VERSION_CHECK_URL}?t=${Date.now()}`); // Chống cache
+        const res = await fetch(`${VERSION_CHECK_URL}?t=${Date.now()}`); 
         const data = await res.json();
         if (data.version && isNewerVersion(CURRENT_VERSION, data.version)) {
           setUpdateInfo({ version: data.version, notes: data.notes });
@@ -217,7 +218,6 @@ export default function App() {
   }, [services, dateFrom, dateTo, searchTerm, searchTech, currentUser]);
 
   const handleUpdateApp = () => {
-    // Đối với PWA/Web App, cập nhật là tải lại trang để lấy code mới từ GitHub Pages/Hosting
     window.location.reload();
   };
 
@@ -227,7 +227,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen p-3 md:p-6 bg-[#f8fafc] text-slate-800">
-      {/* Modal Cập nhật cho Mobile */}
       {updateInfo && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[300] flex items-end md:items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-t-3xl md:rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-5">
@@ -266,7 +265,7 @@ export default function App() {
         <header className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <div className="h-14 w-14 bg-white rounded-xl flex items-center justify-center shadow-md border border-slate-100 overflow-hidden">
-              <img src="logo.png" alt="Diticoms Logo" className="h-12 w-12 object-contain" />
+              <Logo size={48} />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -340,7 +339,7 @@ export default function App() {
 
       {isGenerating && (
         <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[110] flex flex-col items-center justify-center space-y-4">
-          <div className="relative"><div className="h-16 w-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div><div className="absolute inset-0 m-auto flex items-center justify-center"><img src="logo.png" className="w-8 h-8 object-contain" /></div></div>
+          <div className="relative"><div className="h-16 w-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div><div className="absolute inset-0 m-auto flex items-center justify-center"><Logo size={32} /></div></div>
           <p className="font-bold text-slate-800 animate-pulse">Đang tạo hóa đơn...</p>
         </div>
       )}

@@ -5,15 +5,14 @@ const path = require('path');
 const distDir = path.join(__dirname, 'dist');
 const publicDir = path.join(__dirname, 'public');
 
-// 1. Dọn dẹp dist cũ để đảm bảo build sạch
+// 1. Dọn dẹp dist cũ
 if (fs.existsSync(distDir)) {
     fs.rmSync(distDir, { recursive: true, force: true });
     console.log('🧹 Đã dọn dẹp thư mục dist/');
 }
 fs.mkdirSync(distDir, { recursive: true });
-console.log('✅ Đã tạo mới thư mục dist/');
 
-// 2. Danh sách các file và thư mục cần copy
+// 2. Các file và thư mục cần copy
 const itemsToCopy = [
     'index.html',
     'index.tsx',
@@ -27,7 +26,8 @@ const itemsToCopy = [
     'deploy.sh',
     'components',
     'services',
-    'utils'
+    'utils',
+    'assets'
 ];
 
 itemsToCopy.forEach(item => {
@@ -56,9 +56,11 @@ if (!fs.existsSync(cnamePath)) {
     fs.writeFileSync(cnamePath, 'service.diticoms.vn');
 }
 
-const publicFiles = fs.readdirSync(publicDir);
-publicFiles.forEach(file => {
-    fs.copyFileSync(path.join(publicDir, file), path.join(distDir, file));
-});
+if (fs.existsSync(publicDir)) {
+    const publicFiles = fs.readdirSync(publicDir);
+    publicFiles.forEach(file => {
+        fs.copyFileSync(path.join(publicDir, file), path.join(distDir, file));
+    });
+}
 
-console.log('🚀 Build thành công - Sẵn sàng cho Capacitor!');
+console.log('🚀 Build hoàn tất - Sẵn sàng cho Capacitor!');

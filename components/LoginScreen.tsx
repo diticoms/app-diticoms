@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { User, Lock, Settings, Loader2 } from 'lucide-react';
+import { Logo } from './Logo';
 
 interface Props {
   onLogin: (u: string, p: string) => void;
@@ -16,8 +17,8 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onOpenConfig, isLoading 
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 space-y-6">
         <div className="flex flex-col items-center">
-          <div className="h-20 w-20 bg-white rounded-2xl flex items-center justify-center shadow-lg border border-slate-100 mb-4">
-            <img src="logo.png" alt="Logo" className="h-16 w-16 object-contain" />
+          <div className="h-24 w-24 bg-white rounded-2xl flex items-center justify-center shadow-lg border border-slate-100 mb-4">
+            <Logo size={70} />
           </div>
           <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Diticoms Service</h2>
           <p className="text-slate-500 text-sm font-semibold">Đăng nhập để quản lý dịch vụ</p>

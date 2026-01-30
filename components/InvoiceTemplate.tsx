@@ -2,6 +2,7 @@
 import React from 'react';
 import { ServiceFormData, BankConfig } from '../types';
 import { formatCurrency, calculateTotalEstimate } from '../utils/helpers';
+import { Logo } from './Logo';
 
 interface Props {
   formData: ServiceFormData;
@@ -15,7 +16,7 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
   return (
     <div className="w-[400px] bg-white p-8 space-y-8 font-sans">
       <div className="flex flex-col items-center text-center space-y-2">
-        <img src="logo.png" className="h-16 w-16 mb-2" alt="Logo" />
+        <Logo size={80} />
         <h1 className="text-2xl font-black uppercase text-blue-600 tracking-tighter">DITICOMS SERVICE</h1>
         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Trung tâm sửa chữa & Bảo trì Laptop/PC</p>
         <div className="w-12 h-1 bg-blue-600 rounded-full mt-2"></div>
