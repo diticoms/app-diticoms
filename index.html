@@ -50,16 +50,8 @@
         height: 100%;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        /* Hỗ trợ khoảng trống cho iPhone tai thỏ */
         padding-top: env(safe-area-inset-top);
         padding-bottom: env(safe-area-inset-bottom);
-      }
-      @media (max-width: 768px) {
-        input, select, textarea {
-          font-size: 16px !important; /* Ngăn zoom trên iOS */
-          appearance: none;
-          -webkit-appearance: none;
-        }
       }
       .premium-card {
         background: white;
@@ -82,18 +74,21 @@
         to { opacity: 1; transform: translateY(0); }
       }
     </style>
-  <script type="importmap">
+    <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
+    "lucide-react": "https://esm.sh/lucide-react@0.463.0",
+    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "html2canvas": "https://esm.sh/html2canvas@^1.4.1"
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>

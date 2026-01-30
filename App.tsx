@@ -6,24 +6,24 @@ import {
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
-import { ServiceForm } from './components/ServiceForm';
-import { ServiceList } from './components/ServiceList';
-import { ConfigModal } from './components/ConfigModal';
-import { TechnicianModal } from './components/TechnicianModal';
-import { InvoiceTemplate } from './components/InvoiceTemplate';
-import { LoginScreen } from './components/LoginScreen';
-import { Logo } from './components/Logo';
+import { ServiceForm } from './components/ServiceForm.tsx';
+import { ServiceList } from './components/ServiceList.tsx';
+import { ConfigModal } from './components/ConfigModal.tsx';
+import { TechnicianModal } from './components/TechnicianModal.tsx';
+import { InvoiceTemplate } from './components/InvoiceTemplate.tsx';
+import { LoginScreen } from './components/LoginScreen.tsx';
+import { Logo } from './components/Logo.tsx';
 
-import { callSheetAPI } from './services/api';
-import { ACCESS_CODE, DEFAULT_CONFIG, CURRENT_VERSION, GITHUB_REPO, VERSION_CHECK_URL } from './constants';
+import { callSheetAPI } from './services/api.ts';
+import { ACCESS_CODE, DEFAULT_CONFIG, CURRENT_VERSION, GITHUB_REPO, VERSION_CHECK_URL } from './constants.ts';
 import { 
   AppConfig, ServiceTicket, PriceItem, 
   ServiceFormData, User
-} from './types';
+} from './types.ts';
 import { 
   getTodayString, removeVietnameseTones, formatCurrency, 
   parseCurrency, calculateTotalEstimate, normalizeIdentity, isNewerVersion
-} from './utils/helpers';
+} from './utils/helpers.ts';
 
 const CONFIG_STORAGE_KEY = 'diticoms_config_v2';
 
@@ -58,7 +58,6 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTech, setSearchTech] = useState('');
 
-  // Kiểm tra cập nhật từ GitHub
   useEffect(() => {
     const checkUpdates = async () => {
       try {
@@ -139,7 +138,6 @@ export default function App() {
           setPreviewImage(canvas.toDataURL('image/png'));
         } catch (e) { 
           alert("Lỗi khi tạo ảnh hóa đơn!"); 
-          console.error(e);
         } finally { 
           setIsGenerating(false); 
         }
@@ -217,10 +215,6 @@ export default function App() {
     });
   }, [services, dateFrom, dateTo, searchTerm, searchTech, currentUser]);
 
-  const handleUpdateApp = () => {
-    window.location.reload();
-  };
-
   if (!currentUser && !isConfigMode) return <LoginScreen onLogin={handleLogin} onOpenConfig={() => setIsConfigMode(true)} isLoading={isLoggingIn} />;
 
   if (isConfigMode && !currentUser) return <ConfigModal config={config} onSave={(c) => { setConfig(c); localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(c)); setIsConfigMode(false); }} onClose={() => setIsConfigMode(false)} isAdmin={true} />;
@@ -235,28 +229,10 @@ export default function App() {
                 <CloudDownload size={32} />
               </div>
               <h3 className="text-xl font-black text-slate-900 uppercase">Bản cập nhật mới!</h3>
-              <p className="text-sm text-slate-500 font-medium">Phiên bản <b>v{updateInfo.version}</b> đã có sẵn trên GitHub. Vui lòng cập nhật để trải nghiệm tính năng mới.</p>
-              {updateInfo.notes && (
-                <div className="bg-slate-50 p-3 rounded-xl w-full text-left">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Có gì mới:</p>
-                  <p className="text-xs text-slate-600 leading-relaxed italic">"{updateInfo.notes}"</p>
-                </div>
-              )}
+              <p className="text-sm text-slate-500 font-medium">Phiên bản <b>v{updateInfo.version}</b> đã có sẵn.</p>
             </div>
-            <div className="flex flex-col gap-2">
-              <button 
-                onClick={handleUpdateApp}
-                className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-200 active:scale-95 transition-transform"
-              >
-                CẬP NHẬT NGAY
-              </button>
-              <button 
-                onClick={() => setUpdateInfo(null)}
-                className="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl text-xs uppercase"
-              >
-                Để sau
-              </button>
-            </div>
+            <button onClick={() => window.location.reload()} className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg">CẬP NHẬT NGAY</button>
+            <button onClick={() => setUpdateInfo(null)} className="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl text-xs uppercase">Để sau</button>
           </div>
         </div>
       )}
@@ -279,8 +255,8 @@ export default function App() {
             </div>
           </div>
           <div className="flex gap-1 md:gap-2">
-             <button onClick={() => setShowConfigModal(true)} className="p-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all border border-slate-200"><Settings size={20}/></button>
-             <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-all border border-red-100"><LogOut size={20}/></button>
+             <button onClick={() => setShowConfigModal(true)} className="p-2.5 rounded-xl bg-slate-50 text-slate-600 border border-slate-200"><Settings size={20}/></button>
+             <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100"><LogOut size={20}/></button>
           </div>
         </header>
 
@@ -303,12 +279,7 @@ export default function App() {
               data={filteredData} loading={loadingData} technicians={technicians}
               selectedId={selectedId} onSelectRow={(item) => { setSelectedId(item.id); setFormData(item as any); }}
               filters={{ dateFrom, dateTo, searchTerm, searchTech }}
-              setFilters={{ 
-                setDateFrom, 
-                setDateTo, 
-                setSearchTerm, 
-                setSearchTech 
-              }} 
+              setFilters={{ setDateFrom, setDateTo, setSearchTerm, setSearchTech }} 
               currentUser={currentUser}
             />
           </div>
@@ -320,17 +291,12 @@ export default function App() {
       </div>
 
       {previewImage && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center"><h3 className="font-bold text-slate-900">Xem trước hóa đơn</h3><button onClick={() => setPreviewImage(null)} className="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600"><X size={20}/></button></div>
-            <img src={previewImage} alt="Preview Bill" className="w-full border border-slate-100 rounded-xl shadow-inner" />
+            <div className="flex justify-between items-center"><h3 className="font-bold">Xem hóa đơn</h3><button onClick={() => setPreviewImage(null)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button></div>
+            <img src={previewImage} className="w-full border border-slate-100 rounded-xl" />
             <div className="flex gap-3">
-              <button onClick={() => { 
-                const link = document.createElement('a'); 
-                link.download = `Bill_${removeVietnameseTones(formData.customerName)}.png`; 
-                link.href = previewImage; 
-                link.click(); 
-              }} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-200"><Download size={18}/> LƯU ẢNH</button>
+              <button onClick={() => { const l = document.createElement('a'); l.download = `Bill.png`; l.href = previewImage; l.click(); }} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2"><Download size={18}/> LƯU ẢNH</button>
               <button onClick={() => setPreviewImage(null)} className="px-6 bg-slate-100 text-slate-600 font-bold rounded-2xl">ĐÓNG</button>
             </div>
           </div>
@@ -339,22 +305,13 @@ export default function App() {
 
       {isGenerating && (
         <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[110] flex flex-col items-center justify-center space-y-4">
-          <div className="relative"><div className="h-16 w-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div><div className="absolute inset-0 m-auto flex items-center justify-center"><Logo size={32} /></div></div>
-          <p className="font-bold text-slate-800 animate-pulse">Đang tạo hóa đơn...</p>
+          <div className="h-16 w-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+          <p className="font-bold text-slate-800">Đang tạo hóa đơn...</p>
         </div>
       )}
 
       {showConfigModal && <ConfigModal config={config} onSave={(c) => { setConfig(c); localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(c)); setShowConfigModal(false); }} onClose={() => setShowConfigModal(false)} isAdmin={currentUser?.role === 'admin'} />}
       {showTechModal && <TechnicianModal technicians={technicians} setTechnicians={setTechnicians} onClose={() => setShowTechModal(false)} sheetUrl={config.sheetUrl} />}
-      
-      <footer className="max-w-7xl mx-auto mt-8 pb-8 text-center px-4">
-        <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-          <span>© 2025 Diticoms Service Manager</span>
-          <span className="hidden md:inline">•</span>
-          <a href="https://service.diticoms.vn" className="text-blue-500 hover:underline">service.diticoms.vn</a>
-          <span>• Phiên bản Pro</span>
-        </p>
-      </footer>
     </div>
   );
 }
