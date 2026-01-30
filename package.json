@@ -1,4 +1,3 @@
-
 {
   "name": "diticoms-service-manager",
   "version": "1.0.1",
@@ -7,9 +6,10 @@
     "start": "echo 'Ứng dụng đang chạy...'",
     "build": "node build.js",
     "version-up": "node -e \"const fs = require('fs'); const v = JSON.parse(fs.readFileSync('version.json')); const parts = v.version.split('.').map(Number); parts[2]++; v.version = parts.join('.'); fs.writeFileSync('version.json', JSON.stringify(v, null, 2)); console.log('Version: ' + v.version);\"",
-    "deploy": "npm run build && npm run version-up && git add . && git commit -m \"Auto-deploy: Cập nhật hệ thống và bảo trì Domain\" && git push origin main",
+    "deploy": "npm run build && npm run version-up && git add . && git commit -m \"Auto-deploy: Cập nhật hệ thống\" && git pull --rebase origin main && git push origin main",
     "mobile:init": "npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/ios",
-    "mobile:sync": "npx cap sync"
+    "mobile:sync": "npx cap sync",
+    "generate:icons": "npx @capacitor/assets generate --icon --android --ios"
   },
   "keywords": [
     "diticoms",
@@ -19,9 +19,12 @@
   "author": "Diticoms",
   "license": "MIT",
   "dependencies": {
-    "lucide-react": "^0.563.0",
     "html2canvas": "^1.4.1",
+    "lucide-react": "^0.563.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5"
   }
 }

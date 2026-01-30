@@ -11,10 +11,11 @@ if (!fs.existsSync(distDir)) {
     console.log('✅ Đã tạo thư mục dist/');
 }
 
-// 2. Danh sách các file và thư mục cần copy
+// 2. Danh sách các file và thư mục cần copy vào bản build
 const itemsToCopy = [
     'index.html',
     'index.tsx',
+    'App.tsx',
     'types.ts',
     'constants.ts',
     'metadata.json',
@@ -32,23 +33,27 @@ itemsToCopy.forEach(item => {
     const dest = path.join(distDir, item);
 
     if (fs.existsSync(src)) {
-        if (fs.lstatSync(src).isDirectory()) {
-            // Copy thư mục (Yêu cầu Node.js 16.7.0+)
-            fs.cpSync(src, dest, { recursive: true });
-        } else {
-            // Copy file
-            fs.copyFileSync(src, dest);
+        try {
+            if (fs.lstatSync(src).isDirectory()) {
+                // Copy thư mục (Yêu cầu Node.js 16.7.0+)
+                fs.cpSync(src, dest, { recursive: true });
+            } else {
+                // Copy file
+                fs.copyFileSync(src, dest);
+            }
+        } catch (err) {
+            console.error(`❌ Lỗi khi copy ${item}:`, err.message);
         }
     }
 });
 
-// 3. Xử lý đặc biệt cho thư mục public (Copy nội dung bên trong vào gốc dist)
+// 3. Copy file CNAME từ public/ vào gốc dist/
 if (fs.existsSync(publicDir)) {
     const publicFiles = fs.readdirSync(publicDir);
     publicFiles.forEach(file => {
         fs.copyFileSync(path.join(publicDir, file), path.join(distDir, file));
     });
-    console.log('✅ Đã đồng bộ cấu hình Domain (CNAME) từ public/');
+    console.log('✅ Đã bảo toàn Domain (CNAME) từ thư mục public/');
 }
 
 console.log('🚀 Build hoàn tất thành công!');
