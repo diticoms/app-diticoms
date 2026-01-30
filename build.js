@@ -40,13 +40,13 @@ itemsToCopy.forEach(item => {
     }
 });
 
-// 3. Copy CNAME từ public nếu có, nếu không thì tạo mới
-if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
-const cnamePath = path.join(publicDir, 'CNAME');
-if (!fs.existsSync(cnamePath)) {
-    fs.writeFileSync(cnamePath, 'service.diticoms.vn');
+// 3. Copy CNAME để giữ domain service.diticoms.vn
+const cnamePath = path.join(__dirname, 'CNAME');
+if (fs.existsSync(cnamePath)) {
+    fs.copyFileSync(cnamePath, path.join(distDir, 'CNAME'));
+} else {
+    fs.writeFileSync(path.join(distDir, 'CNAME'), 'service.diticoms.vn');
 }
-fs.copyFileSync(cnamePath, path.join(distDir, 'CNAME'));
 
 // 4. Copy assets
 if (fs.existsSync(assetsDir)) {

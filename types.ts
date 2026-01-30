@@ -1,4 +1,3 @@
-
 export interface BankConfig {
   bankId: string;
   accountNo: string;
@@ -13,7 +12,6 @@ export interface AppConfig {
 export interface User {
   username: string;
   name: string;
-  // Fix: Union types in TypeScript use the single pipe '|' operator, not '||'
   role: 'admin' | 'user';
   associatedTech?: string;
 }
