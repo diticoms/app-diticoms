@@ -2,8 +2,6 @@ export async function callSheetAPI(url: string, action: string, data: any = {}) 
   try {
     const payload = { ...data, action };
     
-    // Google Apps Script yêu cầu fetch thông thường để xử lý redirect (302) và trả về data.
-    // 'no-cors' sẽ khiến kết quả trả về là 'opaque', không thể đọc được JSON.
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -13,12 +11,21 @@ export async function callSheetAPI(url: string, action: string, data: any = {}) 
     });
 
     if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
+      throw new Error(`Lỗi kết nối Server: ${response.status}`);
     }
 
-    return await response.json();
+    const text = await response.text();
+    try {
+      // Thử parse JSON, nếu server trả về chuỗi bẩn thì lọc bớt
+      return JSON.parse(text);
+    } catch (e) {
+      console.warn("Phản hồi không phải JSON, thử parse lại...");
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) return JSON.parse(jsonMatch[0]);
+      throw new Error("Dữ liệu Server trả về không hợp lệ.");
+    }
   } catch (error) {
-    console.error("API Error details:", error);
+    console.error("Chi tiết lỗi API:", error);
     throw error;
   }
 }

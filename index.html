@@ -65,17 +65,17 @@
         border-radius: 10px;
       }
     </style>
-    <!-- Script bắt lỗi để hiển thị nếu app bị crash lúc khởi động -->
     <script>
       window.onerror = function(msg, url, lineNo, columnNo, error) {
         const root = document.getElementById('root');
         if (root && root.innerHTML === "") {
-          root.innerHTML = `<div style="padding: 20px; color: red; font-family: sans-serif;">
-            <h2 style="margin:0">Lỗi khởi động App:</h2>
-            <p>${msg}</p>
-            <small>${url} - Line: ${lineNo}</small>
-            <br><br>
-            <button onclick="location.reload()" style="padding: 10px 20px; background: #1d4ed8; color: white; border: none; border-radius: 8px;">Thử lại</button>
+          root.innerHTML = `<div style="padding: 20px; color: red; font-family: sans-serif; text-align: center; background: white; height: 100vh; display: flex; flex-direction: column; justify-content: center;">
+            <h2 style="margin:0">Hệ thống đang khởi động...</h2>
+            <p style="color: #64748b; font-size: 14px;">Nếu màn hình không tự tải lại, vui lòng bấm nút bên dưới.</p>
+            <div style="margin-top: 20px;">
+              <button onclick="location.reload()" style="padding: 12px 24px; background: #1d4ed8; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer;">TẢI LẠI TRANG</button>
+            </div>
+            <p style="font-size: 10px; margin-top: 20px; color: #cbd5e1;">${msg}</p>
           </div>`;
         }
         return false;
