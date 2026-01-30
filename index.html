@@ -7,38 +7,13 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Diticoms" />
-    <link rel="apple-touch-icon" href="logo.png" />
-    <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="index.css" />
     <title>Diticoms Service Manager</title>
     
+    <link rel="stylesheet" href="index.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <script>
-      // Đăng ký Service Worker để sửa lỗi MIME type octet-stream từ server
-      if ('serviceWorker' in navigator) {
-        const swCode = `
-          self.addEventListener('fetch', event => {
-            const url = event.request.url;
-            if (url.endsWith('.tsx') || url.endsWith('.ts')) {
-              event.respondWith(
-                fetch(event.request).then(response => {
-                  return new Response(response.body, {
-                    status: response.status,
-                    statusText: response.statusText,
-                    headers: { ...Object.fromEntries(response.headers), 'Content-Type': 'application/javascript' }
-                  });
-                })
-              );
-            }
-          });
-        `;
-        const blob = new Blob([swCode], { type: 'application/javascript' });
-        navigator.serviceWorker.register(URL.createObjectURL(blob));
-      }
-
       tailwind.config = {
         theme: {
           extend: {
@@ -58,6 +33,10 @@
       }
       #root { height: 100%; overflow-y: auto; }
       @keyframes spin { to { transform: rotate(360deg); } }
+      .loader-container {
+        height: 100vh; display: flex; flex-direction: column; 
+        align-items: center; justify-content: center; background: #f1f5f9;
+      }
     </style>
 
     <script type="importmap">
@@ -78,14 +57,96 @@
 </head>
   <body>
     <div id="root">
-      <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f1f5f9;">
+      <div class="loader-container">
         <div style="width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
-        <p style="font-weight: bold; color: #64748b; font-size: 14px;">Đang tải ứng dụng...</p>
+        <p style="font-weight: bold; color: #64748b; font-size: 14px;">Đang khởi động hệ thống...</p>
       </div>
     </div>
 
-    <!-- Tải và biên dịch TSX trực tiếp để đảm bảo chạy được trên mọi server -->
-    <script type="text/babel" data-type="module" data-presets="react,typescript" src="index.tsx"></script>
+    <script type="module">
+      const moduleCache = new Map();
+
+      async function loadVirtualModule(inputUrl) {
+        // Resolve URL tuyệt đối để làm key cho cache và fetch
+        const absoluteUrl = new URL(inputUrl, window.location.href).href;
+        
+        if (moduleCache.has(absoluteUrl)) return moduleCache.get(absoluteUrl);
+
+        try {
+          const response = await fetch(absoluteUrl);
+          if (!response.ok) throw new Error(`Không thể tải file: ${absoluteUrl} (HTTP ${response.status})`);
+          let code = await response.text();
+
+          // Regex tìm các import tương đối (./ hoặc ../)
+          // Hỗ trợ cả import { x } from './y' và import './z'
+          const importRegex = /(import\s+[\s\S]*?from\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])|(import\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])/g;
+          
+          const matches = [...code.matchAll(importRegex)];
+          
+          for (const match of matches) {
+            // Xác định đường dẫn tương đối từ regex match
+            const relativePath = match[2] ? (match[2] + match[3]) : (match[6] + match[7]);
+            const fullMatch = match[0];
+            
+            // Resolve path con dựa trên URL của module cha
+            const childAbsoluteUrl = new URL(relativePath, absoluteUrl).href;
+            
+            // Đệ quy tải module con
+            const blobUrl = await loadVirtualModule(childAbsoluteUrl);
+            
+            // Thay thế path cũ bằng Blob URL mới trong code
+            if (match[2]) {
+               const newImport = `${match[1]}${blobUrl}${match[4]}`;
+               code = code.replace(fullMatch, newImport);
+            } else {
+               const newImport = `${match[5]}${blobUrl}${match[8]}`;
+               code = code.replace(fullMatch, newImport);
+            }
+          }
+
+          // Biên dịch TSX/TS sang JS bằng Babel
+          const transformed = Babel.transform(code, {
+            presets: [
+              ['react', { runtime: 'automatic' }],
+              ['typescript', { isTSX: true, allExtensions: true }]
+            ],
+            filename: absoluteUrl
+          }).code;
+
+          const blob = new Blob([transformed], { type: 'application/javascript' });
+          const blobUrl = URL.createObjectURL(blob);
+          
+          moduleCache.set(absoluteUrl, blobUrl);
+          return blobUrl;
+        } catch (e) {
+          console.error(`Lỗi tại [${absoluteUrl}]:`, e);
+          const root = document.getElementById('root');
+          if (root) {
+            root.innerHTML = `
+              <div class="p-8 text-red-500 bg-white m-4 rounded-2xl shadow-lg border-2 border-red-100">
+                <h2 class="font-black text-xl mb-2">LỖI KHỞI ĐỘNG</h2>
+                <p class="font-mono text-sm mb-4">${e.message}</p>
+                <p class="text-xs text-slate-400">File: ${absoluteUrl}</p>
+                <button onclick="window.location.reload()" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-xl font-bold">THỬ LẠI</button>
+              </div>`;
+          }
+          throw e;
+        }
+      }
+
+      // Khởi chạy ứng dụng
+      (async () => {
+        try {
+          const entryBlobUrl = await loadVirtualModule('./index.tsx');
+          const script = document.createElement('script');
+          script.type = 'module';
+          script.src = entryBlobUrl;
+          document.body.appendChild(script);
+        } catch (err) {
+          console.error("Critical boot error:", err);
+        }
+      })();
+    </script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
