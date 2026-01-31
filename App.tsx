@@ -75,6 +75,17 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTech, setSearchTech] = useState('');
 
+  // Ẩn Splash Screen khi App đã render
+  useEffect(() => {
+    const splash = document.getElementById('splash');
+    if (splash) {
+      setTimeout(() => {
+        splash.style.opacity = '0';
+        setTimeout(() => splash.remove(), 500);
+      }, 800);
+    }
+  }, []);
+
   useEffect(() => {
     const checkUpdates = async () => {
       try {
@@ -83,14 +94,10 @@ export default function App() {
         let data: any = null;
         
         try {
-          // Cố gắng parse JSON trước
           data = JSON.parse(text);
         } catch (e) {
-          // Nếu lỗi, thử trích xuất version bằng Regex
           const versionMatch = text.match(/(\d+\.\d+\.\d+)/);
-          if (versionMatch) {
-            data = { version: versionMatch[1] };
-          }
+          if (versionMatch) data = { version: versionMatch[1] };
         }
         
         if (data && data.version && isNewerVersion(CURRENT_VERSION, data.version)) {
@@ -319,9 +326,9 @@ export default function App() {
 
       {isGenerating && (
         <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[110] flex flex-col items-center justify-center space-y-4 animate-in fade-in">
-          <div className="loader-wrapper scale-75">
-            <div className="loader-ring"></div>
-            <Logo size={70} />
+          <div className="relative w-20 h-20 flex items-center justify-center">
+            <div className="absolute inset-0 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
+            <Logo size={40} />
           </div>
           <p className="font-bold text-slate-800">Đang tạo hóa đơn...</p>
         </div>

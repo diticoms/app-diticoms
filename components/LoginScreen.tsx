@@ -21,10 +21,10 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onOpenConfig, isLoading 
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 space-y-6 relative overflow-hidden">
         {isLoading && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center space-y-4">
-            <div className="loader-wrapper scale-75">
-              <div className="loader-ring"></div>
-              <Logo size={70} />
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center space-y-4">
+            <div className="relative w-24 h-24 flex items-center justify-center">
+              <div className="absolute inset-0 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
+              <Logo size={50} />
             </div>
             <p className="font-bold text-slate-800 text-sm animate-pulse uppercase tracking-widest">ĐANG ĐĂNG NHẬP...</p>
           </div>

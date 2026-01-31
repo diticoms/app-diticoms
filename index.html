@@ -20,22 +20,22 @@
         background: #f1f5f9; z-index: 9999;
       }
       .loader-wrapper {
-        position: relative; width: 120px; height: 120px;
+        position: relative; width: 100px; height: 100px;
         display: flex; align-items: center; justify-content: center;
       }
       .loader-ring {
         position: absolute; inset: 0; border: 4px solid #e2e8f0;
         border-top-color: #1d4ed8; border-radius: 50%;
-        animation: splash-spin 1s linear infinite;
+        animation: splash-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
       }
       .loader-logo {
-        width: 70px; height: 70px; object-fit: contain;
+        width: 60px; height: 60px; object-fit: contain; z-index: 10;
         animation: splash-pulse 2s ease-in-out infinite;
       }
       @keyframes splash-spin { to { transform: rotate(360deg); } }
       @keyframes splash-pulse { 
-        0%, 100% { transform: scale(0.92); opacity: 0.8; }
-        50% { transform: scale(1); opacity: 1; }
+        0%, 100% { transform: scale(0.95); opacity: 0.9; }
+        50% { transform: scale(1.05); opacity: 1; }
       }
     </style>
     <script type="importmap">
@@ -56,7 +56,7 @@
 </head>
   <body>
     <div id="root">
-      <div class="splash-container">
+      <div class="splash-container" id="splash">
         <div class="loader-wrapper">
           <div class="loader-ring"></div>
           <img src="public/logo.png" class="loader-logo" onerror="this.src='logo.png';this.onerror=function(){this.src='https://service.diticoms.vn/logo.png'}">
@@ -64,7 +64,7 @@
       </div>
     </div>
     <script type="module">
-      const VER = "1.2.3";
+      const VER = "1.2.4";
       const cache = new Map(), origins = new Map();
 
       const resolve = (p, b) => {
@@ -115,6 +115,7 @@
       boot('./index.tsx').then(entry => {
         const s = document.createElement('script');
         s.type = 'module'; s.src = entry; document.body.appendChild(s);
+        // Tự động ẩn splash sau khi app nạp xong (được xử lý trong App.tsx)
       }).catch(e => {
         document.getElementById('root').innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif"><div style="color:#ef4444;font-weight:bold;margin-bottom:10px">Lỗi khởi động: ${e.message}</div><button onclick="localStorage.clear();location.reload()" style="padding:10px 20px;background:#1d4ed8;color:white;border:none;border-radius:12px;font-weight:bold">TẢI LẠI</button></div>`;
       });
