@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#1d4ed8" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Diticoms Service Manager</title>
     <link rel="stylesheet" href="index.css" />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,15 +14,15 @@
       window.tailwind.config = { theme: { extend: { colors: { primary: '#1d4ed8', secondary: '#64748b' } } } }
     </script>
     <style>
-      body { background: #f1f5f9; margin: 0; padding: 0; overflow: hidden; }
-      #root { height: 100vh; overflow-y: auto; }
+      body { background: #f1f5f9; margin: 0; padding: 0; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+      #root { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
       
       .splash-container {
         position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-        background: #f1f5f9; z-index: 9999;
+        background: #f1f5f9; z-index: 9999; transition: opacity 0.5s ease-out;
       }
       .loader-wrapper {
-        position: relative; width: 100px; height: 100px;
+        position: relative; width: 110px; height: 110px;
         display: flex; align-items: center; justify-content: center;
       }
       .loader-ring {
@@ -29,7 +31,7 @@
         animation: splash-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
       }
       .loader-logo {
-        width: 60px; height: 60px; object-fit: contain; z-index: 10;
+        width: 65px; height: 65px; object-fit: contain; z-index: 10;
         animation: splash-pulse 2s ease-in-out infinite;
       }
       @keyframes splash-spin { to { transform: rotate(360deg); } }
@@ -39,19 +41,19 @@
       }
     </style>
     <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@19.2.4",
-    "react-dom": "https://esm.sh/react-dom@19.2.4",
-    "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
-    "react/jsx-runtime": "https://esm.sh/react@19.2.4/jsx-runtime",
-    "lucide-react": "https://esm.sh/lucide-react@0.475.0?deps=react@19.2.4",
-    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
-  }
-}
-</script>
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.2.4",
+        "react-dom": "https://esm.sh/react-dom@19.2.4",
+        "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
+        "react/jsx-runtime": "https://esm.sh/react@19.2.4/jsx-runtime",
+        "lucide-react": "https://esm.sh/lucide-react@0.475.0?deps=react@19.2.4",
+        "html2canvas": "https://esm.sh/html2canvas@1.4.1",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+        "react/": "https://esm.sh/react@^19.2.4/"
+      }
+    }
+    </script>
   <link rel="stylesheet" href="/index.css">
 </head>
   <body>
@@ -64,7 +66,7 @@
       </div>
     </div>
     <script type="module">
-      const VER = "1.2.4";
+      const VER = "1.2.5";
       const cache = new Map(), origins = new Map();
 
       const resolve = (p, b) => {
@@ -115,7 +117,6 @@
       boot('./index.tsx').then(entry => {
         const s = document.createElement('script');
         s.type = 'module'; s.src = entry; document.body.appendChild(s);
-        // Tự động ẩn splash sau khi app nạp xong (được xử lý trong App.tsx)
       }).catch(e => {
         document.getElementById('root').innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif"><div style="color:#ef4444;font-weight:bold;margin-bottom:10px">Lỗi khởi động: ${e.message}</div><button onclick="localStorage.clear();location.reload()" style="padding:10px 20px;background:#1d4ed8;color:white;border:none;border-radius:12px;font-weight:bold">TẢI LẠI</button></div>`;
       });

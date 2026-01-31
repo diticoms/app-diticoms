@@ -53,7 +53,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onOpenConfig, isLoading 
           </div>
           <button 
             type="submit" disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2 uppercase tracking-widest active:scale-[0.98]"
           >
             ĐĂNG NHẬP
           </button>
