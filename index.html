@@ -14,7 +14,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <script>
-      tailwind.config = {
+      window.tailwind.config = {
         theme: {
           extend: {
             colors: { primary: '#1d4ed8', secondary: '#64748b' }
@@ -37,6 +37,14 @@
         height: 100vh; display: flex; flex-direction: column; 
         align-items: center; justify-content: center; background: #f1f5f9;
       }
+      .progress-bar {
+        width: 200px; height: 4px; background: #e2e8f0; 
+        border-radius: 2px; margin-top: 20px; overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%; background: #1d4ed8; width: 0%;
+        transition: width 0.3s ease;
+      }
     </style>
 
     <script type="importmap">
@@ -53,62 +61,99 @@
   }
 }
 </script>
-  <link rel="stylesheet" href="/index.css">
-</head>
+  </head>
   <body>
     <div id="root">
       <div class="loader-container">
-        <div style="width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
-        <p style="font-weight: bold; color: #64748b; font-size: 14px;">Hệ thống đang đồng bộ dữ liệu...</p>
+        <div style="width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="font-weight: bold; color: #1d4ed8; font-size: 14px; margin-top: 16px;">DITICOMS SERVICE</p>
+        <p id="loader-status" style="color: #64748b; font-size: 11px; margin-top: 4px;">Đang khởi tạo hệ thống...</p>
+        <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
       </div>
     </div>
 
     <script type="module">
+      const APP_VERSION = "1.0.10"; 
       const moduleCache = new Map();
+      const blobToOrigin = new Map();
+      
+      const statusEl = document.getElementById('loader-status');
+      const progressEl = document.getElementById('progress-fill');
 
-      // Hàm fetch thông minh: tự thử thêm đuôi .ts, .tsx nếu gặp lỗi 404
-      async function smartFetch(url) {
-        let response = await fetch(url);
-        
-        // Nếu không tìm thấy và URL chưa có đuôi file
-        if (response.status === 404 && !url.split('/').pop().includes('.')) {
-          // Thử đuôi .ts
-          const tsRes = await fetch(url + '.ts');
-          if (tsRes.ok) return { response: tsRes, finalUrl: url + '.ts' };
-          
-          // Thử đuôi .tsx
-          const tsxRes = await fetch(url + '.tsx');
-          if (tsxRes.ok) return { response: tsxRes, finalUrl: url + '.tsx' };
-        }
-        
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return { response, finalUrl: url };
+      function updateStatus(msg, progress) {
+        if (statusEl) statusEl.innerText = msg;
+        if (progressEl) progressEl.style.width = `${progress}%`;
       }
 
-      async function loadVirtualModule(inputUrl) {
-        const absoluteUrl = new URL(inputUrl, window.location.href).href;
+      function resolveUrl(path, base) {
+        if (/^(https?|capacitor|file|blob):/i.test(path)) return path;
+        
+        let realBase = base.startsWith('blob:') ? (blobToOrigin.get(base) || window.location.href) : base;
+        
+        try {
+          const urlObj = new URL(realBase, window.location.href);
+          const baseDir = urlObj.href.substring(0, urlObj.href.lastIndexOf('/') + 1);
+          return new URL(path, baseDir).href;
+        } catch (e) {
+          return new URL(path, window.location.href).href;
+        }
+      }
+
+      async function smartFetch(url) {
+        // Luôn fetch từ URL mạng thực tế
+        const networkUrl = url.replace(/^blob:/, '').split('#')[0].split('?')[0];
+        
+        try {
+          const response = await fetch(networkUrl);
+          if (response.ok) return { response, finalUrl: networkUrl };
+          
+          // Thử tìm với extension nếu 404
+          if (response.status === 404) {
+            for (const ext of ['.tsx', '.ts', '.js']) {
+              if (!networkUrl.endsWith(ext)) {
+                const res = await fetch(networkUrl + ext);
+                if (res.ok) return { response: res, finalUrl: networkUrl + ext };
+              }
+            }
+          }
+          throw new Error(`HTTP ${response.status}`);
+        } catch (e) {
+          throw new Error(`Không tìm thấy: ${networkUrl.split('/').pop()}`);
+        }
+      }
+
+      async function loadModule(inputUrl, depth = 0) {
+        const absoluteUrl = resolveUrl(inputUrl, window.location.href);
         if (moduleCache.has(absoluteUrl)) return moduleCache.get(absoluteUrl);
 
+        const cacheKey = `v_mod_${APP_VERSION}_${absoluteUrl}`;
+        const cachedCode = localStorage.getItem(cacheKey);
+        
+        if (cachedCode) {
+          const blob = new Blob([cachedCode], { type: 'application/javascript' });
+          const bUrl = URL.createObjectURL(blob);
+          moduleCache.set(absoluteUrl, bUrl);
+          blobToOrigin.set(bUrl, absoluteUrl);
+          return bUrl;
+        }
+
         try {
+          updateStatus(`Tải: ${absoluteUrl.split('/').pop()}`, Math.min(depth * 5 + 10, 95));
           const { response, finalUrl } = await smartFetch(absoluteUrl);
           let code = await response.text();
 
-          // Regex tìm import tương đối
-          const importRegex = /(import\s+[\s\S]*?from\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])|(import\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])/g;
+          const importRegex = /(import|export)(\s+[\s\S]*?from\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])|(import\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])/g;
           const matches = [...code.matchAll(importRegex)];
           
           for (const match of matches) {
-            const relativePath = match[2] ? (match[2] + match[3]) : (match[6] + match[7]);
             const fullMatch = match[0];
-            const childAbsoluteUrl = new URL(relativePath, finalUrl).href;
+            const prefix = (match[1] || '') + (match[2] || match[6]);
+            const relPath = (match[3] || '') + (match[4] || '') + (match[7] || '') + (match[8] || '');
+            const suffix = match[5] || match[9];
             
-            const blobUrl = await loadVirtualModule(childAbsoluteUrl);
-            
-            if (match[2]) {
-               code = code.replace(fullMatch, `${match[1]}${blobUrl}${match[4]}`);
-            } else {
-               code = code.replace(fullMatch, `${match[5]}${blobUrl}${match[8]}`);
-            }
+            const childUrl = resolveUrl(relPath, finalUrl);
+            const childBlob = await loadModule(childUrl, depth + 1);
+            code = code.split(fullMatch).join(prefix + childBlob + suffix);
           }
 
           const transformed = Babel.transform(code, {
@@ -116,36 +161,53 @@
               ['react', { runtime: 'automatic' }],
               ['typescript', { isTSX: true, allExtensions: true }]
             ],
-            filename: finalUrl
+            filename: finalUrl,
+            sourceMaps: false
           }).code;
 
+          try {
+            localStorage.setItem(cacheKey, transformed);
+          } catch (e) {}
+
           const blob = new Blob([transformed], { type: 'application/javascript' });
-          const blobUrl = URL.createObjectURL(blob);
-          
-          moduleCache.set(absoluteUrl, blobUrl);
-          return blobUrl;
+          const bUrl = URL.createObjectURL(blob);
+          moduleCache.set(absoluteUrl, bUrl);
+          blobToOrigin.set(bUrl, absoluteUrl);
+          return bUrl;
         } catch (e) {
-          console.error(`Lỗi nạp [${absoluteUrl}]:`, e);
           throw e;
         }
       }
 
       (async () => {
         try {
-          const entryBlobUrl = await loadVirtualModule('./index.tsx');
+          // Xóa cache khi phiên bản thay đổi
+          const lastVer = localStorage.getItem('app_v');
+          if (lastVer !== APP_VERSION) {
+            Object.keys(localStorage).forEach(k => { if(k.startsWith('v_mod_')) localStorage.removeItem(k); });
+            localStorage.setItem('app_v', APP_VERSION);
+          }
+
+          const entryUrl = await loadModule('./index.tsx');
+          updateStatus('Sẵn sàng!', 100);
+          
           const script = document.createElement('script');
-          script.type = 'module'; script.src = entryBlobUrl;
+          script.type = 'module'; 
+          script.src = entryUrl;
           document.body.appendChild(script);
         } catch (err) {
           document.getElementById('root').innerHTML = `
-            <div class="p-8 text-red-500 bg-white m-4 rounded-2xl shadow-lg border-2 border-red-100">
-              <h2 class="font-black text-xl mb-2">LỖI ĐƯỜNG TRUYỀN</h2>
-              <p class="text-sm mb-4">Hệ thống không thể tải tài nguyên từ Server. Vui lòng kiểm tra kết nối internet hoặc liên hệ kỹ thuật.</p>
-              <button onclick="window.location.reload()" class="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold">TẢI LẠI TRANG</button>
+            <div class="p-8 text-red-500 bg-white m-4 rounded-3xl shadow-xl border-2 border-red-50 text-center max-w-sm mx-auto">
+              <div class="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              </div>
+              <h2 class="font-black text-lg mb-2 uppercase">Lỗi khởi động</h2>
+              <p class="text-[11px] mb-4 text-slate-500 font-medium italic">${err.message}</p>
+              <button onclick="localStorage.clear(); window.location.reload();" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-100 active:scale-95 transition-transform">XÓA CACHE & TẢI LẠI</button>
+              <p class="mt-4 text-[9px] text-slate-400 font-bold uppercase tracking-widest">Diticoms Service Manager</p>
             </div>`;
         }
       })();
     </script>
-  <script type="module" src="/index.tsx"></script>
-</body>
+  </body>
 </html>
