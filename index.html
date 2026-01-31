@@ -12,12 +12,12 @@
       window.tailwind.config = { theme: { extend: { colors: { primary: '#1d4ed8', secondary: '#64748b' } } } }
     </script>
     <style>
-      body { background: #f1f5f9; margin: 0; padding: 0; }
+      body { background: #f1f5f9; margin: 0; padding: 0; overflow: hidden; }
+      #root { height: 100vh; overflow-y: auto; }
       #root:empty::before {
-        content: ""; display: block; width: 24px; height: 24px;
-        border: 2px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%;
-        position: fixed; top: 50%; left: 50%; margin: -12px 0 0 -12px;
-        animation: spin 0.6s linear infinite;
+        content: ""; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 24px; height: 24px; border: 2px solid #e2e8f0; border-top-color: #1d4ed8;
+        border-radius: 50%; animation: spin 0.6s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -40,7 +40,7 @@
   <body>
     <div id="root"></div>
     <script type="module">
-      const VER = "1.1.0";
+      const VER = "1.2.0";
       const cache = new Map(), origins = new Map();
 
       const resolve = (p, b) => {
@@ -51,8 +51,8 @@
 
       const fastFetch = async (url) => {
         const clean = url.replace(/^blob:/, '').split(/[?#]/)[0];
-        const lastPart = clean.substring(clean.lastIndexOf('/') + 1);
-        const exts = lastPart.includes('.') ? [''] : ['.tsx', '.ts', '.js', ''];
+        const last = clean.split('/').pop();
+        const exts = last.includes('.') ? [''] : ['.tsx', '.ts', '.js', ''];
         for (const ext of exts) {
           try {
             const res = await fetch(clean + ext);
@@ -81,7 +81,7 @@
         }
         const compiled = Babel.transform(code, {
           presets: [['react', { runtime: 'automatic' }], ['typescript', { isTSX: true, allExtensions: true }]],
-          filename: final, compact: true
+          filename: final, compact: true, comments: false
         }).code;
         try { localStorage.setItem(key, compiled); } catch(e) { localStorage.clear(); }
         const b = URL.createObjectURL(new Blob([compiled], { type: 'application/javascript' }));
@@ -92,7 +92,7 @@
         const s = document.createElement('script');
         s.type = 'module'; s.src = entry; document.body.appendChild(s);
       }).catch(e => {
-        document.getElementById('root').innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif"><div style="color:#ef4444;font-weight:bold;margin-bottom:10px">${e.message}</div><button onclick="localStorage.clear();location.reload()" style="padding:10px 20px;background:#1d4ed8;color:white;border:none;border-radius:12px;font-weight:bold">TẢI LẠI</button></div>`;
+        document.getElementById('root').innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif"><div style="color:#ef4444;font-weight:bold;margin-bottom:10px">Lỗi khởi động: ${e.message}</div><button onclick="localStorage.clear();location.reload()" style="padding:10px 20px;background:#1d4ed8;color:white;border:none;border-radius:12px;font-weight:bold">TẢI LẠI</button></div>`;
       });
     </script>
   <script type="module" src="/index.tsx"></script>
