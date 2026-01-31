@@ -80,20 +80,25 @@ export default function App() {
       try {
         const res = await fetch(`${VERSION_CHECK_URL}?t=${Date.now()}`); 
         const text = (await res.text()).trim();
-        let data;
+        let data: any = null;
+        
         try {
+          // Cố gắng parse JSON trước
           data = JSON.parse(text);
         } catch (e) {
-          // Xử lý trường hợp GitHub trả về text thuần "1.0.1" không có ngoặc kép
-          const versionMatch = text.match(/\d+\.\d+\.\d+/);
+          // Nếu lỗi, thử trích xuất version bằng Regex
+          const versionMatch = text.match(/(\d+\.\d+\.\d+)/);
           if (versionMatch) {
-            data = { version: versionMatch[0] };
-          } else throw e;
+            data = { version: versionMatch[1] };
+          }
         }
+        
         if (data && data.version && isNewerVersion(CURRENT_VERSION, data.version)) {
           setUpdateInfo({ version: data.version, notes: data.notes });
         }
-      } catch (e) { console.warn("Lỗi kiểm tra cập nhật:", e); }
+      } catch (e) { 
+        console.warn("Lỗi kiểm tra cập nhật:", e); 
+      }
     };
     checkUpdates();
   }, []);
@@ -314,7 +319,10 @@ export default function App() {
 
       {isGenerating && (
         <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[110] flex flex-col items-center justify-center space-y-4 animate-in fade-in">
-          <div className="h-16 w-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="loader-wrapper scale-75">
+            <div className="loader-ring"></div>
+            <Logo size={70} />
+          </div>
           <p className="font-bold text-slate-800">Đang tạo hóa đơn...</p>
         </div>
       )}
