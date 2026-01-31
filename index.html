@@ -19,7 +19,7 @@
       
       .splash-container {
         position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-        background: #f1f5f9; z-index: 9999; transition: opacity 0.5s ease-out;
+        background: #f1f5f9; z-index: 9999; transition: opacity 0.4s ease-out, visibility 0.4s;
       }
       .loader-wrapper {
         position: relative; width: 110px; height: 110px;
@@ -66,7 +66,7 @@
       </div>
     </div>
     <script type="module">
-      const VER = "1.2.5";
+      const VER = "1.2.6"; // Nâng cấp để clear cache cũ
       const cache = new Map(), origins = new Map();
 
       const resolve = (p, b) => {
@@ -81,44 +81,66 @@
         const exts = last.includes('.') ? [''] : ['.tsx', '.ts', '.js', ''];
         for (const ext of exts) {
           try {
-            const res = await fetch(clean + ext);
-            if (res.ok) return { code: await res.text(), url: clean + ext };
+            const fullUrl = clean + ext;
+            const res = await fetch(fullUrl);
+            if (res.ok) return { code: await res.text(), url: fullUrl };
           } catch (e) {}
         }
-        throw new Error(`404: ${clean}`);
+        throw new Error(`Không tìm thấy file: ${clean}`);
       };
 
-      const boot = async (path) => {
+      const boot = async (path, stack = new Set()) => {
         const abs = resolve(path, location.href);
         if (cache.has(abs)) return cache.get(abs);
+        if (stack.has(abs)) return abs; // Tránh vòng lặp
+
         const key = `v${VER}_${abs}`;
         const stored = localStorage.getItem(key);
         if (stored) {
           const b = URL.createObjectURL(new Blob([stored], { type: 'application/javascript' }));
           cache.set(abs, b); origins.set(b, abs); return b;
         }
+
         const { code: raw, url: final } = await fastFetch(abs);
         let code = raw;
+        stack.add(abs);
+
         const matches = [...code.matchAll(/(import|export)(\s+[\s\S]*?from\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])|(import\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])/g)];
         for (const m of matches) {
           const full = m[0], pre = (m[1]||'')+(m[2]||m[6]), rel = (m[3]||'')+(m[4]||'')+(m[7]||'')+(m[8]||''), suf = m[5]||m[9];
-          const child = await boot(resolve(rel, final));
-          code = code.split(full).join(pre + child + suf);
+          const childUrl = await boot(resolve(rel, final), new Set(stack));
+          code = code.split(full).join(pre + childUrl + suf);
         }
-        const compiled = Babel.transform(code, {
-          presets: [['react', { runtime: 'automatic' }], ['typescript', { isTSX: true, allExtensions: true }]],
-          filename: final, compact: true, comments: false
-        }).code;
-        try { localStorage.setItem(key, compiled); } catch(e) { localStorage.clear(); }
-        const b = URL.createObjectURL(new Blob([compiled], { type: 'application/javascript' }));
-        cache.set(abs, b); origins.set(b, abs); return b;
+
+        try {
+          const compiled = Babel.transform(code, {
+            presets: [['react', { runtime: 'automatic' }], ['typescript', { isTSX: true, allExtensions: true }]],
+            filename: final, compact: true, comments: false
+          }).code;
+          
+          try { localStorage.setItem(key, compiled); } catch(e) { /* LocalStorage full */ }
+          const b = URL.createObjectURL(new Blob([compiled], { type: 'application/javascript' }));
+          cache.set(abs, b); origins.set(b, abs); return b;
+        } catch (err) {
+          throw new Error(`Lỗi biên dịch ${final}: ${err.message}`);
+        }
       };
 
+      // Tự động reload sau 10s nếu vẫn kẹt splash
+      const timeout = setTimeout(() => {
+        if(document.getElementById('splash')) {
+          console.warn("Nạp quá lâu, đang thử dọn dẹp bộ nhớ...");
+          localStorage.clear();
+        }
+      }, 10000);
+
       boot('./index.tsx').then(entry => {
+        clearTimeout(timeout);
         const s = document.createElement('script');
         s.type = 'module'; s.src = entry; document.body.appendChild(s);
       }).catch(e => {
-        document.getElementById('root').innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif"><div style="color:#ef4444;font-weight:bold;margin-bottom:10px">Lỗi khởi động: ${e.message}</div><button onclick="localStorage.clear();location.reload()" style="padding:10px 20px;background:#1d4ed8;color:white;border:none;border-radius:12px;font-weight:bold">TẢI LẠI</button></div>`;
+        clearTimeout(timeout);
+        document.getElementById('root').innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif;background:white;height:100vh"><div style="color:#ef4444;font-weight:bold;margin-bottom:20px;font-size:18px">LỖI KHỞI ĐỘNG</div><div style="color:#64748b;font-size:14px;margin-bottom:30px;line-height:1.6">${e.message}</div><button onclick="localStorage.clear();location.reload()" style="padding:15px 30px;background:#1d4ed8;color:white;border:none;border-radius:16px;font-weight:black;box-shadow:0 10px 15px -3px rgba(29,78,216,0.2)">TẢI LẠI HỆ THỐNG</button></div>`;
       });
     </script>
   <script type="module" src="/index.tsx"></script>

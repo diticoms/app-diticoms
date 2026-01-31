@@ -26,25 +26,37 @@ import {
 
 const CONFIG_STORAGE_KEY = 'diticoms_config_v2';
 
+// Fallback UUID cho môi trường không có crypto.randomUUID (WebView cũ)
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem('diti_user');
-      return saved && saved !== "undefined" ? JSON.parse(saved) : null;
+      if (!saved || saved === "undefined" || saved === "null") return null;
+      return JSON.parse(saved);
     } catch { return null; }
   });
 
   const [config, setConfig] = useState<AppConfig>(() => {
     try {
       const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
-      return saved && saved !== "undefined" ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : DEFAULT_CONFIG;
+      if (!saved || saved === "undefined") return DEFAULT_CONFIG;
+      return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
     } catch { return DEFAULT_CONFIG; }
   });
 
   const [technicians, setTechnicians] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('diti_techs');
-      return saved && saved !== "undefined" ? JSON.parse(saved) : [];
+      if (!saved || saved === "undefined") return [];
+      return JSON.parse(saved);
     } catch { return []; }
   });
 
@@ -75,15 +87,17 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTech, setSearchTech] = useState('');
 
-  // Ẩn Splash Screen khi App đã render
+  // Ẩn Splash Screen NGAY LẬP TỨC khi component mount
   useEffect(() => {
-    const splash = document.getElementById('splash');
-    if (splash) {
-      setTimeout(() => {
+    const hideSplash = () => {
+      const splash = document.getElementById('splash');
+      if (splash) {
         splash.style.opacity = '0';
+        splash.style.visibility = 'hidden';
         setTimeout(() => splash.remove(), 500);
-      }, 800);
-    }
+      }
+    };
+    hideSplash();
   }, []);
 
   useEffect(() => {
@@ -92,14 +106,12 @@ export default function App() {
         const res = await fetch(`${VERSION_CHECK_URL}?t=${Date.now()}`); 
         const text = (await res.text()).trim();
         let data: any = null;
-        
         try {
           data = JSON.parse(text);
         } catch (e) {
           const versionMatch = text.match(/(\d+\.\d+\.\d+)/);
           if (versionMatch) data = { version: versionMatch[1] };
         }
-        
         if (data && data.version && isNewerVersion(CURRENT_VERSION, data.version)) {
           setUpdateInfo({ version: data.version, notes: data.notes });
         }
@@ -208,7 +220,7 @@ export default function App() {
     if (!formData.customerName || !formData.phone) { alert("Thiếu Tên hoặc SĐT!"); return; }
     setIsSubmitting(true);
     try {
-      const id = (isUpdate && selectedId) ? selectedId : crypto.randomUUID();
+      const id = (isUpdate && selectedId) ? selectedId : generateUUID();
       const payload = {
         ...formData, id, 
         created_at: (isUpdate && selectedId) ? services.find(s => s.id === selectedId)?.created_at : new Date().toISOString(),

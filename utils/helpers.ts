@@ -1,5 +1,4 @@
-
-import { WorkItem } from '../types';
+import { WorkItem } from '../types.ts';
 
 export const getTodayString = () => {
   return new Date().toISOString().split('T')[0];
