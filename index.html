@@ -18,7 +18,7 @@
       #root { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
       
       .splash-container {
-        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         background: #f1f5f9; z-index: 9999; transition: opacity 0.4s ease-out, visibility 0.4s;
       }
       .loader-wrapper {
@@ -33,6 +33,12 @@
       .loader-logo {
         width: 65px; height: 65px; object-fit: contain; z-index: 10;
         animation: splash-pulse 2s ease-in-out infinite;
+      }
+      .reset-btn {
+        margin-top: 30px; padding: 10px 20px; background: #fff; border: 1px solid #e2e8f0;
+        border-radius: 12px; font-size: 11px; font-weight: bold; color: #64748b;
+        text-transform: uppercase; cursor: pointer; display: none;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
       }
       @keyframes splash-spin { to { transform: rotate(360deg); } }
       @keyframes splash-pulse { 
@@ -63,11 +69,18 @@
           <div class="loader-ring"></div>
           <img src="public/logo.png" class="loader-logo" onerror="this.src='logo.png';this.onerror=function(){this.src='https://service.diticoms.vn/logo.png'}">
         </div>
+        <button id="reset-trigger" class="reset-btn" onclick="localStorage.clear();location.reload()">Sửa lỗi nạp hệ thống</button>
       </div>
     </div>
     <script type="module">
-      const VER = "1.2.6"; // Nâng cấp để clear cache cũ
+      const VER = "1.2.7";
       const cache = new Map(), origins = new Map();
+
+      // Hiện nút reset sau 5 giây nếu chưa nạp xong
+      setTimeout(() => {
+        const btn = document.getElementById('reset-trigger');
+        if (btn) btn.style.display = 'block';
+      }, 5000);
 
       const resolve = (p, b) => {
         if (/^(https?|blob):/i.test(p)) return p;
@@ -86,19 +99,26 @@
             if (res.ok) return { code: await res.text(), url: fullUrl };
           } catch (e) {}
         }
-        throw new Error(`Không tìm thấy file: ${clean}`);
+        throw new Error(`404: ${clean}`);
       };
 
       const boot = async (path, stack = new Set()) => {
         const abs = resolve(path, location.href);
         if (cache.has(abs)) return cache.get(abs);
-        if (stack.has(abs)) return abs; // Tránh vòng lặp
+        if (stack.has(abs)) return abs;
 
         const key = `v${VER}_${abs}`;
         const stored = localStorage.getItem(key);
+        
+        // Nếu có cache, thử nạp, nếu lỗi thì xóa cache nạp lại từ đầu
         if (stored) {
-          const b = URL.createObjectURL(new Blob([stored], { type: 'application/javascript' }));
-          cache.set(abs, b); origins.set(b, abs); return b;
+          try {
+            const b = URL.createObjectURL(new Blob([stored], { type: 'application/javascript' }));
+            cache.set(abs, b); origins.set(b, abs); return b;
+          } catch(e) {
+            console.warn("Lỗi cache file:", abs, "Đang nạp lại từ Server...");
+            localStorage.removeItem(key);
+          }
         }
 
         const { code: raw, url: final } = await fastFetch(abs);
@@ -108,8 +128,12 @@
         const matches = [...code.matchAll(/(import|export)(\s+[\s\S]*?from\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])|(import\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])/g)];
         for (const m of matches) {
           const full = m[0], pre = (m[1]||'')+(m[2]||m[6]), rel = (m[3]||'')+(m[4]||'')+(m[7]||'')+(m[8]||''), suf = m[5]||m[9];
-          const childUrl = await boot(resolve(rel, final), new Set(stack));
-          code = code.split(full).join(pre + childUrl + suf);
+          try {
+            const childUrl = await boot(resolve(rel, final), new Set(stack));
+            code = code.split(full).join(pre + childUrl + suf);
+          } catch(err) {
+            console.error("Lỗi nạp dependency:", rel, err);
+          }
         }
 
         try {
@@ -118,29 +142,30 @@
             filename: final, compact: true, comments: false
           }).code;
           
-          try { localStorage.setItem(key, compiled); } catch(e) { /* LocalStorage full */ }
+          try { localStorage.setItem(key, compiled); } catch(e) {}
           const b = URL.createObjectURL(new Blob([compiled], { type: 'application/javascript' }));
           cache.set(abs, b); origins.set(b, abs); return b;
         } catch (err) {
-          throw new Error(`Lỗi biên dịch ${final}: ${err.message}`);
+          throw new Error(`Biên dịch lỗi ${final}: ${err.message}`);
         }
       };
 
-      // Tự động reload sau 10s nếu vẫn kẹt splash
-      const timeout = setTimeout(() => {
-        if(document.getElementById('splash')) {
-          console.warn("Nạp quá lâu, đang thử dọn dẹp bộ nhớ...");
-          localStorage.clear();
-        }
-      }, 10000);
-
       boot('./index.tsx').then(entry => {
-        clearTimeout(timeout);
         const s = document.createElement('script');
-        s.type = 'module'; s.src = entry; document.body.appendChild(s);
+        s.type = 'module'; s.src = entry;
+        s.onerror = () => {
+          console.error("Lỗi thực thi script entry");
+          localStorage.clear();
+          location.reload();
+        };
+        document.body.appendChild(s);
       }).catch(e => {
-        clearTimeout(timeout);
-        document.getElementById('root').innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif;background:white;height:100vh"><div style="color:#ef4444;font-weight:bold;margin-bottom:20px;font-size:18px">LỖI KHỞI ĐỘNG</div><div style="color:#64748b;font-size:14px;margin-bottom:30px;line-height:1.6">${e.message}</div><button onclick="localStorage.clear();location.reload()" style="padding:15px 30px;background:#1d4ed8;color:white;border:none;border-radius:16px;font-weight:black;box-shadow:0 10px 15px -3px rgba(29,78,216,0.2)">TẢI LẠI HỆ THỐNG</button></div>`;
+        document.getElementById('root').innerHTML = `
+          <div style="padding:40px;text-align:center;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:white">
+            <div style="color:#ef4444;font-weight:900;margin-bottom:10px;font-size:20px">HỆ THỐNG ĐANG BẢO TRÌ</div>
+            <div style="color:#64748b;font-size:13px;margin-bottom:25px">${e.message}</div>
+            <button onclick="localStorage.clear();location.reload()" style="padding:15px 35px;background:#1d4ed8;color:white;border:none;border-radius:18px;font-weight:bold;box-shadow:0 10px 20px rgba(29,78,216,0.3)">TẢI LẠI TRÌNH DUYỆT</button>
+          </div>`;
       });
     </script>
   <script type="module" src="/index.tsx"></script>

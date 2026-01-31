@@ -26,7 +26,6 @@ import {
 
 const CONFIG_STORAGE_KEY = 'diticoms_config_v2';
 
-// Fallback UUID cho môi trường không có crypto.randomUUID (WebView cũ)
 const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -87,17 +86,14 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTech, setSearchTech] = useState('');
 
-  // Ẩn Splash Screen NGAY LẬP TỨC khi component mount
+  // Ẩn Splash Screen
   useEffect(() => {
-    const hideSplash = () => {
-      const splash = document.getElementById('splash');
-      if (splash) {
-        splash.style.opacity = '0';
-        splash.style.visibility = 'hidden';
-        setTimeout(() => splash.remove(), 500);
-      }
-    };
-    hideSplash();
+    const splash = document.getElementById('splash');
+    if (splash) {
+      splash.style.opacity = '0';
+      splash.style.visibility = 'hidden';
+      setTimeout(() => splash.remove(), 500);
+    }
   }, []);
 
   useEffect(() => {
