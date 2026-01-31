@@ -27,7 +27,6 @@ import {
 const CONFIG_STORAGE_KEY = 'diticoms_config_v2';
 
 export default function App() {
-  // Khởi tạo state an toàn từ localStorage
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem('diti_user');
@@ -76,13 +75,22 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTech, setSearchTech] = useState('');
 
-  // Kiểm tra cập nhật
   useEffect(() => {
     const checkUpdates = async () => {
       try {
         const res = await fetch(`${VERSION_CHECK_URL}?t=${Date.now()}`); 
-        const data = await res.json();
-        if (data.version && isNewerVersion(CURRENT_VERSION, data.version)) {
+        const text = (await res.text()).trim();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          // Xử lý trường hợp GitHub trả về text thuần "1.0.1" không có ngoặc kép
+          const versionMatch = text.match(/\d+\.\d+\.\d+/);
+          if (versionMatch) {
+            data = { version: versionMatch[0] };
+          } else throw e;
+        }
+        if (data && data.version && isNewerVersion(CURRENT_VERSION, data.version)) {
           setUpdateInfo({ version: data.version, notes: data.notes });
         }
       } catch (e) { console.warn("Lỗi kiểm tra cập nhật:", e); }
