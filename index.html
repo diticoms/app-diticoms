@@ -4,49 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#1d4ed8" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Diticoms Service Manager</title>
-    
     <link rel="stylesheet" href="index.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <script>
-      window.tailwind.config = {
-        theme: {
-          extend: {
-            colors: { primary: '#1d4ed8', secondary: '#64748b' }
-          }
-        }
-      }
+      window.tailwind.config = { theme: { extend: { colors: { primary: '#1d4ed8', secondary: '#64748b' } } } }
     </script>
-    
     <style>
-      :root { --primary: #1d4ed8; --secondary: #64748b; }
-      * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-      html, body {
-        height: 100%; width: 100%; margin: 0; padding: 0;
-        background-color: #f1f5f9; overflow: hidden;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      body { background: #f1f5f9; margin: 0; padding: 0; }
+      #root:empty::before {
+        content: ""; display: block; width: 24px; height: 24px;
+        border: 2px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%;
+        position: fixed; top: 50%; left: 50%; margin: -12px 0 0 -12px;
+        animation: spin 0.6s linear infinite;
       }
-      #root { height: 100%; overflow-y: auto; }
       @keyframes spin { to { transform: rotate(360deg); } }
-      .loader-container {
-        height: 100vh; display: flex; flex-direction: column; 
-        align-items: center; justify-content: center; background: #f1f5f9;
-      }
-      .progress-bar {
-        width: 200px; height: 4px; background: #e2e8f0; 
-        border-radius: 2px; margin-top: 20px; overflow: hidden;
-      }
-      .progress-fill {
-        height: 100%; background: #1d4ed8; width: 0%;
-        transition: width 0.3s ease;
-      }
     </style>
-
     <script type="importmap">
 {
   "imports": {
@@ -61,153 +35,66 @@
   }
 }
 </script>
-  </head>
+  <link rel="stylesheet" href="/index.css">
+</head>
   <body>
-    <div id="root">
-      <div class="loader-container">
-        <div style="width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-        <p style="font-weight: bold; color: #1d4ed8; font-size: 14px; margin-top: 16px;">DITICOMS SERVICE</p>
-        <p id="loader-status" style="color: #64748b; font-size: 11px; margin-top: 4px;">Đang khởi tạo hệ thống...</p>
-        <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
-      </div>
-    </div>
-
+    <div id="root"></div>
     <script type="module">
-      const APP_VERSION = "1.0.10"; 
-      const moduleCache = new Map();
-      const blobToOrigin = new Map();
-      
-      const statusEl = document.getElementById('loader-status');
-      const progressEl = document.getElementById('progress-fill');
+      const VER = "1.1.0";
+      const cache = new Map(), origins = new Map();
 
-      function updateStatus(msg, progress) {
-        if (statusEl) statusEl.innerText = msg;
-        if (progressEl) progressEl.style.width = `${progress}%`;
-      }
+      const resolve = (p, b) => {
+        if (/^(https?|blob):/i.test(p)) return p;
+        const base = b.startsWith('blob:') ? (origins.get(b) || location.href) : b;
+        return new URL(p, base).href;
+      };
 
-      function resolveUrl(path, base) {
-        if (/^(https?|capacitor|file|blob):/i.test(path)) return path;
-        
-        let realBase = base.startsWith('blob:') ? (blobToOrigin.get(base) || window.location.href) : base;
-        
-        try {
-          const urlObj = new URL(realBase, window.location.href);
-          const baseDir = urlObj.href.substring(0, urlObj.href.lastIndexOf('/') + 1);
-          return new URL(path, baseDir).href;
-        } catch (e) {
-          return new URL(path, window.location.href).href;
-        }
-      }
-
-      async function smartFetch(url) {
-        // Luôn fetch từ URL mạng thực tế
-        const networkUrl = url.replace(/^blob:/, '').split('#')[0].split('?')[0];
-        
-        try {
-          const response = await fetch(networkUrl);
-          if (response.ok) return { response, finalUrl: networkUrl };
-          
-          // Thử tìm với extension nếu 404
-          if (response.status === 404) {
-            for (const ext of ['.tsx', '.ts', '.js']) {
-              if (!networkUrl.endsWith(ext)) {
-                const res = await fetch(networkUrl + ext);
-                if (res.ok) return { response: res, finalUrl: networkUrl + ext };
-              }
-            }
-          }
-          throw new Error(`HTTP ${response.status}`);
-        } catch (e) {
-          throw new Error(`Không tìm thấy: ${networkUrl.split('/').pop()}`);
-        }
-      }
-
-      async function loadModule(inputUrl, depth = 0) {
-        const absoluteUrl = resolveUrl(inputUrl, window.location.href);
-        if (moduleCache.has(absoluteUrl)) return moduleCache.get(absoluteUrl);
-
-        const cacheKey = `v_mod_${APP_VERSION}_${absoluteUrl}`;
-        const cachedCode = localStorage.getItem(cacheKey);
-        
-        if (cachedCode) {
-          const blob = new Blob([cachedCode], { type: 'application/javascript' });
-          const bUrl = URL.createObjectURL(blob);
-          moduleCache.set(absoluteUrl, bUrl);
-          blobToOrigin.set(bUrl, absoluteUrl);
-          return bUrl;
-        }
-
-        try {
-          updateStatus(`Tải: ${absoluteUrl.split('/').pop()}`, Math.min(depth * 5 + 10, 95));
-          const { response, finalUrl } = await smartFetch(absoluteUrl);
-          let code = await response.text();
-
-          const importRegex = /(import|export)(\s+[\s\S]*?from\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])|(import\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])/g;
-          const matches = [...code.matchAll(importRegex)];
-          
-          for (const match of matches) {
-            const fullMatch = match[0];
-            const prefix = (match[1] || '') + (match[2] || match[6]);
-            const relPath = (match[3] || '') + (match[4] || '') + (match[7] || '') + (match[8] || '');
-            const suffix = match[5] || match[9];
-            
-            const childUrl = resolveUrl(relPath, finalUrl);
-            const childBlob = await loadModule(childUrl, depth + 1);
-            code = code.split(fullMatch).join(prefix + childBlob + suffix);
-          }
-
-          const transformed = Babel.transform(code, {
-            presets: [
-              ['react', { runtime: 'automatic' }],
-              ['typescript', { isTSX: true, allExtensions: true }]
-            ],
-            filename: finalUrl,
-            sourceMaps: false
-          }).code;
-
+      const fastFetch = async (url) => {
+        const clean = url.replace(/^blob:/, '').split(/[?#]/)[0];
+        const lastPart = clean.substring(clean.lastIndexOf('/') + 1);
+        const exts = lastPart.includes('.') ? [''] : ['.tsx', '.ts', '.js', ''];
+        for (const ext of exts) {
           try {
-            localStorage.setItem(cacheKey, transformed);
+            const res = await fetch(clean + ext);
+            if (res.ok) return { code: await res.text(), url: clean + ext };
           } catch (e) {}
-
-          const blob = new Blob([transformed], { type: 'application/javascript' });
-          const bUrl = URL.createObjectURL(blob);
-          moduleCache.set(absoluteUrl, bUrl);
-          blobToOrigin.set(bUrl, absoluteUrl);
-          return bUrl;
-        } catch (e) {
-          throw e;
         }
-      }
+        throw new Error(`404: ${clean}`);
+      };
 
-      (async () => {
-        try {
-          // Xóa cache khi phiên bản thay đổi
-          const lastVer = localStorage.getItem('app_v');
-          if (lastVer !== APP_VERSION) {
-            Object.keys(localStorage).forEach(k => { if(k.startsWith('v_mod_')) localStorage.removeItem(k); });
-            localStorage.setItem('app_v', APP_VERSION);
-          }
-
-          const entryUrl = await loadModule('./index.tsx');
-          updateStatus('Sẵn sàng!', 100);
-          
-          const script = document.createElement('script');
-          script.type = 'module'; 
-          script.src = entryUrl;
-          document.body.appendChild(script);
-        } catch (err) {
-          document.getElementById('root').innerHTML = `
-            <div class="p-8 text-red-500 bg-white m-4 rounded-3xl shadow-xl border-2 border-red-50 text-center max-w-sm mx-auto">
-              <div class="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-              </div>
-              <h2 class="font-black text-lg mb-2 uppercase">Lỗi khởi động</h2>
-              <p class="text-[11px] mb-4 text-slate-500 font-medium italic">${err.message}</p>
-              <button onclick="localStorage.clear(); window.location.reload();" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-100 active:scale-95 transition-transform">XÓA CACHE & TẢI LẠI</button>
-              <p class="mt-4 text-[9px] text-slate-400 font-bold uppercase tracking-widest">Diticoms Service Manager</p>
-            </div>`;
+      const boot = async (path) => {
+        const abs = resolve(path, location.href);
+        if (cache.has(abs)) return cache.get(abs);
+        const key = `v${VER}_${abs}`;
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const b = URL.createObjectURL(new Blob([stored], { type: 'application/javascript' }));
+          cache.set(abs, b); origins.set(b, abs); return b;
         }
-      })();
+        const { code: raw, url: final } = await fastFetch(abs);
+        let code = raw;
+        const matches = [...code.matchAll(/(import|export)(\s+[\s\S]*?from\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])|(import\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])/g)];
+        for (const m of matches) {
+          const full = m[0], pre = (m[1]||'')+(m[2]||m[6]), rel = (m[3]||'')+(m[4]||'')+(m[7]||'')+(m[8]||''), suf = m[5]||m[9];
+          const child = await boot(resolve(rel, final));
+          code = code.split(full).join(pre + child + suf);
+        }
+        const compiled = Babel.transform(code, {
+          presets: [['react', { runtime: 'automatic' }], ['typescript', { isTSX: true, allExtensions: true }]],
+          filename: final, compact: true
+        }).code;
+        try { localStorage.setItem(key, compiled); } catch(e) { localStorage.clear(); }
+        const b = URL.createObjectURL(new Blob([compiled], { type: 'application/javascript' }));
+        cache.set(abs, b); origins.set(b, abs); return b;
+      };
+
+      boot('./index.tsx').then(entry => {
+        const s = document.createElement('script');
+        s.type = 'module'; s.src = entry; document.body.appendChild(s);
+      }).catch(e => {
+        document.getElementById('root').innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif"><div style="color:#ef4444;font-weight:bold;margin-bottom:10px">${e.message}</div><button onclick="localStorage.clear();location.reload()" style="padding:10px 20px;background:#1d4ed8;color:white;border:none;border-radius:12px;font-weight:bold">TẢI LẠI</button></div>`;
+      });
     </script>
-  </body>
+  <script type="module" src="/index.tsx"></script>
+</body>
 </html>
