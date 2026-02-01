@@ -72,12 +72,21 @@ const App: React.FC = () => {
   const handleLogin = async (username: string, pass: string) => {
     setLoading(true);
     try {
-      const response = await callSheetAPI(config.sheetUrl, 'login', { username, pass });
+      const u = username.trim();
+      const p = pass.trim();
+
+      const response = await callSheetAPI(config.sheetUrl, 'login', { 
+        username: u, 
+        user: u, 
+        pass: p, 
+        password: p 
+      });
+
       if (response.status === 'success' && response.user) {
         setUser(response.user);
         localStorage.setItem('diti_user', JSON.stringify(response.user));
       } else {
-        alert(response.error || 'Sai tài khoản hoặc mật khẩu');
+        alert(response.error || 'Sai tài khoản hoặc mật khẩu.');
       }
     } catch (e: any) {
       alert('Lỗi kết nối Server: ' + e.message);
@@ -195,25 +204,10 @@ const App: React.FC = () => {
 
   if (!user) {
     return (
-      <>
-        <LoginScreen 
-          onLogin={handleLogin} 
-          onOpenConfig={() => setShowConfig(true)} 
-          isLoading={loading} 
-        />
-        {showConfig && (
-          <ConfigModal 
-            config={config} 
-            onClose={() => setShowConfig(false)} 
-            isAdmin={false} 
-            onSave={(c) => {
-              setConfig(c);
-              localStorage.setItem('diti_config', JSON.stringify(c));
-              setShowConfig(false);
-            }} 
-          />
-        )}
-      </>
+      <LoginScreen 
+        onLogin={handleLogin} 
+        isLoading={loading} 
+      />
     );
   }
 
@@ -248,7 +242,7 @@ const App: React.FC = () => {
                 onUpdate={handleUpdate}
                 onDelete={handleDelete}
                 onClear={handleClear}
-                onShareImage={() => alert('Vui lòng sử dụng trình duyệt di động hoặc công chụp màn hình để xuất ảnh Bill.')}
+                onShareImage={() => alert('Sử dụng trình duyệt di động hoặc công chụp màn hình để xuất ảnh Bill.')}
                 onCopyZalo={handleCopyZalo}
                 onOpenTechManager={() => setShowTechModal(true)}
                 services={services}

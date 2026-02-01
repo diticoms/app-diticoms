@@ -4,8 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#1d4ed8" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Diticoms Service Manager</title>
     <link rel="stylesheet" href="index.css" />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,10 +12,7 @@
       window.tailwind.config = { 
         theme: { 
           extend: { 
-            colors: { 
-              primary: '#1d4ed8', 
-              secondary: '#64748b' 
-            } 
+            colors: { primary: '#1d4ed8', secondary: '#64748b' } 
           } 
         } 
       }
@@ -27,17 +22,15 @@
       #root { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
       .splash-container {
         position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        background: #f1f5f9; z-index: 9999; transition: opacity 0.5s ease-out, visibility 0.5s;
+        background: #f1f5f9; z-index: 9999; transition: opacity 0.5s ease-out;
       }
-      .loader-wrapper { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; }
+      .loader-wrapper { position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
       .loader-ring {
         position: absolute; inset: 0; border: 4px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%;
-        animation: splash-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        animation: spin 0.8s linear infinite;
       }
-      .loader-logo { width: 65px; height: 65px; object-fit: contain; z-index: 10; animation: splash-pulse 2s ease-in-out infinite; }
-      @keyframes splash-spin { to { transform: rotate(360deg); } }
-      @keyframes splash-pulse { 0%, 100% { transform: scale(0.95); opacity: 0.9; } 50% { transform: scale(1.05); opacity: 1; } }
-      
+      .loader-logo { width: 60px; height: 60px; object-fit: contain; z-index: 10; }
+      @keyframes spin { to { transform: rotate(360deg); } }
       #error-overlay {
         position: fixed; inset: 0; background: white; z-index: 10000; display: none;
         flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center;
@@ -61,104 +54,61 @@
 </head>
   <body>
     <div id="root"></div>
-    
     <div id="error-overlay">
-      <div style="color:#ef4444; font-weight:bold; font-size: 18px; margin-bottom: 10px;">LỖI KHỞI ĐỘNG</div>
-      <div id="error-message" style="color:#64748b; font-size: 13px; margin-bottom: 20px; font-family: monospace; max-width: 90%; word-break: break-all;"></div>
-      <button onclick="location.reload()" style="padding: 12px 24px; background: #1d4ed8; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer;">TẢI LẠI TRANG</button>
+      <div style="color:#ef4444; font-weight:bold; font-size: 18px; margin-bottom: 10px;">LỖI HỆ THỐNG</div>
+      <div id="error-message" style="color:#64748b; font-size: 13px; margin-bottom: 20px; font-family: monospace;"></div>
+      <button onclick="location.reload()" style="padding: 10px 20px; background: #1d4ed8; color: white; border: none; border-radius: 8px; cursor: pointer;">TẢI LẠI</button>
     </div>
-
     <div class="splash-container" id="splash">
       <div class="loader-wrapper">
         <div class="loader-ring"></div>
         <img src="logo.png" class="loader-logo" onerror="this.src='https://service.diticoms.vn/logo.png'">
       </div>
     </div>
-
     <script type="module">
       const cache = new Map();
       const fetching = new Map();
-
-      // Đảm bảo lấy URL tuyệt đối của thư mục hiện tại
-      const APP_BASE_URL = (() => {
-        try {
-          // document.baseURI là cách chuẩn nhất để lấy URL tuyệt đối của trang
-          const base = new URL('./', document.baseURI).href;
-          return base;
-        } catch (e) {
-          // Fallback nếu baseURI không khả dụng
-          let href = window.location.href.split(/[?#]/)[0];
-          return href.substring(0, href.lastIndexOf('/') + 1) || './';
-        }
-      })();
+      const APP_BASE_URL = new URL('./', document.baseURI).href;
 
       async function loadModule(path, sourceUrl = APP_BASE_URL) {
-        let fullUrl;
-        try {
-          // QUAN TRỌNG: sourceUrl phải là URL tuyệt đối để new URL() không bị lỗi
-          fullUrl = new URL(path, sourceUrl).href;
-        } catch (e) {
-          throw new Error(`Invalid URL: ${path} (Base: ${sourceUrl})`);
-        }
-        
+        const fullUrl = new URL(path, sourceUrl).href;
         if (cache.has(fullUrl)) return cache.get(fullUrl);
         if (fetching.has(fullUrl)) return fetching.get(fullUrl);
 
         const fetchPromise = (async () => {
           try {
-            const response = await fetch(fullUrl, { cache: 'no-cache' });
-            if (!response.ok) throw new Error(`HTTP ${response.status}: ${fullUrl}`);
-            
+            const response = await fetch(fullUrl);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             let code = await response.text();
-            
-            // Xử lý các import tương đối
             const localImportRegex = /(import|export)\s+([\s\S]*?)\s+from\s+['"](\.\.?\/.*?)['"]/g;
             const matches = Array.from(code.matchAll(localImportRegex));
-            
             for (const match of matches) {
               const [fullMatch, type, members, importPath] = match;
-              let targetPath = importPath;
-              if (!targetPath.match(/\.(tsx|ts|js)$/)) {
-                targetPath += '.tsx';
-              }
-              
-              // Đệ quy nạp module con với URL gốc là URL của file hiện tại
+              let targetPath = importPath.endsWith('.tsx') || importPath.endsWith('.ts') ? importPath : importPath + '.tsx';
               const dependencyBlobUrl = await loadModule(targetPath, fullUrl);
               code = code.split(fullMatch).join(`${type} ${members} from '${dependencyBlobUrl}'`);
             }
-
             const transformed = Babel.transform(code, {
-              presets: [
-                ['react', { runtime: 'automatic' }],
-                ['typescript', { isTSX: true, allExtensions: true }]
-              ],
+              presets: [['react', { runtime: 'automatic' }], ['typescript', { isTSX: true, allExtensions: true }]],
               filename: fullUrl,
             }).code;
-
-            const blob = new Blob([transformed], { type: 'application/javascript' });
-            const blobUrl = URL.createObjectURL(blob);
+            const blobUrl = URL.createObjectURL(new Blob([transformed], { type: 'application/javascript' }));
             cache.set(fullUrl, blobUrl);
             return blobUrl;
           } catch (err) {
-            console.error(`[Loader Error] ${fullUrl}:`, err);
             document.getElementById('error-overlay').style.display = 'flex';
-            document.getElementById('error-message').innerText = err.message;
+            document.getElementById('error-message').innerText = `${fullUrl}: ${err.message}`;
             throw err;
           }
         })();
-
         fetching.set(fullUrl, fetchPromise);
         return fetchPromise;
       }
-
-      // Khởi động ứng dụng
       loadModule('./index.tsx').then(url => {
         const script = document.createElement('script');
         script.type = 'module';
         script.src = url;
         document.body.appendChild(script);
-      }).catch(err => {
-        console.error("Critical boot failure:", err);
       });
     </script>
   <script type="module" src="/index.tsx"></script>
