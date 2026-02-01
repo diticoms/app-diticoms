@@ -7,17 +7,20 @@
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* Tối ưu Webview APK/IPA */
+/* Optimize for Webview APK/IPA */
 html, body {
-  overscroll-behavior-y: none; /* Ngăn chặn kéo làm mới trên trình duyệt Android */
-  -webkit-text-size-adjust: 100%; /* Ngăn iOS tự tăng size chữ */
+  overscroll-behavior-y: none; /* Prevent pull-to-refresh */
+  -webkit-text-size-adjust: 100%; /* Prevent iOS text resize */
+  height: 100%;
+  width: 100%;
 }
 
 #root { 
-  -webkit-overflow-scrolling: touch; 
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
 }
 
-/* Fix lỗi padding/safe-area trên iPhone có tai thỏ */
+/* Padding for notched displays */
 .safe-area-padding {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
@@ -26,12 +29,12 @@ html, body {
 input:focus, select:focus, textarea:focus { 
   border-color: #1d4ed8 !important; 
   box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1); 
-  font-size: 16px; /* Tránh tự động zoom trên iOS Safari/Webview */
+  font-size: 16px; /* Avoid auto-zoom on iOS */
 }
 
-/* Đảm bảo layout lưới co giãn tốt */
+/* Flexible grid for mobile search filters */
 @media (max-width: 640px) {
   input[type="date"] {
-    min-width: 0; /* Cho phép co lại hết cỡ trong grid */
+    min-width: 0;
   }
 }

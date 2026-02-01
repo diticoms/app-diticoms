@@ -1,4 +1,3 @@
-
 {
   "appId": "vn.diticoms.service",
   "appName": "Diticoms Service",
@@ -6,7 +5,9 @@
   "server": {
     "androidScheme": "https",
     "allowNavigation": [
-      "service.diticoms.vn"
+      "service.diticoms.vn",
+      "*.google.com",
+      "*.googleusercontent.com"
     ]
   },
   "android": {
