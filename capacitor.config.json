@@ -3,16 +3,22 @@
   "appName": "Diticoms Service",
   "webDir": "dist",
   "server": {
-    "androidScheme": "https",
+    "url": "https://service.diticoms.vn",
     "allowNavigation": [
       "service.diticoms.vn",
       "*.google.com",
-      "*.googleusercontent.com"
+      "*.googleusercontent.com",
+      "*.vietqr.io"
     ]
   },
   "android": {
     "buildOptions": {
       "releaseType": "APK"
-    }
+    },
+    "allowMixedContent": true,
+    "captureInput": true
+  },
+  "ios": {
+    "contentInset": "always"
   }
 }
