@@ -6,12 +6,12 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ className = "", size = 64 }) => {
-  const [imgSrc, setImgSrc] = useState("public/logo.png");
+  const [imgSrc, setImgSrc] = useState("logo.png");
   const [retryCount, setRetryCount] = useState(0);
 
   const handleError = () => {
     if (retryCount === 0) {
-      setImgSrc("logo.png");
+      setImgSrc("public/logo.png");
       setRetryCount(1);
     } else if (retryCount === 1) {
       setImgSrc("https://service.diticoms.vn/logo.png");

@@ -24,7 +24,7 @@
     </script>
     <style>
       body { background: #f1f5f9; margin: 0; padding: 0; overflow: hidden; -webkit-tap-highlight-color: transparent; }
-      #root { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+      #root { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
       .splash-container {
         position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         background: #f1f5f9; z-index: 9999; transition: opacity 0.5s ease-out, visibility 0.5s;
@@ -63,9 +63,9 @@
     <div id="root"></div>
     
     <div id="error-overlay">
-      <div style="color:#ef4444; font-weight:bold; font-size: 18px; margin-bottom: 10px;">LỖI TẢI ỨNG DỤNG</div>
-      <div id="error-message" style="color:#64748b; font-size: 13px; margin-bottom: 20px; font-family: monospace;"></div>
-      <button onclick="location.reload()" style="padding: 10px 20px; background: #1d4ed8; color: white; border: none; border-radius: 10px; font-weight: bold;">TẢI LẠI TRANG</button>
+      <div style="color:#ef4444; font-weight:bold; font-size: 18px; margin-bottom: 10px;">LỖI KHỞI ĐỘNG</div>
+      <div id="error-message" style="color:#64748b; font-size: 13px; margin-bottom: 20px; font-family: monospace; max-width: 90%; word-break: break-all;"></div>
+      <button onclick="location.reload()" style="padding: 12px 24px; background: #1d4ed8; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer;">TẢI LẠI TRANG</button>
     </div>
 
     <div class="splash-container" id="splash">
@@ -76,50 +76,89 @@
     </div>
 
     <script type="module">
-      // Bộ nạp Runtime Transpiler cho môi trường GitHub Pages/Web tĩnh
       const cache = new Map();
-      const getBaseUrl = () => {
-        const url = window.location.href;
-        return url.substring(0, url.lastIndexOf('/') + 1);
-      };
+      const fetching = new Map();
 
-      async function loadModule(path, parentUrl = getBaseUrl()) {
-        const fullUrl = new URL(path, parentUrl).href;
-        if (cache.has(fullUrl)) return cache.get(fullUrl);
-
+      // Đảm bảo lấy URL tuyệt đối của thư mục hiện tại
+      const APP_BASE_URL = (() => {
         try {
-          const response = await fetch(fullUrl);
-          if (!response.ok) throw new Error(`HTTP ${response.status} - Không tìm thấy ${path}`);
-          let code = await response.text();
-
-          // Chuyển đổi mã TSX sang JS bằng Babel
-          const transformed = Babel.transform(code, {
-            presets: [
-              ['react', { runtime: 'automatic' }],
-              ['typescript', { isTSX: true, allExtensions: true }]
-            ],
-            filename: fullUrl,
-          }).code;
-
-          // Xử lý các lệnh import tương đối bên trong tệp
-          const blob = new Blob([transformed], { type: 'application/javascript' });
-          const blobUrl = URL.createObjectURL(blob);
-          cache.set(fullUrl, blobUrl);
-          return blobUrl;
-        } catch (err) {
-          console.error("Module Load Error:", err);
-          document.getElementById('error-overlay').style.display = 'flex';
-          document.getElementById('error-message').innerText = err.message;
-          throw err;
+          // document.baseURI là cách chuẩn nhất để lấy URL tuyệt đối của trang
+          const base = new URL('./', document.baseURI).href;
+          return base;
+        } catch (e) {
+          // Fallback nếu baseURI không khả dụng
+          let href = window.location.href.split(/[?#]/)[0];
+          return href.substring(0, href.lastIndexOf('/') + 1) || './';
         }
+      })();
+
+      async function loadModule(path, sourceUrl = APP_BASE_URL) {
+        let fullUrl;
+        try {
+          // QUAN TRỌNG: sourceUrl phải là URL tuyệt đối để new URL() không bị lỗi
+          fullUrl = new URL(path, sourceUrl).href;
+        } catch (e) {
+          throw new Error(`Invalid URL: ${path} (Base: ${sourceUrl})`);
+        }
+        
+        if (cache.has(fullUrl)) return cache.get(fullUrl);
+        if (fetching.has(fullUrl)) return fetching.get(fullUrl);
+
+        const fetchPromise = (async () => {
+          try {
+            const response = await fetch(fullUrl, { cache: 'no-cache' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${fullUrl}`);
+            
+            let code = await response.text();
+            
+            // Xử lý các import tương đối
+            const localImportRegex = /(import|export)\s+([\s\S]*?)\s+from\s+['"](\.\.?\/.*?)['"]/g;
+            const matches = Array.from(code.matchAll(localImportRegex));
+            
+            for (const match of matches) {
+              const [fullMatch, type, members, importPath] = match;
+              let targetPath = importPath;
+              if (!targetPath.match(/\.(tsx|ts|js)$/)) {
+                targetPath += '.tsx';
+              }
+              
+              // Đệ quy nạp module con với URL gốc là URL của file hiện tại
+              const dependencyBlobUrl = await loadModule(targetPath, fullUrl);
+              code = code.split(fullMatch).join(`${type} ${members} from '${dependencyBlobUrl}'`);
+            }
+
+            const transformed = Babel.transform(code, {
+              presets: [
+                ['react', { runtime: 'automatic' }],
+                ['typescript', { isTSX: true, allExtensions: true }]
+              ],
+              filename: fullUrl,
+            }).code;
+
+            const blob = new Blob([transformed], { type: 'application/javascript' });
+            const blobUrl = URL.createObjectURL(blob);
+            cache.set(fullUrl, blobUrl);
+            return blobUrl;
+          } catch (err) {
+            console.error(`[Loader Error] ${fullUrl}:`, err);
+            document.getElementById('error-overlay').style.display = 'flex';
+            document.getElementById('error-message').innerText = err.message;
+            throw err;
+          }
+        })();
+
+        fetching.set(fullUrl, fetchPromise);
+        return fetchPromise;
       }
 
-      // Khởi chạy ứng dụng từ index.tsx
+      // Khởi động ứng dụng
       loadModule('./index.tsx').then(url => {
         const script = document.createElement('script');
         script.type = 'module';
         script.src = url;
         document.body.appendChild(script);
+      }).catch(err => {
+        console.error("Critical boot failure:", err);
       });
     </script>
   <script type="module" src="/index.tsx"></script>
