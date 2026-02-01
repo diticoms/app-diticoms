@@ -1,5 +1,5 @@
 {
-  "version": "1.0.38",
-  "release_date": "2025-05-15",
-  "notes": "Phiên bản khởi tạo hệ thống tự động cập nhật GitHub và Mobile App."
+  "version": "1.0.39",
+  "release_date": "2025-05-20",
+  "notes": "Cập nhật hệ thống nạp module và sửa lỗi dọn dẹp cache khi nâng cấp."
 }

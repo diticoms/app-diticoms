@@ -35,10 +35,10 @@
         animation: splash-pulse 2s ease-in-out infinite;
       }
       .reset-btn {
-        margin-top: 30px; padding: 10px 20px; background: #fff; border: 1px solid #e2e8f0;
-        border-radius: 12px; font-size: 11px; font-weight: bold; color: #64748b;
+        margin-top: 30px; padding: 12px 24px; background: #fff; border: 1px solid #e2e8f0;
+        border-radius: 14px; font-size: 11px; font-weight: bold; color: #1d4ed8;
         text-transform: uppercase; cursor: pointer; display: none;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       }
       @keyframes splash-spin { to { transform: rotate(360deg); } }
       @keyframes splash-pulse { 
@@ -47,19 +47,19 @@
       }
     </style>
     <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@19.2.4",
-        "react-dom": "https://esm.sh/react-dom@19.2.4",
-        "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
-        "react/jsx-runtime": "https://esm.sh/react@19.2.4/jsx-runtime",
-        "lucide-react": "https://esm.sh/lucide-react@0.475.0?deps=react@19.2.4",
-        "html2canvas": "https://esm.sh/html2canvas@1.4.1",
-        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-        "react/": "https://esm.sh/react@^19.2.4/"
-      }
-    }
-    </script>
+{
+  "imports": {
+    "react": "https://esm.sh/react@19.2.4",
+    "react-dom": "https://esm.sh/react-dom@19.2.4",
+    "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
+    "react/jsx-runtime": "https://esm.sh/react@19.2.4/jsx-runtime",
+    "lucide-react": "https://esm.sh/lucide-react@0.475.0?deps=react@19.2.4",
+    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/"
+  }
+}
+</script>
   <link rel="stylesheet" href="/index.css">
 </head>
   <body>
@@ -67,104 +67,119 @@
       <div class="splash-container" id="splash">
         <div class="loader-wrapper">
           <div class="loader-ring"></div>
-          <img src="public/logo.png" class="loader-logo" onerror="this.src='logo.png';this.onerror=function(){this.src='https://service.diticoms.vn/logo.png'}">
+          <img src="logo.png" class="loader-logo" onerror="this.src='https://service.diticoms.vn/logo.png'">
         </div>
-        <button id="reset-trigger" class="reset-btn" onclick="localStorage.clear();location.reload()">Sửa lỗi nạp hệ thống</button>
+        <button id="reset-trigger" class="reset-btn" onclick="localStorage.clear();location.reload()">Khôi phục hệ thống</button>
       </div>
     </div>
     <script type="module">
-      const VER = "1.2.7";
+      const VER = "1.0.38"; // Cập nhật phiên bản tại đây
       const cache = new Map(), origins = new Map();
 
-      // Hiện nút reset sau 5 giây nếu chưa nạp xong
+      // Tự động dọn dẹp các bản cache của phiên bản cũ để giải phóng bộ nhớ
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('diti_v') && !key.startsWith(`diti_v${VER}`)) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (e) {}
+
       setTimeout(() => {
         const btn = document.getElementById('reset-trigger');
         if (btn) btn.style.display = 'block';
       }, 5000);
 
-      const resolve = (p, b) => {
-        if (/^(https?|blob):/i.test(p)) return p;
-        const base = b.startsWith('blob:') ? (origins.get(b) || location.href) : b;
-        return new URL(p, base).href;
+      const resolve = (path, base) => {
+        if (path.startsWith('blob:') || path.startsWith('https://') || path.startsWith('http://')) return path;
+        const url = new URL(path, base);
+        return url.href;
       };
 
       const fastFetch = async (url) => {
-        const clean = url.replace(/^blob:/, '').split(/[?#]/)[0];
-        const last = clean.split('/').pop();
-        const exts = last.includes('.') ? [''] : ['.tsx', '.ts', '.js', ''];
-        for (const ext of exts) {
+        const cleanUrl = url.split(/[?#]/)[0];
+        const extensions = cleanUrl.endsWith('.tsx') || cleanUrl.endsWith('.ts') || cleanUrl.endsWith('.js') 
+          ? [''] 
+          : ['.tsx', '.ts', '.js', ''];
+
+        for (const ext of extensions) {
+          const finalUrl = cleanUrl + ext;
           try {
-            const fullUrl = clean + ext;
-            const res = await fetch(fullUrl);
-            if (res.ok) return { code: await res.text(), url: fullUrl };
+            const res = await fetch(finalUrl);
+            if (res.ok) {
+              const contentType = res.headers.get('content-type');
+              if (contentType && contentType.includes('text/html')) continue;
+              return { code: await res.text(), url: finalUrl };
+            }
           } catch (e) {}
         }
-        throw new Error(`404: ${clean}`);
+        throw new Error(`Không tìm thấy file: ${cleanUrl}`);
       };
 
-      const boot = async (path, stack = new Set()) => {
-        const abs = resolve(path, location.href);
-        if (cache.has(abs)) return cache.get(abs);
-        if (stack.has(abs)) return abs;
+      const boot = async (inputPath, stack = new Set()) => {
+        const absUrl = resolve(inputPath, origins.get(location.href) || location.href);
+        if (cache.has(absUrl)) return cache.get(absUrl);
+        if (stack.has(absUrl)) return absUrl;
 
-        const key = `v${VER}_${abs}`;
-        const stored = localStorage.getItem(key);
-        
-        // Nếu có cache, thử nạp, nếu lỗi thì xóa cache nạp lại từ đầu
-        if (stored) {
-          try {
-            const b = URL.createObjectURL(new Blob([stored], { type: 'application/javascript' }));
-            cache.set(abs, b); origins.set(b, abs); return b;
-          } catch(e) {
-            console.warn("Lỗi cache file:", abs, "Đang nạp lại từ Server...");
-            localStorage.removeItem(key);
-          }
-        }
+        const storageKey = `diti_v${VER}_${absUrl}`;
+        let compiled = localStorage.getItem(storageKey);
+        let finalSourceUrl = absUrl;
 
-        const { code: raw, url: final } = await fastFetch(abs);
-        let code = raw;
-        stack.add(abs);
-
-        const matches = [...code.matchAll(/(import|export)(\s+[\s\S]*?from\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])|(import\s+['"])(\.\/|\.\.\/)([^'"]+)(['"])/g)];
-        for (const m of matches) {
-          const full = m[0], pre = (m[1]||'')+(m[2]||m[6]), rel = (m[3]||'')+(m[4]||'')+(m[7]||'')+(m[8]||''), suf = m[5]||m[9];
-          try {
-            const childUrl = await boot(resolve(rel, final), new Set(stack));
-            code = code.split(full).join(pre + childUrl + suf);
-          } catch(err) {
-            console.error("Lỗi nạp dependency:", rel, err);
-          }
-        }
-
-        try {
-          const compiled = Babel.transform(code, {
-            presets: [['react', { runtime: 'automatic' }], ['typescript', { isTSX: true, allExtensions: true }]],
-            filename: final, compact: true, comments: false
+        if (!compiled) {
+          const { code: raw, url: fetchedUrl } = await fastFetch(absUrl);
+          finalSourceUrl = fetchedUrl;
+          
+          compiled = Babel.transform(raw, {
+            presets: [
+              ['react', { runtime: 'automatic' }],
+              ['typescript', { isTSX: true, allExtensions: true }]
+            ],
+            filename: fetchedUrl,
+            compact: true,
+            comments: false
           }).code;
           
-          try { localStorage.setItem(key, compiled); } catch(e) {}
-          const b = URL.createObjectURL(new Blob([compiled], { type: 'application/javascript' }));
-          cache.set(abs, b); origins.set(b, abs); return b;
-        } catch (err) {
-          throw new Error(`Biên dịch lỗi ${final}: ${err.message}`);
+          try { localStorage.setItem(storageKey, compiled); } catch(e) {}
         }
+
+        let executable = compiled;
+        stack.add(absUrl);
+
+        const importRegex = /(from|import)\s+['"](\.\.?\/[^'"]+)['"]/g;
+        const matches = [...executable.matchAll(importRegex)];
+        
+        for (let i = matches.length - 1; i >= 0; i--) {
+          const m = matches[i];
+          const relativePath = m[2];
+          try {
+            const childAbsUrl = resolve(relativePath, finalSourceUrl);
+            const childBlobUrl = await boot(childAbsUrl, new Set(stack));
+            executable = executable.substring(0, m.index + m[0].indexOf(relativePath)) + 
+                         childBlobUrl + 
+                         executable.substring(m.index + m[0].indexOf(relativePath) + relativePath.length);
+          } catch (err) {
+            console.warn(`Lỗi nạp phụ thuộc: ${relativePath}`, err);
+          }
+        }
+
+        const blobUrl = URL.createObjectURL(new Blob([executable], { type: 'application/javascript' }));
+        cache.set(absUrl, blobUrl);
+        origins.set(blobUrl, finalSourceUrl);
+        return blobUrl;
       };
 
       boot('./index.tsx').then(entry => {
-        const s = document.createElement('script');
-        s.type = 'module'; s.src = entry;
-        s.onerror = () => {
-          console.error("Lỗi thực thi script entry");
-          localStorage.clear();
-          location.reload();
-        };
-        document.body.appendChild(s);
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = entry;
+        document.body.appendChild(script);
       }).catch(e => {
+        console.error("Boot error:", e);
         document.getElementById('root').innerHTML = `
           <div style="padding:40px;text-align:center;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:white">
-            <div style="color:#ef4444;font-weight:900;margin-bottom:10px;font-size:20px">HỆ THỐNG ĐANG BẢO TRÌ</div>
-            <div style="color:#64748b;font-size:13px;margin-bottom:25px">${e.message}</div>
-            <button onclick="localStorage.clear();location.reload()" style="padding:15px 35px;background:#1d4ed8;color:white;border:none;border-radius:18px;font-weight:bold;box-shadow:0 10px 20px rgba(29,78,216,0.3)">TẢI LẠI TRÌNH DUYỆT</button>
+            <div style="color:#ef4444;font-weight:900;margin-bottom:10px;font-size:20px">LỖI HỆ THỐNG</div>
+            <div style="color:#64748b;font-size:12px;margin-bottom:25px;max-width:300px;line-height:1.6;word-break:break-all">${e.message}</div>
+            <button onclick="localStorage.clear();location.reload()" style="padding:15px 35px;background:#1d4ed8;color:white;border:none;border-radius:18px;font-weight:bold;cursor:pointer">TẢI LẠI TRANG</button>
           </div>`;
       });
     </script>
