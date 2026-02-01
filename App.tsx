@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   Settings, LogOut, Activity, Share2, 
-  RefreshCw, Trash2, Plus, Edit, Clipboard, X, Wrench, User as UserIcon, AlertTriangle, Download, Sparkles, Loader2, Github, ExternalLink, CloudDownload
+  RefreshCw, Trash2, Plus, Edit, Clipboard, X, Wrench, User as UserIcon, AlertTriangle, Download, Sparkles, Loader2, Github, ExternalLink, CloudDownload, WifiOff
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
@@ -25,6 +25,7 @@ import {
 } from './utils/helpers.ts';
 
 const CONFIG_STORAGE_KEY = 'diticoms_config_v2';
+const USER_STORAGE_KEY = 'diti_user_secure';
 
 const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -37,8 +38,8 @@ const generateUUID = () => {
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
-      const saved = localStorage.getItem('diti_user');
-      if (!saved || saved === "undefined" || saved === "null") return null;
+      const saved = localStorage.getItem(USER_STORAGE_KEY);
+      if (!saved) return null;
       return JSON.parse(saved);
     } catch { return null; }
   });
@@ -46,7 +47,7 @@ export default function App() {
   const [config, setConfig] = useState<AppConfig>(() => {
     try {
       const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
-      if (!saved || saved === "undefined") return DEFAULT_CONFIG;
+      if (!saved) return DEFAULT_CONFIG;
       return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
     } catch { return DEFAULT_CONFIG; }
   });
@@ -54,7 +55,7 @@ export default function App() {
   const [technicians, setTechnicians] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('diti_techs');
-      if (!saved || saved === "undefined") return [];
+      if (!saved) return [];
       return JSON.parse(saved);
     } catch { return []; }
   });
@@ -64,6 +65,8 @@ export default function App() {
   const [showTechModal, setShowTechModal] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<{version: string, notes?: string} | null>(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -86,58 +89,64 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTech, setSearchTech] = useState('');
 
-  // Ẩn Splash Screen
+  // Theo dõi trạng thái mạng
   useEffect(() => {
-    const splash = document.getElementById('splash');
-    if (splash) {
-      splash.style.opacity = '0';
-      splash.style.visibility = 'hidden';
-      setTimeout(() => splash.remove(), 500);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Kiểm tra cập nhật
+  const checkUpdates = useCallback(async (manual = false) => {
+    if (manual) setIsCheckingUpdate(true);
+    try {
+      const res = await fetch(`${VERSION_CHECK_URL}?t=${Date.now()}`); 
+      const data = await res.json();
+      if (data && data.version && isNewerVersion(CURRENT_VERSION, data.version)) {
+        setUpdateInfo({ version: data.version, notes: data.notes });
+      } else if (manual) {
+        alert(`Bạn đang dùng bản mới nhất (v${CURRENT_VERSION})`);
+      }
+    } catch (e) { 
+      if (manual) alert("Không thể kiểm tra cập nhật lúc này.");
+    } finally {
+      if (manual) setIsCheckingUpdate(false);
     }
   }, []);
 
   useEffect(() => {
-    const checkUpdates = async () => {
-      try {
-        const res = await fetch(`${VERSION_CHECK_URL}?t=${Date.now()}`); 
-        const text = (await res.text()).trim();
-        let data: any = null;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          const versionMatch = text.match(/(\d+\.\d+\.\d+)/);
-          if (versionMatch) data = { version: versionMatch[1] };
-        }
-        if (data && data.version && isNewerVersion(CURRENT_VERSION, data.version)) {
-          setUpdateInfo({ version: data.version, notes: data.notes });
-        }
-      } catch (e) { 
-        console.warn("Lỗi kiểm tra cập nhật:", e); 
-      }
-    };
     checkUpdates();
-  }, []);
+    const interval = setInterval(() => checkUpdates(), 3600000);
+    return () => clearInterval(interval);
+  }, [checkUpdates]);
 
-  const fetchGlobalSettings = useCallback(async (url: string) => {
-    if (!url) return;
+  const handleApplyUpdate = () => {
+    // Xóa toàn bộ cache cũ trước khi tải lại
     try {
-        const response = await callSheetAPI(url, 'read_settings');
-        if (response && response.technicians) {
-            const techs = response.technicians.map((t: any) => String(t).trim()).filter(Boolean);
-            setTechnicians(techs);
-            localStorage.setItem('diti_techs', JSON.stringify(techs));
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('diti_v')) {
+          localStorage.removeItem(key);
         }
-    } catch (e) { console.warn("Lỗi tải cài đặt KTV:", e); }
-  }, []);
+      });
+    } catch (e) {}
+    window.location.reload();
+  };
 
   const fetchData = useCallback(async () => {
     if (!config.sheetUrl || !currentUser) return;
     setLoadingData(true);
     try {
-      const [result, priceResult] = await Promise.all([
+      const [result, priceResult, techResult] = await Promise.all([
         callSheetAPI(config.sheetUrl, 'read', { role: currentUser.role, associatedTech: currentUser.associatedTech }),
-        callSheetAPI(config.sheetUrl, 'read_pricelist')
+        callSheetAPI(config.sheetUrl, 'read_pricelist'),
+        callSheetAPI(config.sheetUrl, 'read_settings')
       ]);
+
       if (Array.isArray(result)) {
         const mappedData = result.map((row: any) => ({
           ...row,
@@ -148,88 +157,99 @@ export default function App() {
         })).reverse();
         setServices(mappedData);
       }
+
       if (Array.isArray(priceResult)) setPriceList(priceResult);
-    } catch (error) { console.error("Lỗi tải dữ liệu phiếu:", error); }
-    finally { setLoadingData(false); }
+      
+      if (techResult && techResult.technicians) {
+        const techs = techResult.technicians.map((t: any) => String(t).trim()).filter(Boolean);
+        setTechnicians(techs);
+        localStorage.setItem('diti_techs', JSON.stringify(techs));
+      }
+    } catch (error) {
+      console.error("Fetch Data Error:", error);
+    } finally {
+      setLoadingData(false);
+    }
   }, [config.sheetUrl, currentUser]);
 
   useEffect(() => { 
-    if (config.sheetUrl) {
-      fetchGlobalSettings(config.sheetUrl);
-      if (currentUser) fetchData();
-    }
-  }, [config.sheetUrl, currentUser, fetchGlobalSettings, fetchData]);
+    if (currentUser) fetchData();
+  }, [currentUser, fetchData]);
 
   const handleShareImage = async () => {
-    if (!formData.customerName) { alert("Vui lòng nhập tên khách hàng!"); return; }
+    if (!formData.customerName) { alert("Thiếu tên khách hàng!"); return; }
     setIsGenerating(true);
     try {
       if (invoiceRef.current) {
         const canvas = await html2canvas(invoiceRef.current, { 
-          scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false
+          scale: 3, useCORS: true, backgroundColor: "#ffffff", logging: false,
+          allowTaint: true
         });
         setPreviewImage(canvas.toDataURL('image/png'));
       }
-    } catch (e) { alert("Lỗi khi tạo ảnh hóa đơn!"); }
+    } catch (e) { alert("Lỗi khi tạo ảnh!"); }
     finally { setIsGenerating(false); }
   };
 
   const handleCopyZalo = () => {
     const total = formatCurrency(calculateTotalEstimate(formData.workItems));
-    const debt = formData.debt || '0';
-    const text = `[DITICOMS SERVICE]\n---\nKhách hàng: ${formData.customerName}\nSĐT: ${formData.phone}\nNội dung: ${formData.workItems.map(i => i.desc).join(', ')}\nTổng phí: ${total}đ\nCòn nợ: ${debt}đ\nTrạng thái: ${formData.status}\nHotline: 0935.71.5151\nTrân trọng cảm ơn quý khách!`;
-    navigator.clipboard.writeText(text);
-    alert("Đã copy nội dung Zalo!");
-  };
-
-  const handleDelete = async () => {
-    if (!selectedId || !window.confirm("Bạn có chắc muốn xóa phiếu này?")) return;
-    setIsSubmitting(true);
-    try {
-      const response = await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: currentUser?.role });
-      if (response.status === 'success' || response.status === 'deleted') {
-        setFormData(initialForm); setSelectedId(null); fetchData(); alert("Đã xóa thành công!");
-      }
-    } catch (e) { alert("Lỗi khi xóa dữ liệu!"); }
-    finally { setIsSubmitting(false); }
+    const text = `[DITICOMS SERVICE]\n---\nKhách hàng: ${formData.customerName}\nSĐT: ${formData.phone}\nNội dung: ${formData.workItems.map(i => i.desc).join(', ')}\nTổng phí: ${total}đ\nTrạng thái: ${formData.status}\nTrân trọng cảm ơn!`;
+    navigator.clipboard.writeText(text).then(() => alert("Đã copy nội dung!"));
   };
 
   const handleLogin = async (username: string, pass: string) => {
-    if (!config.sheetUrl) { alert("Vui lòng cấu hình Server!"); setIsConfigMode(true); return; }
     setIsLoggingIn(true);
     try {
         const response = await callSheetAPI(config.sheetUrl, 'login', { username, password: pass });
         if (response.status === 'success' && response.user) {
             setCurrentUser(response.user);
-            localStorage.setItem('diti_user', JSON.stringify(response.user));
-        } else alert(response.error || "Sai tài khoản!");
-    } catch (e: any) { alert("Lỗi kết nối Server!"); }
-    finally { setIsLoggingIn(false); }
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.user));
+        } else {
+            alert(response.error || "Sai tài khoản hoặc mật khẩu!");
+        }
+    } catch (e) {
+        alert("Lỗi kết nối Server. Vui lòng kiểm tra lại URL Server trong phần Cấu hình.");
+    } finally {
+        setIsLoggingIn(false);
+    }
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('diti_user');
+    if (window.confirm("Bạn muốn đăng xuất khỏi hệ thống?")) {
+      setCurrentUser(null);
+      localStorage.removeItem(USER_STORAGE_KEY);
+      setServices([]);
+    }
   };
 
   const saveToSheet = async (isUpdate: boolean) => {
-    if (!formData.customerName || !formData.phone) { alert("Thiếu Tên hoặc SĐT!"); return; }
+    if (!formData.customerName || !formData.phone) { alert("Vui lòng điền đủ Tên và SĐT!"); return; }
     setIsSubmitting(true);
     try {
       const id = (isUpdate && selectedId) ? selectedId : generateUUID();
       const payload = {
         ...formData, id, 
         created_at: (isUpdate && selectedId) ? services.find(s => s.id === selectedId)?.created_at : new Date().toISOString(),
-        revenue: parseCurrency(formData.revenue), cost: parseCurrency(formData.cost), debt: parseCurrency(formData.debt),
-        work_items: formData.workItems, customer_name: formData.customerName,
+        revenue: parseCurrency(formData.revenue), 
+        cost: parseCurrency(formData.cost), 
+        debt: parseCurrency(formData.debt),
+        work_items: formData.workItems,
+        customer_name: formData.customerName,
         action: isUpdate ? 'update' : 'create'
       };
+      
       const response = await callSheetAPI(config.sheetUrl, payload.action, payload);
       if (response.status === 'success' || response.status === 'updated') {
-        setFormData(initialForm); setSelectedId(null); fetchData(); alert("Thành công!");
+        setFormData(initialForm);
+        setSelectedId(null);
+        fetchData();
+        alert("Đã lưu thành công!");
       }
-    } catch (error) { alert("Lỗi lưu dữ liệu."); }
-    finally { setIsSubmitting(false); }
+    } catch (error) {
+      alert("Lỗi lưu dữ liệu. Vui lòng kiểm tra mạng!");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const filteredData = useMemo(() => {
@@ -249,19 +269,28 @@ export default function App() {
   if (isConfigMode && !currentUser) return <ConfigModal config={config} onSave={(c) => { setConfig(c); localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(c)); setIsConfigMode(false); }} onClose={() => setIsConfigMode(false)} isAdmin={true} />;
 
   return (
-    <div className="min-h-screen p-3 md:p-6 bg-[#f8fafc] text-slate-800 animate-in fade-in duration-500">
+    <div className="min-h-screen p-3 md:p-6 bg-[#f8fafc] text-slate-800 animate-in">
+      {!isOnline && (
+        <div className="fixed top-0 left-0 right-0 bg-red-500 text-white text-[10px] font-bold text-center py-1 z-[500] flex items-center justify-center gap-2">
+          <WifiOff size={12} /> ĐANG NGOẠI TUYẾN - MỘT SỐ TÍNH NĂNG CÓ THỂ KHÔNG HOẠT ĐỘNG
+        </div>
+      )}
+
       {updateInfo && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[300] flex items-end md:items-center justify-center p-4 animate-in slide-in-from-bottom duration-300">
-          <div className="bg-white rounded-t-3xl md:rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-5">
-            <div className="flex flex-col items-center text-center space-y-2">
-              <div className="h-16 w-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-2">
-                <CloudDownload size={32} />
-              </div>
-              <h3 className="text-xl font-black text-slate-900 uppercase">Bản cập nhật mới!</h3>
-              <p className="text-sm text-slate-500 font-medium">Phiên bản <b>v{updateInfo.version}</b> đã sẵn sàng.</p>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[600] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-5 text-center">
+            <div className="h-16 w-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-2">
+              <CloudDownload size={32} />
             </div>
-            <button onClick={() => window.location.reload()} className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-colors">CẬP NHẬT NGAY</button>
-            <button onClick={() => setUpdateInfo(null)} className="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl text-xs uppercase">Để sau</button>
+            <h3 className="text-xl font-black text-slate-900 uppercase">Cập nhật mới!</h3>
+            <p className="text-sm text-slate-500">Bản <b>v{updateInfo.version}</b> đã sẵn sàng.</p>
+            <button 
+              onClick={handleApplyUpdate} 
+              className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2"
+            >
+              <RefreshCw size={18} className="animate-spin-slow" /> CẬP NHẬT NGAY
+            </button>
+            <button onClick={() => setUpdateInfo(null)} className="text-xs font-bold text-slate-400 uppercase">Để sau</button>
           </div>
         </div>
       )}
@@ -284,8 +313,8 @@ export default function App() {
             </div>
           </div>
           <div className="flex gap-1 md:gap-2">
-             <button onClick={() => setShowConfigModal(true)} className="p-2.5 rounded-xl bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-colors"><Settings size={20}/></button>
-             <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-colors"><LogOut size={20}/></button>
+             <button onClick={() => setShowConfigModal(true)} className="p-2.5 rounded-xl bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100"><Settings size={20}/></button>
+             <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-100"><LogOut size={20}/></button>
           </div>
         </header>
 
@@ -297,7 +326,7 @@ export default function App() {
                   priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
                   currentUser={currentUser}
                   onSave={() => saveToSheet(false)} onUpdate={() => saveToSheet(true)}
-                  onDelete={handleDelete} onClear={() => {setFormData(initialForm); setSelectedId(null);}} 
+                  onDelete={() => {}} onClear={() => {setFormData(initialForm); setSelectedId(null);}} 
                   onShareImage={handleShareImage} onCopyZalo={handleCopyZalo} 
                   onOpenTechManager={() => setShowTechModal(true)} services={services}
                 />
@@ -320,29 +349,25 @@ export default function App() {
       </div>
 
       {previewImage && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center"><h3 className="font-bold">Xem hóa đơn</h3><button onClick={() => setPreviewImage(null)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button></div>
-            <img src={previewImage} className="w-full border border-slate-100 rounded-xl" />
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[700] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div className="flex justify-between items-center"><h3 className="font-bold">Hóa đơn</h3><button onClick={() => setPreviewImage(null)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button></div>
+            <img src={previewImage} className="w-full border rounded-xl" />
             <div className="flex gap-3">
-              <button onClick={() => { const l = document.createElement('a'); l.download = `Bill_${formData.customerName}.png`; l.href = previewImage; l.click(); }} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2"><Download size={18}/> LƯU ẢNH</button>
-              <button onClick={() => setPreviewImage(null)} className="px-6 bg-slate-100 text-slate-600 font-bold rounded-2xl">ĐÓNG</button>
+              <button onClick={() => { const a = document.createElement('a'); a.href = previewImage; a.download = `Bill_${formData.customerName}.png`; a.click(); }} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2"><Download size={18}/> TẢI ẢNH</button>
             </div>
           </div>
         </div>
       )}
 
       {isGenerating && (
-        <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[110] flex flex-col items-center justify-center space-y-4 animate-in fade-in">
-          <div className="relative w-20 h-20 flex items-center justify-center">
-            <div className="absolute inset-0 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
-            <Logo size={40} />
-          </div>
-          <p className="font-bold text-slate-800">Đang tạo hóa đơn...</p>
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[800] flex flex-col items-center justify-center space-y-4">
+          <div className="relative w-16 h-16"><div className="absolute inset-0 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div></div>
+          <p className="font-bold text-slate-800 text-xs uppercase tracking-widest">Đang tạo ảnh...</p>
         </div>
       )}
 
-      {showConfigModal && <ConfigModal config={config} onSave={(c) => { setConfig(c); localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(c)); setShowConfigModal(false); }} onClose={() => setShowConfigModal(false)} isAdmin={currentUser?.role === 'admin'} />}
+      {showConfigModal && <ConfigModal config={config} onSave={(c) => { setConfig(c); localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(c)); setShowConfigModal(false); }} onClose={() => setShowConfigModal(false)} isAdmin={currentUser?.role === 'admin'} onCheckUpdate={() => checkUpdates(true)} isCheckingUpdate={isCheckingUpdate} />}
       {showTechModal && <TechnicianModal technicians={technicians} setTechnicians={setTechnicians} onClose={() => setShowTechModal(false)} sheetUrl={config.sheetUrl} />}
     </div>
   );
