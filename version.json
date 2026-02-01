@@ -1,5 +1,5 @@
 {
-  "version": "1.0.40",
+  "version": "1.0.41",
   "release_date": "2025-05-20",
   "notes": "Cập nhật hệ thống nạp module và sửa lỗi dọn dẹp cache khi nâng cấp."
 }
