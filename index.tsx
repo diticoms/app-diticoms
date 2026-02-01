@@ -14,13 +14,18 @@ const removeSplash = () => {
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
-  const root = createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-  
-  // Gỡ màn hình chờ sau khi ứng dụng bắt đầu render
-  setTimeout(removeSplash, 1200);
+  try {
+    const root = createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+    // Gỡ splash sớm hơn để tránh cảm giác bị treo
+    removeSplash();
+  } catch (err) {
+    console.error("Render error:", err);
+    // Vẫn gỡ splash nếu có lỗi render để xem được thông báo lỗi từ React
+    removeSplash();
+  }
 }
