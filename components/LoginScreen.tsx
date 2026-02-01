@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { User, Lock, Settings } from 'lucide-react';
+import { User, Lock } from 'lucide-react';
 import { Logo } from './Logo.tsx';
 
 interface Props {
   onLogin: (u: string, p: string) => void;
-  onOpenConfig: () => void;
   isLoading: boolean;
 }
 
-export const LoginScreen: React.FC<Props> = ({ onLogin, onOpenConfig, isLoading }) => {
+export const LoginScreen: React.FC<Props> = ({ onLogin, isLoading }) => {
   const [u, setU] = useState('');
   const [p, setP] = useState('');
 
@@ -58,11 +57,9 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onOpenConfig, isLoading 
             ĐĂNG NHẬP
           </button>
         </form>
-
-        <div className="pt-4 border-t border-slate-50 flex justify-center">
-          <button onClick={onOpenConfig} className="text-[10px] font-bold text-slate-400 hover:text-blue-600 flex items-center gap-2 uppercase tracking-widest transition-colors">
-            <Settings size={14} /> Cấu hình Server
-          </button>
+        
+        <div className="pt-2 text-center">
+           <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Diticoms Service Manager v1.0.44</p>
         </div>
       </div>
     </div>

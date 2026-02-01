@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { 
   Plus, Trash2, Save, RefreshCw, Activity, Share2, Clipboard, 
-  Wrench, Users, User, Phone, MapPin, ListFilter, AlertTriangle, Loader2 
+  User, Phone, Loader2 
 } from 'lucide-react';
 import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
 import { STATUS_OPTIONS } from '../constants.ts';
@@ -27,7 +26,7 @@ interface Props {
 }
 
 export const ServiceForm: React.FC<Props> = ({
-  formData, setFormData, technicians, priceList, selectedId, isSubmitting, 
+  formData, setFormData, technicians, selectedId, isSubmitting, 
   currentUser, onSave, onUpdate, onDelete, onClear, onShareImage, onCopyZalo, onOpenTechManager
 }) => {
   const isAdmin = currentUser?.role === 'admin';
@@ -47,12 +46,9 @@ export const ServiceForm: React.FC<Props> = ({
     setFormData(prev => {
       const newItems = [...prev.workItems];
       const item = { ...newItems[index], [field]: value };
-      
-      // Tự động tính toán tổng tiền cho từng item
       const price = parseCurrency(field === 'price' ? value : item.price);
       const qty = Number(field === 'qty' ? value : item.qty);
       item.total = price * qty;
-      
       newItems[index] = item;
       return { ...prev, workItems: newItems };
     });
@@ -181,7 +177,6 @@ export const ServiceForm: React.FC<Props> = ({
             disabled={isSubmitting} onClick={onSave}
             className="col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
           >
-            {/* Fix: Added Loader2 to imports */}
             {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <Save size={20}/>}
             <span className="uppercase tracking-widest text-sm">Lưu phiếu mới</span>
           </button>
@@ -191,7 +186,6 @@ export const ServiceForm: React.FC<Props> = ({
               disabled={isSubmitting} onClick={onUpdate}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {/* Fix: Added Loader2 to imports */}
               {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18}/>} CẬP NHẬT
             </button>
             <button onClick={onClear} className="bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors">
@@ -202,7 +196,6 @@ export const ServiceForm: React.FC<Props> = ({
         <button onClick={onShareImage} className="bg-orange-50 text-orange-600 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 border border-orange-100 hover:bg-orange-100 transition-colors">
           <Share2 size={18}/> ẢNH BILL
         </button>
-        {/* Fix: Changed handleCopyZalo to onCopyZalo */}
         <button onClick={onCopyZalo} className="bg-blue-50 text-blue-600 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 border border-blue-100 hover:bg-blue-100 transition-colors">
           <Clipboard size={18}/> COPY ZALO
         </button>
