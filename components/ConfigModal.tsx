@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Server, CreditCard } from 'lucide-react';
+import { X, Save, Server, CreditCard, RefreshCw, Loader2 } from 'lucide-react';
 import { AppConfig } from '../types.ts';
 
 interface Props {
@@ -7,9 +7,11 @@ interface Props {
   onSave: (c: AppConfig) => void;
   onClose: () => void;
   isAdmin: boolean;
+  onCheckUpdate?: () => void;
+  isCheckingUpdate?: boolean;
 }
 
-export const ConfigModal: React.FC<Props> = ({ config, onSave, onClose, isAdmin }) => {
+export const ConfigModal: React.FC<Props> = ({ config, onSave, onClose, isAdmin, onCheckUpdate, isCheckingUpdate }) => {
   const [localConfig, setLocalConfig] = useState<AppConfig>({ ...config });
 
   return (
@@ -46,6 +48,19 @@ export const ConfigModal: React.FC<Props> = ({ config, onSave, onClose, isAdmin 
                 />
              </div>
           </div>
+
+          {onCheckUpdate && (
+            <div className="pt-2">
+              <button 
+                onClick={onCheckUpdate} 
+                disabled={isCheckingUpdate}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-[10px] font-bold uppercase transition-colors"
+              >
+                {isCheckingUpdate ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                Kiểm tra cập nhật từ GitHub
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3">
