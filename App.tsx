@@ -1,11 +1,14 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Settings, LogOut } from 'lucide-react';
 import { LoginScreen } from './components/LoginScreen.tsx';
 import { ServiceList } from './components/ServiceList.tsx';
 import { ServiceForm } from './components/ServiceForm.tsx';
 import { ConfigModal } from './components/ConfigModal.tsx';
 import { TechnicianModal } from './components/TechnicianModal.tsx';
+import { Logo } from './components/Logo.tsx';
 import { callSheetAPI } from './services/api.ts';
-import { User, AppConfig, ServiceTicket, ServiceFormData } from './types.ts';
+import { User, AppConfig, ServiceTicket, ServiceFormData, PriceItem } from './types.ts';
 import { DEFAULT_CONFIG, STATUS_OPTIONS } from './constants.ts';
 import { getTodayString } from './utils/helpers.ts';
 
@@ -22,6 +25,7 @@ const App: React.FC = () => {
   
   const [services, setServices] = useState<ServiceTicket[]>([]);
   const [technicians, setTechnicians] = useState<string[]>([]);
+  const [priceList, setPriceList] = useState<PriceItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
@@ -32,7 +36,8 @@ const App: React.FC = () => {
     dateFrom: getTodayString(),
     dateTo: getTodayString(),
     searchTerm: '',
-    searchTech: ''
+    searchTech: '',
+    viewAll: false
   });
 
   const [formData, setFormData] = useState<ServiceFormData>({
@@ -52,217 +57,199 @@ const App: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const response = await callSheetAPI(config.sheetUrl, 'get_data');
-      if (response.data) setServices(response.data);
-      if (response.technicians) {
-        setTechnicians(response.technicians);
-        localStorage.setItem('diti_techs', JSON.stringify(response.technicians));
+      const resData = await callSheetAPI(config.sheetUrl, 'read');
+      if (Array.isArray(resData)) {
+        const mapped = resData.map((r: any) => {
+          let items = [];
+          try {
+            items = typeof r.work_items === 'string' ? JSON.parse(r.work_items) : (r.work_items || []);
+          } catch (e) { items = []; }
+          
+          return {
+            ...r,
+            customerName: r.customer_name || r.customerName || '',
+            phone: r.phone || '',
+            address: r.address || '',
+            workItems: Array.isArray(items) ? items : [],
+            revenue: Number(r.revenue || 0),
+            cost: Number(r.cost || 0),
+            debt: Number(r.debt || 0),
+            searchKey: r.search_key || ''
+          };
+        });
+        setServices(mapped);
       }
-    } catch (e: any) {
-      console.error('Data Fetch Error:', e);
-    } finally {
-      setLoading(false);
+      
+      const resConfig = await callSheetAPI(config.sheetUrl, 'read_settings');
+      if (resConfig && resConfig.technicians) setTechnicians(resConfig.technicians);
+      
+      const resPrice = await callSheetAPI(config.sheetUrl, 'read_pricelist');
+      if (Array.isArray(resPrice)) setPriceList(resPrice);
+    } catch (e) { 
+      console.error('Fetch Error:', e);
     }
+    finally { setLoading(false); }
   }, [user, config.sheetUrl]);
 
-  useEffect(() => {
-    if (user) fetchData();
-  }, [user, fetchData]);
+  useEffect(() => { if (user) fetchData(); }, [user, fetchData]);
+
+  const filteredServices = useMemo(() => {
+    let result = [...services];
+    if (!filters.viewAll) {
+      result = result.filter(s => {
+        const date = (s.created_at || '').split('T')[0];
+        return date >= filters.dateFrom && date <= filters.dateTo;
+      });
+    }
+    if (filters.searchTech) result = result.filter(s => s.technician === filters.searchTech);
+    if (filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      result = result.filter(s => 
+        (s.customerName || '').toLowerCase().includes(term) || 
+        (s.phone || '').includes(term) ||
+        (s.address || '').toLowerCase().includes(term)
+      );
+    }
+    return result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  }, [services, filters]);
 
   const handleLogin = async (username: string, pass: string) => {
     setLoading(true);
     try {
-      const u = username.trim();
-      const p = pass.trim();
-
-      const response = await callSheetAPI(config.sheetUrl, 'login', { 
-        username: u, 
-        user: u, 
-        pass: p, 
-        password: p 
-      });
-
+      const response = await callSheetAPI(config.sheetUrl, 'login', { username: username.trim(), password: pass.trim() });
       if (response.status === 'success' && response.user) {
         setUser(response.user);
         localStorage.setItem('diti_user', JSON.stringify(response.user));
-      } else {
-        alert(response.error || 'Sai tài khoản hoặc mật khẩu.');
-      }
-    } catch (e: any) {
-      alert('Lỗi kết nối Server: ' + e.message);
-    } finally {
-      setLoading(false);
-    }
+      } else alert(response.error || 'Sai tài khoản hoặc mật khẩu.');
+    } catch (e: any) { alert('Lỗi kết nối Server.'); }
+    finally { setLoading(false); }
   };
 
   const handleLogout = () => {
-    if (window.confirm('Bạn muốn đăng xuất?')) {
+    if (window.confirm('Xác nhận đăng xuất?')) {
       setUser(null);
       localStorage.removeItem('diti_user');
       setServices([]);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!formData.customerName || !formData.phone) {
-      alert('Vui lòng điền đủ tên khách và SĐT');
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const response = await callSheetAPI(config.sheetUrl, 'save_ticket', formData);
-      if (response.status === 'success') {
-        alert('Lưu phiếu thành công!');
-        fetchData();
-        handleClear();
-      }
-    } catch (e: any) {
-      alert('Lỗi: ' + e.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdate = async () => {
-    if (!selectedId) return;
-    setIsSubmitting(true);
-    try {
-      const response = await callSheetAPI(config.sheetUrl, 'update_ticket', { ...formData, id: selectedId });
-      if (response.status === 'updated') {
-        alert('Cập nhật thành công!');
-        fetchData();
-      }
-    } catch (e: any) {
-      alert('Lỗi: ' + e.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!selectedId || !window.confirm('Xác nhận xóa phiếu này?')) return;
-    setIsSubmitting(true);
-    try {
-      const response = await callSheetAPI(config.sheetUrl, 'delete_ticket', { id: selectedId });
-      if (response.status === 'deleted') {
-        alert('Đã xóa phiếu!');
-        fetchData();
-        handleClear();
-      }
-    } catch (e: any) {
-      alert('Lỗi: ' + e.message);
-    } finally {
-      setIsSubmitting(false);
+      setSelectedId(null);
     }
   };
 
   const handleClear = () => {
     setSelectedId(null);
     setFormData({
-      customerName: '',
-      phone: '',
-      address: '',
-      status: STATUS_OPTIONS[0],
-      technician: '',
-      content: '',
+      customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0],
+      technician: user?.associatedTech || '', content: '',
       workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
-      revenue: 0,
-      cost: 0,
-      debt: 0
+      revenue: 0, cost: 0, debt: 0
     });
+  };
+
+  const handleSave = async () => {
+    if (!formData.customerName || !formData.phone) return alert('Thiếu thông tin khách hàng');
+    setIsSubmitting(true);
+    try {
+      const res = await callSheetAPI(config.sheetUrl, 'create', { ...formData, id: Date.now().toString(), created_at: new Date().toISOString() });
+      if(res.status === 'success') { fetchData(); handleClear(); }
+    } catch(e: any) { alert("Lỗi khi lưu phiếu!"); }
+    finally { setIsSubmitting(false); }
+  };
+
+  const handleUpdate = async () => {
+    if(!selectedId) return;
+    setIsSubmitting(true);
+    try {
+      const res = await callSheetAPI(config.sheetUrl, 'update', { ...formData, id: selectedId });
+      if(res.status === 'updated' || res.status === 'success') {
+        fetchData();
+        alert("Cập nhật thành công!");
+      }
+    } catch(e: any) { alert("Lỗi khi cập nhật!"); }
+    finally { setIsSubmitting(false); }
+  };
+
+  const handleDelete = async () => {
+    if(!selectedId || !window.confirm('Xóa phiếu này?')) return;
+    setIsSubmitting(true);
+    try {
+      const res = await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user?.role });
+      if(res.status === 'deleted' || res.status === 'success') { 
+        fetchData(); 
+        handleClear(); 
+      } else {
+        alert(res.error || "Không thể xóa dữ liệu từ máy chủ.");
+      }
+    } catch(e: any) { alert("Lỗi kết nối khi xóa!"); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleSelectRow = (item: ServiceTicket) => {
     setSelectedId(item.id);
-    setFormData({ ...item });
-  };
-
-  const filteredData = useMemo(() => {
-    return services.filter(item => {
-      const matchesSearch = !filters.searchTerm || 
-        item.customerName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        item.phone.includes(filters.searchTerm) ||
-        item.id.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        (item.technician || '').toLowerCase().includes(filters.searchTerm.toLowerCase());
-      
-      const matchesTech = !filters.searchTech || item.technician === filters.searchTech;
-      
-      const itemDate = (item.created_at || '').split('T')[0];
-      const matchesDate = itemDate >= filters.dateFrom && itemDate <= filters.dateTo;
-      
-      return matchesSearch && matchesTech && matchesDate;
+    let workItems = [];
+    if (Array.isArray(item.workItems)) {
+      workItems = item.workItems;
+    } else if (typeof item.workItems === 'string') {
+      try { workItems = JSON.parse(item.workItems); } catch (e) { workItems = []; }
+    }
+    
+    setFormData({
+      customerName: item.customerName || '',
+      phone: item.phone || '',
+      address: item.address || '',
+      status: item.status || STATUS_OPTIONS[0],
+      technician: item.technician || '',
+      content: item.content || '',
+      workItems: workItems.length > 0 ? workItems : [{ desc: '', qty: 1, price: '', total: 0 }],
+      revenue: item.revenue || 0,
+      cost: item.cost || 0,
+      debt: item.debt || 0
     });
-  }, [services, filters]);
-
-  const handleCopyZalo = () => {
-    const itemsText = formData.workItems.map(i => `- ${i.desc}: ${Number(i.total).toLocaleString('vi-VN')}đ`).join('\n');
-    const total = formData.workItems.reduce((s, i) => s + (Number(i.total) || 0), 0);
-    const text = `DITICOMS SERVICE\nKhách hàng: ${formData.customerName}\nSĐT: ${formData.phone}\nNội dung:\n${itemsText}\n------------------\nTỔNG: ${total.toLocaleString('vi-VN')}đ`;
-    navigator.clipboard.writeText(text);
-    alert('Đã copy nội dung Zalo!');
   };
 
-  if (!user) {
-    return (
-      <LoginScreen 
-        onLogin={handleLogin} 
-        isLoading={loading} 
-      />
-    );
-  }
+  if (!user) return <LoginScreen onLogin={handleLogin} isLoading={loading} />;
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 py-3 shadow-sm shrink-0">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-sm">
+      <header className="bg-white border-b border-slate-100 sticky top-0 z-30 px-4 py-3 shrink-0">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <h1 className="font-black text-slate-900 text-lg uppercase tracking-tighter">DITICOMS SERVICE</h1>
-            <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">{user.role}</span>
+            <Logo size={32} />
+            <div className="flex flex-col">
+              <h1 className="font-bold text-slate-800 uppercase tracking-tight leading-none text-[12px]">DITICOMS SERVICE</h1>
+              <span className="text-slate-400 font-medium uppercase tracking-wider mt-1 text-[10px]">{user.name}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setShowConfig(true)} className="text-[10px] font-bold text-slate-400 hover:text-blue-600 uppercase tracking-widest transition-colors">Cấu hình</button>
-            <button onClick={handleLogout} className="text-[10px] font-bold text-red-500 uppercase tracking-widest hover:underline">Đăng xuất</button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowConfig(true)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl"><Settings size={18} /></button>
+            <button onClick={handleLogout} className="p-2 text-red-400 hover:bg-red-50 rounded-xl"><LogOut size={18} /></button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-4 xl:col-span-4 h-fit lg:sticky lg:top-24">
-            <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 transition-all">
+      <main className="flex-1 p-4 lg:p-6 overflow-auto">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-5 lg:sticky lg:top-24 h-fit">
+            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
               <ServiceForm 
-                formData={formData}
-                setFormData={setFormData}
-                technicians={technicians}
-                priceList={[]}
-                selectedId={selectedId}
-                isSubmitting={isSubmitting}
-                currentUser={user}
-                onSave={handleSave}
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-                onClear={handleClear}
-                onShareImage={() => alert('Sử dụng trình duyệt di động hoặc công chụp màn hình để xuất ảnh Bill.')}
-                onCopyZalo={handleCopyZalo}
-                onOpenTechManager={() => setShowTechModal(true)}
+                formData={formData} setFormData={setFormData} technicians={technicians}
+                priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
+                currentUser={user} onClear={handleClear} 
+                onSave={handleSave} onUpdate={handleUpdate} onDelete={handleDelete}
                 services={services}
+                bankInfo={config.bankInfo}
               />
             </div>
           </div>
-
-          <div className="lg:col-span-8 xl:col-span-8">
+          <div className="lg:col-span-7">
             <ServiceList 
-              data={filteredData}
-              loading={loading}
-              technicians={technicians}
-              selectedId={selectedId}
-              onSelectRow={handleSelectRow}
+              data={filteredServices} loading={loading} technicians={technicians}
+              selectedId={selectedId} onSelectRow={handleSelectRow}
               filters={filters}
               setFilters={{
-                setDateFrom: (v) => setFilters(f => ({ ...f, dateFrom: v })),
-                setDateTo: (v) => setFilters(f => ({ ...f, dateTo: v })),
-                setSearchTerm: (v) => setFilters(f => ({ ...f, searchTerm: v })),
-                setSearchTech: (v) => setFilters(f => ({ ...f, searchTech: v }))
+                setDateFrom: (v: string) => setFilters(f => ({ ...f, dateFrom: v, viewAll: false })),
+                setDateTo: (v: string) => setFilters(f => ({ ...f, dateTo: v, viewAll: false })),
+                setSearchTerm: (v: string) => setFilters(f => ({ ...f, searchTerm: v })),
+                setSearchTech: (v: string) => setFilters(f => ({ ...f, searchTech: v })),
+                setViewAll: (v: boolean) => setFilters(f => ({ ...f, viewAll: v }))
               }}
               currentUser={user}
             />
@@ -270,27 +257,8 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {showConfig && (
-        <ConfigModal 
-          config={config} 
-          onClose={() => setShowConfig(false)} 
-          isAdmin={user.role === 'admin'} 
-          onSave={(c) => {
-            setConfig(c);
-            localStorage.setItem('diti_config', JSON.stringify(c));
-            setShowConfig(false);
-          }} 
-        />
-      )}
-
-      {showTechModal && (
-        <TechnicianModal 
-          technicians={technicians}
-          setTechnicians={setTechnicians}
-          onClose={() => setShowTechModal(false)}
-          sheetUrl={config.sheetUrl}
-        />
-      )}
+      {showConfig && <ConfigModal config={config} onClose={() => setShowConfig(false)} isAdmin={user.role === 'admin'} onSave={(c) => { setConfig(c); localStorage.setItem('diti_config', JSON.stringify(c)); setShowConfig(false); }} />}
+      {showTechModal && <TechnicianModal technicians={technicians} setTechnicians={setTechnicians} onClose={() => setShowTechModal(false)} sheetUrl={config.sheetUrl} />}
     </div>
   );
 };

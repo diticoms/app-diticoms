@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User, Lock } from 'lucide-react';
 import { Logo } from './Logo.tsx';
@@ -17,49 +18,60 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, isLoading }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 space-y-6 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 font-sans text-sm">
+      <div className="max-w-md w-full bg-white rounded-[32px] shadow-xl border border-slate-100 p-10 space-y-10 relative overflow-hidden">
         {isLoading && (
-          <div className="absolute inset-0 bg-white/90 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center space-y-4">
-            <div className="relative w-24 h-24 flex items-center justify-center">
-              <div className="absolute inset-0 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
-              <Logo size={50} />
-            </div>
-            <p className="font-bold text-slate-800 text-sm animate-pulse uppercase tracking-widest">ĐANG ĐĂNG NHẬP...</p>
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-[100] flex flex-col items-center justify-center space-y-6">
+             <div className="relative flex flex-col items-center">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-20"></div>
+                  <Logo size={80} className="relative z-10 animate-pulse" />
+                </div>
+                <div className="mt-8 text-center">
+                  <p className="font-black text-blue-600 uppercase tracking-[0.3em] text-[10px] animate-bounce">ĐANG TẢI DỮ LIỆU</p>
+                  <div className="flex gap-1 justify-center mt-2">
+                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce"></div>
+                  </div>
+                </div>
+             </div>
           </div>
         )}
 
-        <div className="flex flex-col items-center text-center space-y-2">
-          <Logo size={80} />
-          <h1 className="text-2xl font-black uppercase text-slate-900 tracking-tighter">DITICOMS SERVICE</h1>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Hệ thống quản lý dịch vụ</p>
+        <div className="flex flex-col items-center text-center space-y-4">
+          <Logo size={72} />
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-tight">DITICOMS SERVICE</h1>
+            <p className="font-bold text-slate-400 uppercase tracking-widest mt-2">Hệ thống quản lý nội bộ</p>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
-            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="relative group">
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-400 transition-colors" size={22} />
             <input 
-              type="text" placeholder="Tên đăng nhập" className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 transition-all font-medium"
+              type="text" placeholder="Tên đăng nhập" className="w-full pl-14 pr-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-blue-300 transition-all font-medium"
               value={u} onChange={e => setU(e.target.value)} required
             />
           </div>
-          <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <div className="relative group">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-400 transition-colors" size={22} />
             <input 
-              type="password" placeholder="Mật khẩu" className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 transition-all font-medium"
+              type="password" placeholder="Mật khẩu" className="w-full pl-14 pr-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-blue-300 transition-all font-medium"
               value={p} onChange={e => setP(e.target.value)} required
             />
           </div>
           <button 
             type="submit" disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2 uppercase tracking-widest active:scale-[0.98]"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 rounded-2xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center uppercase tracking-widest active:scale-[0.98]"
           >
-            ĐĂNG NHẬP
+            ĐĂNG NHẬP HỆ THỐNG
           </button>
         </form>
         
-        <div className="pt-2 text-center">
-           <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Diticoms Service Manager v1.0.44</p>
+        <div className="pt-6 text-center border-t border-slate-50">
+           <p className="font-bold text-slate-300 uppercase tracking-widest text-[10px]">v1.0.44 • diticoms.vn</p>
         </div>
       </div>
     </div>

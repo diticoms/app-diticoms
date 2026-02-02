@@ -2,21 +2,15 @@
   "appId": "vn.diticoms.service",
   "appName": "Diticoms Service",
   "webDir": "dist",
-  "server": {
-    "url": "https://service.diticoms.vn",
-    "allowNavigation": [
-      "service.diticoms.vn",
-      "*.google.com",
-      "*.googleusercontent.com",
-      "*.vietqr.io"
-    ]
-  },
+  "bundledWebRuntime": false,
   "android": {
     "buildOptions": {
       "releaseType": "APK"
     },
     "allowMixedContent": true,
-    "captureInput": true
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false,
+    "hardwareAccelerated": true
   },
   "ios": {
     "contentInset": "always"

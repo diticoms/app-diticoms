@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { ServiceFormData, BankConfig } from '../types.ts';
 import { formatCurrency, calculateTotalEstimate } from '../utils/helpers.ts';
 import { Logo } from './Logo.tsx';
+import { CURRENT_VERSION } from '../constants.ts';
 
 interface Props {
   formData: ServiceFormData;
@@ -11,6 +13,9 @@ interface Props {
 export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
   const total = calculateTotalEstimate(formData.workItems);
   const qrUrl = bankInfo ? `https://img.vietqr.io/image/${bankInfo.bankId}-${bankInfo.accountNo}-compact2.png?amount=${total}&addInfo=DITICOMS SERVICE ${formData.customerName.toUpperCase()}&accountName=${encodeURIComponent(bankInfo.accountName)}` : '';
+
+  // Ẩn QR Code nếu trạng thái là "Hoàn thành"
+  const showQR = formData.status !== 'Hoàn thành';
 
   return (
     <div className="w-[400px] bg-white p-8 space-y-8 font-sans">
@@ -58,10 +63,10 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
 
       <div className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center">
         <span className="text-xs font-bold text-slate-500 uppercase">Tổng thanh toán:</span>
-        <span className="text-xl font-black text-blue-600">{formatCurrency(total)}đ</span>
+        <span className="text-xl font-black text-blue-600">{formatCurrency(formData.revenue)}đ</span>
       </div>
 
-      {bankInfo && (
+      {bankInfo && showQR && (
         <div className="flex flex-col items-center space-y-4 pt-4 border-t border-dashed border-slate-200">
            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thanh toán chuyển khoản</div>
            <img src={qrUrl} alt="QR Thanh toán" className="w-48 h-48 border-4 border-white shadow-sm rounded-xl" />
@@ -74,7 +79,7 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
 
       <div className="text-center pt-4">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ!</p>
-        <p className="text-[9px] text-slate-300 mt-1">Diticoms Service Manager v1.0.1</p>
+        <p className="text-[9px] text-slate-300 mt-1">Diticoms Service Manager v{CURRENT_VERSION}</p>
       </div>
     </div>
   );

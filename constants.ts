@@ -1,3 +1,4 @@
+
 import { AppConfig } from './types.ts';
 
 export const ACCESS_CODE = "123456"; 
@@ -17,9 +18,6 @@ export const DEFAULT_CONFIG: AppConfig = {
 
 export const STATUS_OPTIONS = [
   'Mới tiếp nhận',
-  'Đang kiểm tra',
   'Đang sửa chữa',
-  'Chờ linh kiện',
-  'Hoàn thành',
-  'Đã trả khách'
+  'Hoàn thành'
 ];
