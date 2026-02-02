@@ -96,15 +96,24 @@ const App: React.FC = () => {
 
   useEffect(() => { if (user) fetchData(); }, [user, fetchData]);
 
+  // LOGIC PHÂN QUYỀN: Lọc dữ liệu tại Client
   const filteredServices = useMemo(() => {
     let result = [...services];
+
+    // PHÂN QUYỀN: Nếu không phải Admin, chỉ thấy phiếu của bản thân KTV đó
+    if (user && user.role !== 'admin' && user.associatedTech) {
+      result = result.filter(s => s.technician === user.associatedTech);
+    }
+
     if (!filters.viewAll) {
       result = result.filter(s => {
         const date = (s.created_at || '').split('T')[0];
         return date >= filters.dateFrom && date <= filters.dateTo;
       });
     }
+
     if (filters.searchTech) result = result.filter(s => s.technician === filters.searchTech);
+
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
       result = result.filter(s => 
@@ -113,8 +122,9 @@ const App: React.FC = () => {
         (s.address || '').toLowerCase().includes(term)
       );
     }
+
     return result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-  }, [services, filters]);
+  }, [services, filters, user]);
 
   const prepareApiPayload = (data: ServiceFormData, id?: string, originalCreatedAt?: string) => {
     return {
@@ -125,7 +135,7 @@ const App: React.FC = () => {
       status: data.status,
       technician: data.technician,
       content: data.content,
-      work_items: JSON.stringify(data.workItems),
+      work_items: data.workItems, // Apps Script sẽ tự JSON.stringify
       revenue: Number(data.revenue || 0),
       cost: Number(data.cost || 0),
       debt: Number(data.debt || 0),
@@ -140,6 +150,10 @@ const App: React.FC = () => {
       if (response.status === 'success' && response.user) {
         setUser(response.user);
         localStorage.setItem('diti_user', JSON.stringify(response.user));
+        // Reset tech to current user tech if not admin
+        if (response.user.role !== 'admin') {
+          setFormData(prev => ({ ...prev, technician: response.user.associatedTech || '' }));
+        }
       } else alert(response.error || 'Sai tài khoản hoặc mật khẩu.');
     } catch (e: any) { alert('Lỗi kết nối Server.'); }
     finally { setLoading(false); }

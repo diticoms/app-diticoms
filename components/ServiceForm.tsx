@@ -37,6 +37,13 @@ export const ServiceForm: React.FC<Props> = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const billRef = useRef<HTMLDivElement>(null);
 
+  // Khóa KTV nếu không phải admin
+  useEffect(() => {
+    if (!isAdmin && currentUser?.associatedTech && !formData.technician) {
+      setFormData(prev => ({ ...prev, technician: currentUser.associatedTech }));
+    }
+  }, [isAdmin, currentUser, formData.technician, setFormData]);
+
   useEffect(() => {
     if (formData.phone.length >= 3) {
       const filtered = services.reduce((acc: ServiceTicket[], curr) => {
@@ -52,7 +59,6 @@ export const ServiceForm: React.FC<Props> = ({
     setFormData(prev => {
       let nextState = { ...prev, [field]: value };
       
-      // LOGIC TỰ ĐỘNG: Cập nhật công nợ theo trạng thái
       if (field === 'status') {
         if (value === 'Hoàn thành') {
           nextState.debt = 0;
@@ -62,7 +68,6 @@ export const ServiceForm: React.FC<Props> = ({
       } else if (field === 'revenue') {
         const rev = parseCurrency(value);
         nextState.revenue = rev;
-        // Nếu không phải hoàn thành thì nợ = tổng thu
         if (prev.status !== 'Hoàn thành') {
           nextState.debt = rev;
         } else {
@@ -200,8 +205,13 @@ export const ServiceForm: React.FC<Props> = ({
             </select>
             <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
           </div>
-          <div className="relative">
-            <select className="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none font-semibold appearance-none cursor-pointer focus:bg-white focus:border-blue-400" value={formData.technician} onChange={e => updateField('technician', e.target.value)}>
+          <div className={`relative ${!isAdmin ? 'opacity-70 pointer-events-none bg-slate-100 rounded-xl' : ''}`}>
+            <select 
+              className="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none font-semibold appearance-none cursor-pointer focus:bg-white focus:border-blue-400" 
+              value={formData.technician} 
+              onChange={e => updateField('technician', e.target.value)}
+              disabled={!isAdmin}
+            >
               <option value="">KTV</option>
               {technicians.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
