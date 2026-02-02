@@ -37,7 +37,6 @@ export const ServiceForm: React.FC<Props> = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const billRef = useRef<HTMLDivElement>(null);
 
-  // Thu thập tất cả các workItems từ lịch sử để gợi ý
   const historyWorkSuggestions = useMemo(() => {
     const suggestions: Record<string, number> = {};
     services.forEach(s => {
@@ -49,7 +48,6 @@ export const ServiceForm: React.FC<Props> = ({
       });
     });
     
-    // Gộp với priceList hiện tại
     priceList.forEach(p => {
       suggestions[p.name.trim()] = p.price;
     });
@@ -349,13 +347,13 @@ export const ServiceForm: React.FC<Props> = ({
         )}
       </div>
 
-      {/* FIXED LAYER BILL: SIÊU HIỂN THỊ TRÊN CÙNG */}
+      {/* SIÊU LAYER HÓA ĐƠN: Z-INDEX 999999 */}
       {showBill && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[999999] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-2 max-w-[450px] w-full max-h-[95vh] overflow-hidden flex flex-col shadow-2xl relative animate-in fade-in slide-in-from-bottom-6 duration-300">
             <button 
               onClick={() => setShowBill(false)} 
-              className="absolute top-4 right-4 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 hover:text-slate-900 z-[100001] shadow-sm transition-colors"
+              className="absolute top-4 right-4 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 hover:text-slate-900 z-[1000001] shadow-sm transition-colors"
             >
               <X size={20}/>
             </button>

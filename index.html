@@ -27,23 +27,23 @@
         background: #f8fafc; 
         margin: 0; 
         padding: 0; 
-        overflow: hidden; 
         -webkit-tap-highlight-color: transparent; 
         font-family: 'Inter', sans-serif;
         color: #1e293b;
         -webkit-font-smoothing: antialiased;
         font-size: 14px;
+        min-height: 100vh;
       }
       #root { 
-        height: 100vh; 
-        overflow-y: auto; 
-        -webkit-overflow-scrolling: touch; 
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
         padding-top: env(safe-area-inset-top); 
         padding-bottom: env(safe-area-inset-bottom); 
       }
       .splash-container {
         position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        background: #ffffff; z-index: 9999; transition: opacity 0.5s ease-out;
+        background: #ffffff; z-index: 9999999; transition: opacity 0.5s ease-out;
       }
       .loader-ring {
         position: absolute; inset: 0; border: 3px solid #f1f5f9; border-top-color: #2563eb; border-radius: 50%;
@@ -65,6 +65,14 @@
       .custom-scrollbar::-webkit-scrollbar { width: 4px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+      
+      /* Cố định layout desktop, cuộn tự do mobile */
+      @media (min-width: 1024px) {
+        .desktop-fixed-layout {
+          height: calc(100vh - 64px);
+          overflow: hidden;
+        }
+      }
     </style>
     <script type="importmap">
 {

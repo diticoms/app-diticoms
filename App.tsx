@@ -120,7 +120,6 @@ const App: React.FC = () => {
   }, [services, filters, user]);
 
   const prepareApiPayload = (data: ServiceFormData, id?: string, originalCreatedAt?: string) => {
-    // Ép kiểu chuẩn cho workItems: [{"desc":"xxx","qty":yyy,"price":"zzz","total":zzz}]
     const workItems = data.workItems.map(item => ({
       desc: item.desc.trim(),
       qty: Number(item.qty) || 0,
@@ -136,7 +135,7 @@ const App: React.FC = () => {
       status: data.status,
       technician: data.technician,
       content: data.content,
-      work_items: workItems, // Apps Script sẽ JSON.stringify cái này
+      work_items: workItems, 
       revenue: Number(data.revenue || 0),
       cost: Number(data.cost || 0),
       debt: Number(data.debt || 0),
@@ -248,13 +247,18 @@ const App: React.FC = () => {
       cost: Number(item.cost || 0),
       debt: Number(item.debt || 0)
     });
+
+    // Mobile: Cuộn lên đầu trang khi chọn khách hàng để dễ cập nhật
+    if (window.innerWidth < 1024) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   if (!user) return <LoginScreen onLogin={handleLogin} isLoading={loading} />;
 
   return (
-    <div className="h-screen bg-slate-50 flex flex-col font-sans text-sm overflow-hidden">
-      <header className="bg-white border-b border-slate-100 px-4 py-3 shrink-0 z-40">
+    <div className="flex flex-col min-h-screen font-sans text-sm bg-slate-50">
+      <header className="sticky top-0 z-40 shrink-0 px-4 py-3 bg-white border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <Logo size={32} />
@@ -270,11 +274,11 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden relative">
-        <div className="absolute inset-0 p-4 lg:p-6 flex flex-col">
+      <main className="flex-1 lg:overflow-hidden relative">
+        <div className="lg:absolute lg:inset-0 p-4 lg:p-6 overflow-y-auto lg:overflow-hidden scroll-smooth">
           <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 h-full w-full">
-            {/* CỘT TRÁI: FORM CỐ ĐỊNH */}
-            <div className="lg:col-span-5 h-full flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            {/* CỘT TRÁI: FORM */}
+            <div className="lg:col-span-5 h-full flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-h-[500px]">
               <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
                 <ServiceForm 
                   formData={formData} setFormData={setFormData} technicians={technicians}
@@ -287,8 +291,8 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* CỘT PHẢI: LIST CỐ ĐỊNH */}
-            <div className="lg:col-span-7 h-full flex flex-col overflow-hidden">
+            {/* CỘT PHẢI: DANH SÁCH */}
+            <div className="lg:col-span-7 h-full flex flex-col overflow-hidden min-h-[600px]">
               <ServiceList 
                 data={filteredServices} loading={loading} technicians={technicians}
                 selectedId={selectedId} onSelectRow={handleSelectRow}
