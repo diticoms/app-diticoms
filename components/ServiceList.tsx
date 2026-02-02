@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Search, Loader2, ChevronRight, Calendar, Filter, CheckCircle2, MessageSquare, Phone, MapPin } from 'lucide-react';
+import { Search, Loader2, ChevronRight, Calendar, Filter, CheckCircle2, MessageSquare, Phone, MapPin, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { ServiceTicket } from '../types.ts';
 import { formatCurrency, debounce } from '../utils/helpers.ts';
 import { Logo } from './Logo.tsx';
@@ -34,6 +35,66 @@ export const ServiceList: React.FC<Props> = ({
     debouncedSetSearch(e.target.value);
   };
 
+  const handleExportExcel = () => {
+    if (data.length === 0) return alert("Không có dữ liệu để xuất!");
+    
+    // Chuẩn bị dữ liệu cho Excel với logic tính lợi nhuận
+    const excelData = data.map(item => {
+      const revenue = Number(item.revenue || 0);
+      const cost = Number(item.cost || 0);
+      const profit = revenue - cost;
+      const debt = Number(item.debt || 0);
+      
+      return {
+        "Ngày nhập": (item.created_at || '').split('T')[0],
+        "Khách hàng": item.customerName,
+        "Số điện thoại": item.phone,
+        "Địa chỉ": item.address,
+        "Kỹ thuật viên": item.technician || "Chưa phân công",
+        "Nội dung dịch vụ": item.content,
+        "Doanh thu (đ)": revenue,
+        "Giá vốn (đ)": cost,
+        "Lợi nhuận (đ)": profit,
+        "Công nợ (đ)": debt,
+        "Trạng thái": item.status
+      };
+    });
+
+    // Thêm dòng tổng kết nếu là Admin
+    if (isAdmin) {
+      const totals = excelData.reduce((acc, curr) => ({
+        revenue: acc.revenue + curr["Doanh thu (đ)"],
+        cost: acc.cost + curr["Giá vốn (đ)"],
+        profit: acc.profit + curr["Lợi nhuận (đ)"],
+        debt: acc.debt + curr["Công nợ (đ)"]
+      }), { revenue: 0, cost: 0, profit: 0, debt: 0 });
+
+      excelData.push({
+        "Ngày nhập": "TỔNG CỘNG",
+        "Khách hàng": "",
+        "Số điện thoại": "",
+        "Địa chỉ": "",
+        "Kỹ thuật viên": "",
+        "Nội dung dịch vụ": "",
+        "Doanh thu (đ)": totals.revenue,
+        "Giá vốn (đ)": totals.cost,
+        "Lợi nhuận (đ)": totals.profit,
+        "Công nợ (đ)": totals.debt,
+        "Trạng thái": ""
+      });
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "BaoCaoDichVu");
+    
+    // Tên file theo thời gian
+    const fileName = `Diticoms_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Xuất file (Hỗ trợ trình duyệt và APK Webview)
+    XLSX.writeFile(workbook, fileName);
+  };
+
   const copyToClipboard = (item: ServiceTicket) => {
     const text = `📌 THÔNG TIN KHÁCH HÀNG\n----------------------\n👤 Khách: ${item.customerName}\n📞 SĐT: ${item.phone}\n📍 Địa chỉ: ${item.address || 'Không có'}\n💬 Yêu cầu: ${item.content || 'Sửa chữa thiết bị'}\n----------------------\n🔧 Kỹ thuật: ${item.technician || 'Chưa phân công'}`;
     navigator.clipboard.writeText(text).then(() => {
@@ -47,33 +108,15 @@ export const ServiceList: React.FC<Props> = ({
   const handlePointerDown = (e: React.PointerEvent, item: ServiceTicket) => {
     isLongPress.current = false;
     startPos.current = { x: e.clientX, y: e.clientY };
-    
     longPressTimer.current = setTimeout(() => {
       isLongPress.current = true;
       copyToClipboard(item);
-      if (window.navigator && window.navigator.vibrate) {
-        window.navigator.vibrate(40);
-      }
     }, 600);
   };
 
   const handlePointerUp = (e: React.PointerEvent, item: ServiceTicket) => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-    }
-
-    const dist = Math.sqrt(Math.pow(e.clientX - startPos.current.x, 2) + Math.pow(e.clientY - startPos.current.y, 2));
-    if (dist > 10) return;
-
-    if (!isLongPress.current) {
-      onSelectRow(item);
-    }
-  };
-
-  const handlePointerCancel = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-    }
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    if (!isLongPress.current) onSelectRow(item);
   };
 
   return (
@@ -112,12 +155,21 @@ export const ServiceList: React.FC<Props> = ({
           )}
 
           {isAdmin && (
-            <div className="relative flex-1 min-w-[80px]">
-              <select className="w-full pl-2 pr-6 py-1.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-600 appearance-none h-[34px] cursor-pointer text-[10px] shadow-sm" value={filters.searchTech} onChange={e => setFilters.setSearchTech(e.target.value)}>
-                <option value="">KTV</option>
-                {technicians.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
+            <>
+              <div className="relative flex-1 min-w-[80px]">
+                <select className="w-full pl-2 pr-6 py-1.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-600 appearance-none h-[34px] cursor-pointer text-[10px] shadow-sm" value={filters.searchTech} onChange={e => setFilters.setSearchTech(e.target.value)}>
+                  <option value="">KTV</option>
+                  {technicians.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <button 
+                onClick={handleExportExcel}
+                className="h-[34px] px-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider"
+                title="Xuất file Excel báo cáo"
+              >
+                <Download size={14} /> EXCEL
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -142,8 +194,6 @@ export const ServiceList: React.FC<Props> = ({
               key={item.id} 
               onPointerDown={(e) => handlePointerDown(e, item)}
               onPointerUp={(e) => handlePointerUp(e, item)}
-              onPointerCancel={handlePointerCancel}
-              onPointerLeave={handlePointerCancel}
               className={`p-4 rounded-[24px] border transition-all cursor-pointer flex items-center justify-between group relative select-none touch-none ${selectedId === item.id ? 'bg-blue-50/80 border-blue-100 ring-2 ring-blue-50' : 'bg-white border-slate-50 hover:border-slate-200 hover:bg-slate-50/50'}`}
             >
               <div className="flex gap-3.5 items-center flex-1 min-w-0">
@@ -154,7 +204,6 @@ export const ServiceList: React.FC<Props> = ({
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-slate-800 leading-tight mb-0.5 truncate text-[14px]">{item.customerName}</div>
                   
-                  {/* Bổ sung hiển thị SĐT và Địa chỉ */}
                   <div className="flex flex-col gap-0.5 mb-1.5">
                     <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
                       <Phone size={10} className="text-blue-400" />
