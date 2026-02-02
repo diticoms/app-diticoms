@@ -1,3 +1,4 @@
+
 export interface BankConfig {
   bankId: string;
   accountNo: string;
@@ -53,4 +54,5 @@ export interface ApiResponse {
   data?: any;
   user?: User;
   technicians?: string[];
+  priceList?: PriceItem[];
 }
