@@ -114,7 +114,7 @@ export const ServiceList: React.FC<Props> = ({
   };
 
   return (
-    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full font-sans text-sm relative overflow-hidden">
+    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col font-sans text-sm relative overflow-hidden lg:h-full">
       {copyStatus && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] bg-slate-900/95 backdrop-blur-md text-white px-5 py-2.5 rounded-full flex items-center gap-2 shadow-2xl animate-in fade-in zoom-in duration-200">
           <CheckCircle2 size={16} className="text-green-400" />
@@ -167,9 +167,9 @@ export const ServiceList: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar pb-2">
+      <div className="flex-1 lg:overflow-y-auto space-y-2 pr-1 custom-scrollbar pb-2">
         {loading ? (
-          <div className="h-full flex flex-col items-center justify-center space-y-6">
+          <div className="py-12 flex flex-col items-center justify-center space-y-6">
             <div className="relative">
               <div className="absolute inset-0 bg-blue-50 rounded-full animate-ping opacity-50 scale-150"></div>
               <Logo size={48} className="relative z-10 animate-pulse" />
@@ -177,7 +177,7 @@ export const ServiceList: React.FC<Props> = ({
             <span className="font-black text-slate-400 uppercase tracking-[0.2em] text-[10px]">Đang tải...</span>
           </div>
         ) : data.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-3">
+          <div className="py-12 flex flex-col items-center justify-center text-slate-300 space-y-3">
             <Search size={48} strokeWidth={1} className="opacity-40" />
             <span className="font-black uppercase tracking-widest text-[11px]">Không có dữ liệu</span>
           </div>
