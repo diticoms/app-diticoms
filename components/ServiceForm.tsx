@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Plus, Trash2, Save, RefreshCw, Activity, 
   User, Phone, MapPin, ChevronDown, ReceiptText, X, Download, MessageSquare
@@ -37,7 +37,26 @@ export const ServiceForm: React.FC<Props> = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const billRef = useRef<HTMLDivElement>(null);
 
-  // Khóa KTV nếu không phải admin
+  // Thu thập tất cả các workItems từ lịch sử để gợi ý
+  const historyWorkSuggestions = useMemo(() => {
+    const suggestions: Record<string, number> = {};
+    services.forEach(s => {
+      const items = Array.isArray(s.workItems) ? s.workItems : [];
+      items.forEach((item: any) => {
+        if (item.desc) {
+          suggestions[item.desc.trim()] = Number(item.price) || 0;
+        }
+      });
+    });
+    
+    // Gộp với priceList hiện tại
+    priceList.forEach(p => {
+      suggestions[p.name.trim()] = p.price;
+    });
+
+    return Object.entries(suggestions).map(([name, price]) => ({ name, price }));
+  }, [services, priceList]);
+
   useEffect(() => {
     if (!isAdmin && currentUser?.associatedTech && !formData.technician) {
       setFormData(prev => ({ ...prev, technician: currentUser.associatedTech }));
@@ -152,7 +171,7 @@ export const ServiceForm: React.FC<Props> = ({
   const inputStyle = "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-blue-400 transition-all font-medium text-slate-800";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-4">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider">
           <Activity size={18} className="text-blue-500"/> {selectedId ? 'Cập nhật phiếu' : 'Tiếp nhận mới'}
@@ -225,20 +244,21 @@ export const ServiceForm: React.FC<Props> = ({
             <button onClick={addWorkItem} className="p-1 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><Plus size={18}/></button>
           </div>
           
-          <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+          <div className="space-y-2">
             {formData.workItems.map((item, idx) => (
-              <div key={idx} className="flex flex-col gap-2 p-3 bg-slate-50/50 border border-slate-100 rounded-2xl group transition-all hover:border-blue-100">
+              <div key={idx} className="flex flex-col gap-2 p-3 bg-slate-50/50 border border-slate-100 rounded-2xl group transition-all hover:border-blue-100 relative">
                 <div className="relative w-full">
                    <input 
                     type="text" placeholder="Nội dung công việc..." 
                     className="w-full bg-transparent font-semibold text-slate-800 outline-none border-b border-transparent focus:border-blue-200 pb-1" 
                     value={item.desc} onFocus={() => setActiveWorkIdx(idx)} 
                     onChange={e => updateWorkItem(idx, 'desc', e.target.value)} 
+                    onBlur={() => setTimeout(() => setActiveWorkIdx(null), 200)}
                   />
                    {activeWorkIdx === idx && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-100 rounded-xl shadow-xl z-[60] max-h-40 overflow-auto">
-                        {priceList.filter(p => p.name.toLowerCase().includes(item.desc.toLowerCase())).map((p, pi) => (
-                          <div key={pi} onClick={() => { updateWorkItem(idx, 'desc', p.name); updateWorkItem(idx, 'price', p.price); setActiveWorkIdx(null); }} className="p-2.5 hover:bg-slate-50 font-medium cursor-pointer flex justify-between border-b border-slate-50 last:border-0 text-[13px]">
+                        {historyWorkSuggestions.filter(p => p.name.toLowerCase().includes(item.desc.toLowerCase())).map((p, pi) => (
+                          <div key={pi} onMouseDown={() => { updateWorkItem(idx, 'desc', p.name); updateWorkItem(idx, 'price', p.price); setActiveWorkIdx(null); }} className="p-2.5 hover:bg-slate-50 font-medium cursor-pointer flex justify-between border-b border-slate-50 last:border-0 text-[13px]">
                             <span>{p.name}</span>
                             <span className="text-blue-500 font-bold">{formatCurrency(p.price)}</span>
                           </div>
@@ -329,12 +349,13 @@ export const ServiceForm: React.FC<Props> = ({
         )}
       </div>
 
+      {/* FIXED LAYER BILL: SIÊU HIỂN THỊ TRÊN CÙNG */}
       {showBill && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-2 max-w-[450px] w-full max-h-[95vh] overflow-hidden flex flex-col shadow-2xl relative animate-in fade-in slide-in-from-bottom-6 duration-300">
             <button 
               onClick={() => setShowBill(false)} 
-              className="absolute top-4 right-4 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 hover:text-slate-900 z-[10000] shadow-sm transition-colors"
+              className="absolute top-4 right-4 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 hover:text-slate-900 z-[100001] shadow-sm transition-colors"
             >
               <X size={20}/>
             </button>
