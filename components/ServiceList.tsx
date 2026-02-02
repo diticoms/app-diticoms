@@ -38,7 +38,6 @@ export const ServiceList: React.FC<Props> = ({
   const handleExportExcel = () => {
     if (data.length === 0) return alert("Không có dữ liệu để xuất!");
     
-    // Chuẩn bị dữ liệu cho Excel với logic tính lợi nhuận
     const excelData = data.map(item => {
       const revenue = Number(item.revenue || 0);
       const cost = Number(item.cost || 0);
@@ -60,7 +59,6 @@ export const ServiceList: React.FC<Props> = ({
       };
     });
 
-    // Thêm dòng tổng kết nếu là Admin
     if (isAdmin) {
       const totals = excelData.reduce((acc, curr) => ({
         revenue: acc.revenue + curr["Doanh thu (đ)"],
@@ -87,11 +85,7 @@ export const ServiceList: React.FC<Props> = ({
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "BaoCaoDichVu");
-    
-    // Tên file theo thời gian
     const fileName = `Diticoms_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
-    
-    // Xuất file (Hỗ trợ trình duyệt và APK Webview)
     XLSX.writeFile(workbook, fileName);
   };
 
@@ -120,7 +114,7 @@ export const ServiceList: React.FC<Props> = ({
   };
 
   return (
-    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 min-h-[500px] flex flex-col font-sans text-sm relative">
+    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full font-sans text-sm relative overflow-hidden">
       {copyStatus && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] bg-slate-900/95 backdrop-blur-md text-white px-5 py-2.5 rounded-full flex items-center gap-2 shadow-2xl animate-in fade-in zoom-in duration-200">
           <CheckCircle2 size={16} className="text-green-400" />
@@ -128,7 +122,7 @@ export const ServiceList: React.FC<Props> = ({
         </div>
       )}
 
-      <div className="space-y-3 mb-5">
+      <div className="space-y-3 mb-5 shrink-0">
         <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
           <input 
@@ -165,7 +159,6 @@ export const ServiceList: React.FC<Props> = ({
               <button 
                 onClick={handleExportExcel}
                 className="h-[34px] px-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider"
-                title="Xuất file Excel báo cáo"
               >
                 <Download size={14} /> EXCEL
               </button>
@@ -174,7 +167,7 @@ export const ServiceList: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto space-y-2 pr-1 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar pb-2">
         {loading ? (
           <div className="h-full flex flex-col items-center justify-center space-y-6">
             <div className="relative">
@@ -241,7 +234,7 @@ export const ServiceList: React.FC<Props> = ({
         )}
       </div>
 
-      <div className="mt-5 pt-4 border-t border-slate-50 flex flex-wrap justify-between items-center gap-2 px-1">
+      <div className="mt-2 pt-4 border-t border-slate-50 flex flex-wrap justify-between items-center gap-2 px-1 shrink-0">
         <span className="font-black text-slate-400 uppercase tracking-widest text-[10px]">
           {filters.viewAll ? 'Tổng cộng: ' : 'Trong ngày: '} 
           <span className="text-slate-700 ml-1 font-black">{data.length}</span>

@@ -96,24 +96,18 @@ const App: React.FC = () => {
 
   useEffect(() => { if (user) fetchData(); }, [user, fetchData]);
 
-  // LOGIC PHÂN QUYỀN: Lọc dữ liệu tại Client
   const filteredServices = useMemo(() => {
     let result = [...services];
-
-    // PHÂN QUYỀN: Nếu không phải Admin, chỉ thấy phiếu của bản thân KTV đó
     if (user && user.role !== 'admin' && user.associatedTech) {
       result = result.filter(s => s.technician === user.associatedTech);
     }
-
     if (!filters.viewAll) {
       result = result.filter(s => {
         const date = (s.created_at || '').split('T')[0];
         return date >= filters.dateFrom && date <= filters.dateTo;
       });
     }
-
     if (filters.searchTech) result = result.filter(s => s.technician === filters.searchTech);
-
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
       result = result.filter(s => 
@@ -122,11 +116,18 @@ const App: React.FC = () => {
         (s.address || '').toLowerCase().includes(term)
       );
     }
-
     return result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
   }, [services, filters, user]);
 
   const prepareApiPayload = (data: ServiceFormData, id?: string, originalCreatedAt?: string) => {
+    // Ép kiểu chuẩn cho workItems: [{"desc":"xxx","qty":yyy,"price":"zzz","total":zzz}]
+    const workItems = data.workItems.map(item => ({
+      desc: item.desc.trim(),
+      qty: Number(item.qty) || 0,
+      price: String(item.price).replace(/\D/g, ''),
+      total: Number(item.total) || 0
+    }));
+
     return {
       id: id || Date.now().toString(),
       customer_name: data.customerName,
@@ -135,7 +136,7 @@ const App: React.FC = () => {
       status: data.status,
       technician: data.technician,
       content: data.content,
-      work_items: data.workItems, // Apps Script sẽ tự JSON.stringify
+      work_items: workItems, // Apps Script sẽ JSON.stringify cái này
       revenue: Number(data.revenue || 0),
       cost: Number(data.cost || 0),
       debt: Number(data.debt || 0),
@@ -150,7 +151,6 @@ const App: React.FC = () => {
       if (response.status === 'success' && response.user) {
         setUser(response.user);
         localStorage.setItem('diti_user', JSON.stringify(response.user));
-        // Reset tech to current user tech if not admin
         if (response.user.role !== 'admin') {
           setFormData(prev => ({ ...prev, technician: response.user.associatedTech || '' }));
         }
@@ -253,8 +253,8 @@ const App: React.FC = () => {
   if (!user) return <LoginScreen onLogin={handleLogin} isLoading={loading} />;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-sm">
-      <header className="bg-white border-b border-slate-100 sticky top-0 z-30 px-4 py-3 shrink-0">
+    <div className="h-screen bg-slate-50 flex flex-col font-sans text-sm overflow-hidden">
+      <header className="bg-white border-b border-slate-100 px-4 py-3 shrink-0 z-40">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <Logo size={32} />
@@ -270,34 +270,39 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 p-4 lg:p-6 overflow-auto">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 lg:sticky lg:top-24 h-fit">
-            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-              <ServiceForm 
-                formData={formData} setFormData={setFormData} technicians={technicians}
-                priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
-                currentUser={user} onClear={handleClear} 
-                onSave={handleSave} onUpdate={handleUpdate} onDelete={handleDelete}
-                services={services}
-                bankInfo={config.bankInfo}
+      <main className="flex-1 overflow-hidden relative">
+        <div className="absolute inset-0 p-4 lg:p-6 flex flex-col">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 h-full w-full">
+            {/* CỘT TRÁI: FORM CỐ ĐỊNH */}
+            <div className="lg:col-span-5 h-full flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+                <ServiceForm 
+                  formData={formData} setFormData={setFormData} technicians={technicians}
+                  priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
+                  currentUser={user} onClear={handleClear} 
+                  onSave={handleSave} onUpdate={handleUpdate} onDelete={handleDelete}
+                  services={services}
+                  bankInfo={config.bankInfo}
+                />
+              </div>
+            </div>
+
+            {/* CỘT PHẢI: LIST CỐ ĐỊNH */}
+            <div className="lg:col-span-7 h-full flex flex-col overflow-hidden">
+              <ServiceList 
+                data={filteredServices} loading={loading} technicians={technicians}
+                selectedId={selectedId} onSelectRow={handleSelectRow}
+                filters={filters}
+                setFilters={{
+                  setDateFrom: (v: string) => setFilters(f => ({ ...f, dateFrom: v, viewAll: false })),
+                  setDateTo: (v: string) => setFilters(f => ({ ...f, dateTo: v, viewAll: false })),
+                  setSearchTerm: (v: string) => setFilters(f => ({ ...f, searchTerm: v })),
+                  setSearchTech: (v: string) => setFilters(f => ({ ...f, searchTech: v })),
+                  setViewAll: (v: boolean) => setFilters(f => ({ ...f, viewAll: v }))
+                }}
+                currentUser={user}
               />
             </div>
-          </div>
-          <div className="lg:col-span-7">
-            <ServiceList 
-              data={filteredServices} loading={loading} technicians={technicians}
-              selectedId={selectedId} onSelectRow={handleSelectRow}
-              filters={filters}
-              setFilters={{
-                setDateFrom: (v: string) => setFilters(f => ({ ...f, dateFrom: v, viewAll: false })),
-                setDateTo: (v: string) => setFilters(f => ({ ...f, dateTo: v, viewAll: false })),
-                setSearchTerm: (v: string) => setFilters(f => ({ ...f, searchTerm: v })),
-                setSearchTech: (v: string) => setFilters(f => ({ ...f, searchTech: v })),
-                setViewAll: (v: boolean) => setFilters(f => ({ ...f, viewAll: v }))
-              }}
-              currentUser={user}
-            />
           </div>
         </div>
       </main>
