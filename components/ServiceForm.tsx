@@ -52,13 +52,22 @@ export const ServiceForm: React.FC<Props> = ({
     setFormData(prev => {
       let nextState = { ...prev, [field]: value };
       
-      // Logic tự động tính Còn nợ dựa trên Trạng thái và Tổng thu
+      // LOGIC TỰ ĐỘNG: Cập nhật công nợ theo trạng thái
       if (field === 'status') {
-        nextState.debt = value === 'Hoàn thành' ? 0 : prev.revenue;
+        if (value === 'Hoàn thành') {
+          nextState.debt = 0;
+        } else {
+          nextState.debt = Number(prev.revenue || 0);
+        }
       } else if (field === 'revenue') {
         const rev = parseCurrency(value);
         nextState.revenue = rev;
-        nextState.debt = prev.status === 'Hoàn thành' ? 0 : rev;
+        // Nếu không phải hoàn thành thì nợ = tổng thu
+        if (prev.status !== 'Hoàn thành') {
+          nextState.debt = rev;
+        } else {
+          nextState.debt = 0;
+        }
       } else if (field === 'cost') {
         nextState.cost = parseCurrency(value);
       }
@@ -67,7 +76,6 @@ export const ServiceForm: React.FC<Props> = ({
     });
   };
 
-  // Hàm tính toán lại tổng doanh thu dựa trên mảng linh kiện
   const recalculateRevenue = (items: WorkItem[]) => {
     return items.reduce((sum, i) => sum + (Number(i.total) || 0), 0);
   };
@@ -212,7 +220,7 @@ export const ServiceForm: React.FC<Props> = ({
               <div key={idx} className="flex flex-col gap-2 p-3 bg-slate-50/50 border border-slate-100 rounded-2xl group transition-all hover:border-blue-100">
                 <div className="relative w-full">
                    <input 
-                    type="text" placeholder="Tên linh kiện hoặc dịch vụ..." 
+                    type="text" placeholder="Nội dung công việc..." 
                     className="w-full bg-transparent font-semibold text-slate-800 outline-none border-b border-transparent focus:border-blue-200 pb-1" 
                     value={item.desc} onFocus={() => setActiveWorkIdx(idx)} 
                     onChange={e => updateWorkItem(idx, 'desc', e.target.value)} 

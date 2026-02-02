@@ -70,11 +70,14 @@ const App: React.FC = () => {
             customerName: r.customer_name || r.customerName || '',
             phone: r.phone || '',
             address: r.address || '',
+            content: r.content || '',
+            status: r.status || STATUS_OPTIONS[0],
+            technician: r.technician || '',
             workItems: Array.isArray(items) ? items : [],
             revenue: Number(r.revenue || 0),
             cost: Number(r.cost || 0),
             debt: Number(r.debt || 0),
-            searchKey: r.search_key || ''
+            created_at: r.created_at || r.date || new Date().toISOString()
           };
         });
         setServices(mapped);
@@ -106,12 +109,29 @@ const App: React.FC = () => {
       const term = filters.searchTerm.toLowerCase();
       result = result.filter(s => 
         (s.customerName || '').toLowerCase().includes(term) || 
-        (s.phone || '').includes(term) ||
+        (String(s.phone || '')).includes(term) ||
         (s.address || '').toLowerCase().includes(term)
       );
     }
     return result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
   }, [services, filters]);
+
+  const prepareApiPayload = (data: ServiceFormData, id?: string, originalCreatedAt?: string) => {
+    return {
+      id: id || Date.now().toString(),
+      customer_name: data.customerName,
+      phone: data.phone,
+      address: data.address,
+      status: data.status,
+      technician: data.technician,
+      content: data.content,
+      work_items: JSON.stringify(data.workItems),
+      revenue: Number(data.revenue || 0),
+      cost: Number(data.cost || 0),
+      debt: Number(data.debt || 0),
+      created_at: originalCreatedAt || (id ? undefined : new Date().toISOString())
+    };
+  };
 
   const handleLogin = async (username: string, pass: string) => {
     setLoading(true);
@@ -148,8 +168,13 @@ const App: React.FC = () => {
     if (!formData.customerName || !formData.phone) return alert('Thiếu thông tin khách hàng');
     setIsSubmitting(true);
     try {
-      const res = await callSheetAPI(config.sheetUrl, 'create', { ...formData, id: Date.now().toString(), created_at: new Date().toISOString() });
-      if(res.status === 'success') { fetchData(); handleClear(); }
+      const payload = prepareApiPayload(formData);
+      const res = await callSheetAPI(config.sheetUrl, 'create', payload);
+      if(res.status === 'success') { 
+        fetchData(); 
+        handleClear(); 
+        alert("Đã lưu phiếu thành công!");
+      }
     } catch(e: any) { alert("Lỗi khi lưu phiếu!"); }
     finally { setIsSubmitting(false); }
   };
@@ -158,25 +183,31 @@ const App: React.FC = () => {
     if(!selectedId) return;
     setIsSubmitting(true);
     try {
-      const res = await callSheetAPI(config.sheetUrl, 'update', { ...formData, id: selectedId });
+      const originalItem = services.find(s => s.id === selectedId);
+      const payload = prepareApiPayload(formData, selectedId, originalItem?.created_at);
+      
+      const res = await callSheetAPI(config.sheetUrl, 'update', payload);
       if(res.status === 'updated' || res.status === 'success') {
         fetchData();
         alert("Cập nhật thành công!");
+      } else {
+        alert(res.error || "Lỗi phản hồi từ máy chủ.");
       }
     } catch(e: any) { alert("Lỗi khi cập nhật!"); }
     finally { setIsSubmitting(false); }
   };
 
   const handleDelete = async () => {
-    if(!selectedId || !window.confirm('Xóa phiếu này?')) return;
+    if(!selectedId || !window.confirm('Xác nhận XÓA phiếu này vĩnh viễn?')) return;
     setIsSubmitting(true);
     try {
       const res = await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user?.role });
       if(res.status === 'deleted' || res.status === 'success') { 
         fetchData(); 
         handleClear(); 
+        alert("Đã xóa phiếu.");
       } else {
-        alert(res.error || "Không thể xóa dữ liệu từ máy chủ.");
+        alert(res.error || "Không có quyền xóa hoặc lỗi Server.");
       }
     } catch(e: any) { alert("Lỗi kết nối khi xóa!"); }
     finally { setIsSubmitting(false); }
@@ -199,9 +230,9 @@ const App: React.FC = () => {
       technician: item.technician || '',
       content: item.content || '',
       workItems: workItems.length > 0 ? workItems : [{ desc: '', qty: 1, price: '', total: 0 }],
-      revenue: item.revenue || 0,
-      cost: item.cost || 0,
-      debt: item.debt || 0
+      revenue: Number(item.revenue || 0),
+      cost: Number(item.cost || 0),
+      debt: Number(item.debt || 0)
     });
   };
 
