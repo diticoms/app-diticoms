@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { X, Save, Server, CreditCard, RefreshCw, Loader2 } from 'lucide-react';
+import { X, Save, CreditCard, RefreshCw, Loader2 } from 'lucide-react';
 import { AppConfig } from '../types.ts';
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export const ConfigModal: React.FC<Props> = ({ config, onSave, onClose, isAdmin, onCheckUpdate, isCheckingUpdate }) => {
-  const [localConfig, setLocalConfig] = useState<AppConfig>({ ...config });
+  const [localConfig, setLocalConfig] = useState<AppConfig>(({ ...config }));
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
@@ -23,14 +24,6 @@ export const ConfigModal: React.FC<Props> = ({ config, onSave, onClose, isAdmin,
         </div>
 
         <div className="space-y-4">
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-2"><Server size={12}/> Server URL (Google Sheet)</label>
-            <input 
-              type="text" className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 text-xs"
-              value={localConfig.sheetUrl} onChange={e => setLocalConfig(prev => ({ ...prev, sheetUrl: e.target.value }))}
-            />
-          </div>
-
           <div className="space-y-3">
              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-2"><CreditCard size={12}/> Thông tin ngân hàng</label>
              <div className="grid grid-cols-2 gap-3">

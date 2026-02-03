@@ -1,7 +1,7 @@
 
 export async function callSheetAPI(url: string, action: string, data: any = {}, retryCount = 0) {
   const MAX_RETRIES = 1;
-  const TIMEOUT = 20000;
+  const TIMEOUT = 25000;
 
   if (!url || !url.startsWith('http')) {
     throw new Error("Cấu hình URL Server không hợp lệ.");
@@ -10,8 +10,6 @@ export async function callSheetAPI(url: string, action: string, data: any = {}, 
   try {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), TIMEOUT);
-
-    console.debug(`[API] Action: ${action}`, data);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -28,12 +26,21 @@ export async function callSheetAPI(url: string, action: string, data: any = {}, 
     if (!text) throw new Error("Server phản hồi rỗng.");
 
     try {
+      // Thử parse trực tiếp trước
       return JSON.parse(text);
     } catch (e) {
-      // Xử lý trường hợp Script trả về JSON thô hoặc có ký tự thừa
-      const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-      if (match) return JSON.parse(match[0]);
-      throw new Error("Phản hồi không phải JSON hợp lệ.");
+      // Nếu thất bại, dùng Regex để trích xuất khối JSON chuẩn nhất
+      // Loại bỏ các tiền tố như "OK", "Success" hoặc các ký tự rác xung quanh
+      const jsonMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+      if (jsonMatch) {
+        try {
+          return JSON.parse(jsonMatch[0]);
+        } catch (innerError) {
+          console.error("[API JSON Parse Error Raw]:", text);
+          throw new Error("Dữ liệu từ Server bị lỗi cấu trúc JSON.");
+        }
+      }
+      throw new Error("Không tìm thấy dữ liệu JSON hợp lệ trong phản hồi.");
     }
   } catch (error: any) {
     console.error(`[API Error] ${action}:`, error);
