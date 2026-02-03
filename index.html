@@ -11,133 +11,52 @@
     <link rel="stylesheet" href="index.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script>
-      window.tailwind.config = { 
-        theme: { 
-          extend: { 
-            fontFamily: { sans: ['Inter', 'sans-serif'] },
-            colors: { primary: '#2563eb', secondary: '#64748b' } 
-          } 
-        } 
-      }
-    </script>
     <style>
       body { 
         background: #f8fafc; 
         margin: 0; 
         padding: 0; 
-        -webkit-tap-highlight-color: transparent; 
         font-family: 'Inter', sans-serif;
         color: #1e293b;
         -webkit-font-smoothing: antialiased;
-        font-size: 14px;
         min-height: 100vh;
+        overscroll-behavior-y: none;
       }
-      #root { 
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        padding-top: env(safe-area-inset-top); 
-        padding-bottom: env(safe-area-inset-bottom); 
-      }
+      #root { min-height: 100vh; }
       .splash-container {
         position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         background: #ffffff; z-index: 9999999; transition: opacity 0.5s ease-out;
       }
       .loader-ring {
-        position: absolute; inset: 0; border: 3px solid #f1f5f9; border-top-color: #2563eb; border-radius: 50%;
+        width: 40px; height: 40px; border: 3px solid #f1f5f9; border-top-color: #2563eb; border-radius: 50%;
         animation: spin 0.8s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
       
-      input, select, textarea, button { 
-        font-size: 14px !important; 
-        font-family: 'Inter', sans-serif !important;
-      }
-      
-      ::placeholder { color: #94a3b8; font-weight: 400; }
-      
-      input:focus, select:focus, textarea:focus {
-        outline: none;
-      }
-
-      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-      
-      /* Cố định layout desktop, cuộn tự do mobile */
-      @media (min-width: 1024px) {
-        .desktop-fixed-layout {
-          height: calc(100vh - 64px);
-          overflow: hidden;
-        }
-      }
+      /* Cải thiện cuộn mượt cho Webview */
+      .custom-scrollbar { -webkit-overflow-scrolling: touch; }
     </style>
-    <script type="importmap">
+  <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19.2.4",
-    "react-dom": "https://esm.sh/react-dom@19.2.4",
-    "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
-    "react/jsx-runtime": "https://esm.sh/react@19.2.4/jsx-runtime",
-    "lucide-react": "https://esm.sh/lucide-react@0.475.0?deps=react@19.2.4",
-    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
-    "xlsx": "https://esm.sh/xlsx@0.18.5",
+    "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "xlsx": "https://esm.sh/xlsx@^0.18.5",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1"
   }
 }
 </script>
-  <link rel="stylesheet" href="/index.css">
+<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>
-    <div id="invoice-capture-area"></div>
     <div class="splash-container" id="splash">
-      <div class="relative w-12 h-12">
-        <div class="loader-ring"></div>
-      </div>
+      <div class="loader-ring"></div>
     </div>
-    <script type="module">
-      const cache = new Map();
-      const fetching = new Map();
-      const APP_BASE_URL = new URL('./', document.baseURI).href;
-      async function loadModule(path, sourceUrl = APP_BASE_URL) {
-        let fullUrl = new URL(path, sourceUrl).href;
-        if (cache.has(fullUrl)) return cache.get(fullUrl);
-        if (fetching.has(fullUrl)) return fetching.get(fullUrl);
-        const fetchPromise = (async () => {
-          try {
-            const response = await fetch(fullUrl);
-            let code = await response.text();
-            const localImportRegex = /(import|export)\s+([\s\S]*?)\s+from\s+['"](\.\.?\/.*?)['"]/g;
-            const matches = Array.from(code.matchAll(localImportRegex));
-            for (const match of matches) {
-              const [fullMatch, type, members, importPath] = match;
-              let targetPath = importPath.match(/\.(tsx|ts|js)$/) ? importPath : importPath + '.tsx';
-              const dependencyBlobUrl = await loadModule(targetPath, fullUrl);
-              code = code.split(fullMatch).join(`${type} ${members} from '${dependencyBlobUrl}'`);
-            }
-            const transformed = Babel.transform(code, {
-              presets: [['react', { runtime: 'automatic' }], ['typescript', { isTSX: true, allExtensions: true }]],
-              filename: fullUrl,
-            }).code;
-            const blobUrl = URL.createObjectURL(new Blob([transformed], { type: 'application/javascript' }));
-            cache.set(fullUrl, blobUrl);
-            return blobUrl;
-          } catch (err) { console.error(err); throw err; }
-        })();
-        fetching.set(fullUrl, fetchPromise);
-        return fetchPromise;
-      }
-      loadModule('./index.tsx').then(url => {
-        const script = document.createElement('script');
-        script.type = 'module';
-        script.src = url;
-        document.body.appendChild(script);
-      });
-    </script>
+    <!-- Entry point trực tiếp cho trình build APK -->
+    <script type="module" src="index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
