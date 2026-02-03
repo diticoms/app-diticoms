@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Plus, Trash2, Save, RefreshCw, Activity, 
-  User, Phone, MapPin, ChevronDown, ReceiptText, X, Download, MessageSquare
+  User, Phone, MapPin, ChevronDown, ReceiptText, X, Download, MessageSquare, Share2
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { ServiceFormData, PriceItem, ServiceTicket, WorkItem } from '../types.ts';
@@ -143,7 +143,7 @@ export const ServiceForm: React.FC<Props> = ({
     });
   };
 
-  const handleDownloadImage = async () => {
+  const handleShareOrSaveImage = async () => {
     if (!billRef.current) return;
     setIsCapturing(true);
     try {
@@ -153,14 +153,43 @@ export const ServiceForm: React.FC<Props> = ({
         backgroundColor: '#ffffff',
         logging: false
       });
-      const image = canvas.toDataURL("image/png");
-      const link = document.createElement('a');
-      link.href = image;
-      link.download = `Bill_${formData.customerName.toUpperCase().replace(/\s+/g, '_')}_${new Date().getTime()}.png`;
-      link.click();
+      
+      const fileName = `Bill_${formData.customerName.toUpperCase().replace(/\s+/g, '_')}_${new Date().getTime()}.png`;
+      
+      // Chuyển canvas thành Blob
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        // Ưu tiên Web Share API (Dành cho APK/Mobile)
+        if (navigator.share && navigator.canShare) {
+          try {
+            const file = new File([blob], fileName, { type: 'image/png' });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: 'Hóa đơn dịch vụ Diticoms',
+                text: `Hóa đơn của khách hàng: ${formData.customerName}`
+              });
+              setIsCapturing(false);
+              return;
+            }
+          } catch (err) {
+            console.error("Share failed", err);
+          }
+        }
+
+        // Phương thức fallback: Tải xuống truyền thống
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = fileName;
+        link.click();
+        
+      }, 'image/png');
+
     } catch (err) {
       console.error("Lỗi lưu ảnh:", err);
-      alert("Không thể lưu ảnh tự động. Vui lòng chụp màn hình bill này!");
+      alert("Lỗi chụp ảnh hóa đơn. Vui lòng chụp màn hình!");
     } finally {
       setIsCapturing(false);
     }
@@ -350,7 +379,7 @@ export const ServiceForm: React.FC<Props> = ({
       {/* SIÊU LAYER HÓA ĐƠN: Z-INDEX 999999 */}
       {showBill && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[999999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[40px] p-2 max-w-[450px] w-full max-h-[95vh] overflow-hidden flex flex-col shadow-2xl relative animate-in fade-in slide-in-from-bottom-6 duration-300">
+          <div className="bg-white rounded-[40px] p-2 max-w-[420px] w-full max-h-[95vh] overflow-hidden flex flex-col shadow-2xl relative animate-in fade-in slide-in-from-bottom-6 duration-300">
             <button 
               onClick={() => setShowBill(false)} 
               className="absolute top-4 right-4 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 hover:text-slate-900 z-[1000001] shadow-sm transition-colors"
@@ -358,29 +387,29 @@ export const ServiceForm: React.FC<Props> = ({
               <X size={20}/>
             </button>
             
-            <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-              <div ref={billRef} id="bill-content-area" className="bg-white rounded-2xl">
+            <div className="flex-1 overflow-auto p-4 custom-scrollbar bg-slate-100/50 flex justify-center">
+              <div ref={billRef} className="bg-white shadow-sm ring-1 ring-slate-200">
                 <InvoiceTemplate formData={formData} bankInfo={bankInfo} />
               </div>
             </div>
 
-            <div className="p-4 pt-0 border-t border-slate-50 grid grid-cols-2 gap-3 mt-2">
+            <div className="p-4 bg-white border-t border-slate-50 grid grid-cols-2 gap-3">
               <button 
-                onClick={handleDownloadImage} 
+                onClick={handleShareOrSaveImage} 
                 disabled={isCapturing}
-                className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl uppercase tracking-widest text-[12px] active:scale-95 transition-all shadow-lg shadow-green-100 disabled:opacity-50"
+                className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl uppercase tracking-widest text-[11px] active:scale-95 transition-all shadow-lg shadow-green-100 disabled:opacity-50"
               >
-                {isCapturing ? <Activity size={18} className="animate-spin" /> : <Download size={18}/>} LƯU ẢNH BILL
+                {isCapturing ? <Activity size={18} className="animate-spin" /> : <Share2 size={18}/>} LƯU / CHIA SẺ
               </button>
               <button 
                 onClick={() => window.print()} 
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl uppercase tracking-widest text-[12px] active:scale-95 transition-all shadow-lg shadow-blue-100"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl uppercase tracking-widest text-[11px] active:scale-95 transition-all shadow-lg shadow-blue-100"
               >
                 IN HÓA ĐƠN
               </button>
               <button 
                 onClick={() => setShowBill(false)} 
-                className="col-span-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl uppercase tracking-widest text-[12px] transition-all"
+                className="col-span-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl uppercase tracking-widest text-[11px] transition-all"
               >
                 ĐÓNG
               </button>
