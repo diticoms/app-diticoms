@@ -25,15 +25,22 @@
       #root { min-height: 100vh; }
       .splash-container {
         position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        background: #ffffff; z-index: 9999999; transition: opacity 0.5s ease-out;
+        background: #ffffff; z-index: 9999999; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+      }
+      .splash-content {
+        display: flex; flex-direction: column; align-items: center; gap: 24px;
+        animation: splashIn 0.5s ease-out;
+      }
+      @keyframes splashIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
       }
       .loader-ring {
-        width: 40px; height: 40px; border: 3px solid #f1f5f9; border-top-color: #2563eb; border-radius: 50%;
+        width: 32px; height: 32px; border: 3px solid #f1f5f9; border-top-color: #2563eb; border-radius: 50%;
         animation: spin 0.8s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
-      
-      /* Cải thiện cuộn mượt cho Webview */
       .custom-scrollbar { -webkit-overflow-scrolling: touch; }
     </style>
   <script type="importmap">
@@ -42,9 +49,9 @@
     "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "xlsx": "https://esm.sh/xlsx@^0.18.5",
     "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "html2canvas": "https://esm.sh/html2canvas@^1.4.1"
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1",
+    "xlsx": "https://esm.sh/xlsx@^0.18.5"
   }
 }
 </script>
@@ -52,10 +59,25 @@
 </head>
   <body>
     <div id="root"></div>
+    
     <div class="splash-container" id="splash">
-      <div class="loader-ring"></div>
+      <div class="splash-content">
+        <img src="logo.png" alt="Logo" style="width: 80px; height: 80px; object-fit: contain;" onerror="this.style.display='none'">
+        <div class="loader-ring"></div>
+        <div style="font-size: 10px; font-weight: 900; color: #94a3b8; letter-spacing: 0.3em; text-transform: uppercase;">Diticoms Service</div>
+      </div>
     </div>
-    <!-- Entry point trực tiếp cho trình build APK -->
+
+    <script>
+      // Failsafe: Tự động ẩn splash sau 6 giây nếu React bị lỗi không load được
+      setTimeout(function() {
+        var splash = document.getElementById('splash');
+        if (splash) {
+          splash.style.opacity = '0';
+          setTimeout(function() { if(splash.parentNode) splash.remove(); }, 600);
+        }
+      }, 6000);
+    </script>
     <script type="module" src="index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
 </body>
