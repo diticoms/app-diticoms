@@ -48,11 +48,29 @@ const App: React.FC = () => {
     revenue: 0, cost: 0, debt: 0
   });
 
+  // Logic xóa màn hình Splash khi App khởi tạo xong
+  useEffect(() => {
+    const removeSplash = () => {
+      const splash = document.getElementById('splash');
+      if (splash) {
+        splash.style.opacity = '0';
+        setTimeout(() => {
+          if (splash && splash.parentNode) {
+            splash.remove();
+          }
+        }, 600);
+      }
+    };
+    
+    // Đợi 800ms sau khi component mount để trải nghiệm mượt mà hơn
+    const timer = setTimeout(removeSplash, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      // 1. Đọc danh sách phiếu
       const resData = await callSheetAPI(config.sheetUrl, 'read');
       if (Array.isArray(resData)) {
         const mapped = resData.map((r: any) => {
@@ -60,10 +78,8 @@ const App: React.FC = () => {
           try {
             parsedWorkItems = typeof r.work_items === 'string' ? JSON.parse(r.work_items) : (r.work_items || []);
           } catch (e) {
-            console.error("Lỗi parse work_items cho phiếu ID:", r.id);
             parsedWorkItems = [];
           }
-
           return {
             ...r,
             customerName: r.customer_name || r.customerName || '',
@@ -77,7 +93,6 @@ const App: React.FC = () => {
         setServices(mapped);
       }
 
-      // 2. Đọc cấu hình (KTV)
       const resConfig = await callSheetAPI(config.sheetUrl, 'read_settings');
       if (resConfig) {
         let techList = [];
@@ -91,7 +106,6 @@ const App: React.FC = () => {
         setTechnicians(Array.isArray(techList) ? techList : []);
       }
 
-      // 3. Đọc bảng giá
       const resPrice = await callSheetAPI(config.sheetUrl, 'read_pricelist');
       if (Array.isArray(resPrice)) setPriceList(resPrice);
       
