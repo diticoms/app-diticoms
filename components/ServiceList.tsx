@@ -27,6 +27,7 @@ export const ServiceList: React.FC<Props> = ({
   const longPressTimer = useRef<any>(null);
   const isLongPress = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
+  const hasMoved = useRef(false);
 
   const debouncedSetSearch = useMemo(() => debounce((val: string) => setFilters.setSearchTerm(val), 300), [setFilters]);
 
@@ -101,16 +102,41 @@ export const ServiceList: React.FC<Props> = ({
 
   const handlePointerDown = (e: React.PointerEvent, item: ServiceTicket) => {
     isLongPress.current = false;
+    hasMoved.current = false;
     startPos.current = { x: e.clientX, y: e.clientY };
+    
     longPressTimer.current = setTimeout(() => {
-      isLongPress.current = true;
-      copyToClipboard(item);
+      if (!hasMoved.current) {
+        isLongPress.current = true;
+        copyToClipboard(item);
+      }
     }, 600);
   };
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const dx = Math.abs(e.clientX - startPos.current.x);
+    const dy = Math.abs(e.clientY - startPos.current.y);
+    
+    // Nếu di chuyển quá 10px, coi như đang cuộn
+    if (dx > 10 || dy > 10) {
+      hasMoved.current = true;
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    }
+  };
+
   const handlePointerUp = (e: React.PointerEvent, item: ServiceTicket) => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    if (!isLongPress.current) onSelectRow(item);
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+
+    // Chỉ thực hiện chọn hàng nếu không phải nhấn giữ lâu và không phải đang cuộn trang
+    if (!isLongPress.current && !hasMoved.current) {
+      onSelectRow(item);
+    }
   };
 
   return (
@@ -186,8 +212,9 @@ export const ServiceList: React.FC<Props> = ({
             <div 
               key={item.id} 
               onPointerDown={(e) => handlePointerDown(e, item)}
+              onPointerMove={handlePointerMove}
               onPointerUp={(e) => handlePointerUp(e, item)}
-              className={`p-4 rounded-[24px] border transition-all cursor-pointer flex items-center justify-between group relative select-none touch-none ${selectedId === item.id ? 'bg-blue-50/80 border-blue-100 ring-2 ring-blue-50' : 'bg-white border-slate-50 hover:border-slate-200 hover:bg-slate-50/50'}`}
+              className={`p-4 rounded-[24px] border transition-all cursor-pointer flex items-center justify-between group relative select-none touch-pan-y ${selectedId === item.id ? 'bg-blue-50/80 border-blue-100 ring-2 ring-blue-50' : 'bg-white border-slate-50 hover:border-slate-200 hover:bg-slate-50/50'}`}
             >
               <div className="flex gap-3.5 items-center flex-1 min-w-0">
                 <div className="h-11 w-11 bg-slate-100/50 rounded-2xl flex flex-col items-center justify-center font-bold text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors text-[13px] shrink-0 shadow-sm">
