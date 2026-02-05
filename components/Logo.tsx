@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 
 interface LogoProps {
   className?: string;
@@ -6,27 +7,20 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ className = "", size = 64 }) => {
-  const [imgSrc, setImgSrc] = useState("logo.png");
-  const [retryCount, setRetryCount] = useState(0);
-
-  const handleError = () => {
-    if (retryCount === 0) {
-      setImgSrc("public/logo.png");
-      setRetryCount(1);
-    } else if (retryCount === 1) {
-      setImgSrc("https://service.diticoms.vn/logo.png");
-      setRetryCount(2);
-    }
-  };
-
   return (
     <img 
-      src={imgSrc} 
-      alt="Diticoms Logo"
+      src="logo.png" 
+      alt="Logo"
       width={size}
       height={size}
       className={`${className} object-contain`}
-      onError={handleError}
+      loading="eager"
+      onError={(e) => {
+        const target = e.target as HTMLImageElement;
+        if (target.src.indexOf('public/') === -1) {
+          target.src = 'public/logo.png';
+        }
+      }}
     />
   );
 };

@@ -1,0 +1,33 @@
+
+{
+  "appId": "vn.diticoms.service",
+  "appName": "Diticoms Service",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "allowNavigation": ["*"],
+    "cleartext": true
+  },
+  "plugins": {
+    "Keyboard": {
+      "resize": "body",
+      "style": "light",
+      "resizeOnFullScreen": true
+    }
+  },
+  "android": {
+    "buildOptions": {
+      "releaseType": "APK"
+    },
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false,
+    "hardwareAccelerated": true,
+    "backgroundColor": "#ffffff"
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#ffffff",
+    "allowsLinkPreview": false
+  }
+}

@@ -1,32 +1,33 @@
 
 #!/bin/bash
 
-# Diticoms Auto Deploy Script for GitHub Pages (Web Only)
+# Diticoms Auto Deploy Script (Web & Mobile Prep)
 
-echo "--- Bắt đầu quy trình cập nhật Diticoms Web App ---"
+echo "--- Bắt đầu quy trình cập nhật Diticoms ---"
 
-# 1. Chạy Build
-echo "Step 1: Building distribution..."
+# 1. Khởi tạo assets
+echo "Step 1: Preparing assets..."
+node generate-assets.js
+
+# 2. Chạy Build Web
+echo "Step 2: Building distribution..."
 node build.js
 
-# 2. Tăng version tự động
+# 3. Tăng version tự động
 npm run version-up
 
-# 3. Git Operations
-echo "Step 2: Adding changes..."
+# 4. Git Operations
+echo "Step 3: Committing changes..."
 git add .
 
-# Nhận tin nhắn commit từ người dùng hoặc dùng mặc định
 read -p "Nhập nội dung ghi chú cập nhật: " msg
 if [ -z "$msg" ]; then
-    msg="Update: Cập nhật hệ thống Web (Triển khai qua gh-pages)"
+    msg="Update: Cập nhật hệ thống (Web & Mobile Config)"
 fi
 
-echo "Step 3: Committing with message: $msg"
 git commit -m "$msg"
 
 echo "Step 4: Pushing to main..."
 git push origin main
 
-echo "--- Đã đẩy mã nguồn lên main. Vui lòng đợi GitHub Action hoàn tất deploy ---"
-echo "--- URL: https://service.diticoms.vn ---"
+echo "--- Hoàn tất! Nếu build APK, hãy chạy: npm run android:build ---"

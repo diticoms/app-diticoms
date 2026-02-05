@@ -23,12 +23,11 @@ try {
     process.exit(1);
 }
 
-// 3. Các file tĩnh cần copy (KHÔNG copy các file .tsx/.ts vào dist nữa)
+// 3. Các file tĩnh cần copy
 const itemsToCopy = [
     'index.html',
     'metadata.json',
     'manifest.json',
-    'logo.png',
     'version.json',
     'index.css',
 ];
@@ -46,7 +45,20 @@ itemsToCopy.forEach(item => {
     }
 });
 
-// 4. CNAME
+// 4. Xử lý Logo đặc biệt từ thư mục public
+const publicLogo = path.join(__dirname, 'public', 'logo.png');
+const rootLogo = path.join(__dirname, 'logo.png');
+const destLogo = path.join(distDir, 'logo.png');
+
+if (fs.existsSync(publicLogo)) {
+    fs.copyFileSync(publicLogo, destLogo);
+    console.log('🖼️ Đã copy logo từ public/logo.png vào dist');
+} else if (fs.existsSync(rootLogo)) {
+    fs.copyFileSync(rootLogo, destLogo);
+    console.log('🖼️ Đã copy logo từ gốc vào dist');
+}
+
+// 5. CNAME
 const cnamePath = path.join(__dirname, 'CNAME');
 if (fs.existsSync(cnamePath)) {
     fs.copyFileSync(cnamePath, path.join(distDir, 'CNAME'));
