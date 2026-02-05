@@ -1,7 +1,11 @@
+
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const distDir = path.join(__dirname, 'dist');
+
+console.log('🚀 Bắt đầu quy trình build Production...');
 
 // 1. Dọn dẹp dist cũ
 if (fs.existsSync(distDir)) {
@@ -9,21 +13,24 @@ if (fs.existsSync(distDir)) {
 }
 fs.mkdirSync(distDir, { recursive: true });
 
-// 2. Các file cần thiết
+// 2. Biên dịch index.tsx sang index.js bằng esbuild
+try {
+    console.log('📦 Đang đóng gói mã nguồn (Bundling)...');
+    execSync('npx esbuild index.tsx --bundle --minify --format=esm --outfile=dist/index.js --loader:.tsx=tsx --loader:.ts=ts --external:react --external:react-dom --external:lucide-react --external:html2canvas --external:xlsx');
+    console.log('✅ Đã tạo file dist/index.js');
+} catch (err) {
+    console.error('❌ Lỗi biên dịch esbuild:', err.message);
+    process.exit(1);
+}
+
+// 3. Các file tĩnh cần copy (KHÔNG copy các file .tsx/.ts vào dist nữa)
 const itemsToCopy = [
     'index.html',
-    'index.tsx',
-    'App.tsx',
-    'types.ts',
-    'constants.ts',
     'metadata.json',
     'manifest.json',
     'logo.png',
     'version.json',
-    'index.css', // Đảm bảo copy file này
-    'components',
-    'services',
-    'utils'
+    'index.css',
 ];
 
 itemsToCopy.forEach(item => {
@@ -39,7 +46,7 @@ itemsToCopy.forEach(item => {
     }
 });
 
-// 3. CNAME
+// 4. CNAME
 const cnamePath = path.join(__dirname, 'CNAME');
 if (fs.existsSync(cnamePath)) {
     fs.copyFileSync(cnamePath, path.join(distDir, 'CNAME'));
@@ -47,4 +54,4 @@ if (fs.existsSync(cnamePath)) {
     fs.writeFileSync(path.join(distDir, 'CNAME'), 'service.diticoms.vn');
 }
 
-console.log('✅ Build hoàn tất! Vui lòng đẩy thư mục dist/ lên server.');
+console.log('✨ Build hoàn tất thành công!');

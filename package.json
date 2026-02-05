@@ -27,6 +27,7 @@
     "html2canvas": "^1.4.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "esbuild": "^0.24.0",
     "@capacitor/core": "^6.0.0",
     "@capacitor/cli": "^6.0.0",
     "@capacitor/android": "^6.0.0",
