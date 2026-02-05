@@ -1,3 +1,4 @@
+
 /* Diticoms Global Styles */
 .animate-in { animation: fadeIn 0.3s ease-in; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -7,12 +8,13 @@
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* Optimize for Webview APK/IPA */
+/* Web/PWA Optimization */
 html, body {
-  overscroll-behavior-y: none; /* Prevent pull-to-refresh */
-  -webkit-text-size-adjust: 100%; /* Prevent iOS text resize */
+  overscroll-behavior-y: none; /* Ngăn chặn pull-to-refresh trên trình duyệt di động */
+  -webkit-text-size-adjust: 100%;
   height: 100%;
   width: 100%;
+  background: #f8fafc;
 }
 
 #root { 
@@ -20,19 +22,18 @@ html, body {
   height: 100%;
 }
 
-/* Padding for notched displays */
+/* Hỗ trợ hiển thị trên các thiết bị có tai thỏ */
 .safe-area-padding {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 input:focus, select:focus, textarea:focus { 
-  border-color: #1d4ed8 !important; 
-  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1); 
-  font-size: 16px; /* Avoid auto-zoom on iOS */
+  border-color: #2563eb !important; 
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); 
+  font-size: 16px; /* Tránh tự động zoom trên iOS Safari */
 }
 
-/* Flexible grid for mobile search filters */
 @media (max-width: 640px) {
   input[type="date"] {
     min-width: 0;
