@@ -5,12 +5,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#2563eb" />
+    <!-- Cập nhật thẻ Meta PWA mới nhất -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Diticoms Service Manager</title>
     <link rel="stylesheet" href="index.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Sử dụng Tailwind Play CDN ổn định cho production (hoặc link CSS trực tiếp) -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
     <style>
       body { 
         background: #f8fafc; 
@@ -78,7 +81,8 @@
         }
       }, 6000);
     </script>
-    <script type="module" src="index.tsx"></script>
+    <!-- Quan trọng: Trỏ đến index.js thay vì index.tsx để fix lỗi MIME Type -->
+    <script type="module" src="index.js"></script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
