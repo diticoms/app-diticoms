@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Search, Loader2, ChevronRight, Calendar, Filter, CheckCircle2, MessageSquare, Phone, MapPin, Download } from 'lucide-react';
+import { Search, Loader2, ChevronRight, Calendar, Filter, CheckCircle2, MessageSquare, Phone, MapPin, Download, Smartphone } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ServiceTicket } from '../types.ts';
 import { formatCurrency, debounce } from '../utils/helpers.ts';
@@ -15,10 +15,12 @@ interface Props {
   filters: any;
   setFilters: any;
   currentUser: any;
+  onInstallApp?: () => void;
+  installAvailable?: boolean;
 }
 
 export const ServiceList: React.FC<Props> = ({
-  data, loading, technicians, selectedId, onSelectRow, filters, setFilters, currentUser
+  data, loading, technicians, selectedId, onSelectRow, filters, setFilters, currentUser, onInstallApp, installAvailable
 }) => {
   const isAdmin = currentUser?.role === 'admin';
   const [localSearch, setLocalSearch] = useState(filters.searchTerm);
@@ -156,6 +158,15 @@ export const ServiceList: React.FC<Props> = ({
                 </select>
               </div>
             )}
+            
+            {/* Nút Tải App - Hiển thị cạnh nút EXCEL */}
+            <button 
+              onClick={onInstallApp}
+              className={`h-[34px] px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider flex-shrink-0 ${installAvailable ? 'bg-slate-800 text-white hover:bg-black animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+            >
+              <Smartphone size={14} /> TẢI APP
+            </button>
+
             <button 
               onClick={handleExportExcel}
               className="h-[34px] px-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider flex-shrink-0"

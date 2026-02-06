@@ -1,0 +1,10 @@
+
+{
+  "appId": "vn.diticoms.service",
+  "appName": "Diticoms Service",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -1,19 +1,23 @@
 
 {
   "name": "diticoms-service-manager",
-  "version": "1.0.45",
-  "description": "Hệ thống quản lý dịch vụ sửa chữa Diticoms - Web & PWA",
+  "version": "1.0.46",
+  "description": "Hệ thống quản lý dịch vụ sửa chữa Diticoms - Web & Mobile",
   "scripts": {
-    "start": "echo 'Ứng dụng đang chạy trên môi trường Web...'",
+    "start": "echo 'Ứng dụng đang chạy...'",
     "build": "node build.js",
+    "generate:icons": "node generate-assets.js",
+    "cap:sync": "npx cap sync",
+    "apk:build": "npm run build && npx cap sync android && npx cap open android",
     "version-up": "node -e \"const fs = require('fs'); const v = JSON.parse(fs.readFileSync('version.json')); const parts = v.version.split('.').map(Number); parts[2]++; v.version = parts.join('.'); fs.writeFileSync('version.json', JSON.stringify(v, null, 2)); console.log('Version: ' + v.version);\"",
-    "deploy": "npm run build && npm run version-up && git add . && git commit -m \"Web Deploy: Cập nhật hệ thống\" && git push origin main"
+    "deploy": "npm run build && npm run version-up && git add . && git commit -m \"Update: Cập nhật hệ thống\" && git push origin main"
   },
   "keywords": [
     "diticoms",
     "service",
     "manager",
-    "pwa"
+    "pwa",
+    "capacitor"
   ],
   "author": "Diticoms",
   "license": "MIT",
@@ -23,6 +27,13 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "esbuild": "^0.24.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/assets": "^3.0.0"
   }
 }

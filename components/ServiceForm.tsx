@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare
+  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Search
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
@@ -36,38 +36,35 @@ export const ServiceForm: React.FC<Props> = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const billRef = useRef<HTMLDivElement>(null);
 
-  // Lấy danh sách khách hàng duy nhất từ lịch sử phiếu
-  const customerHistory = useMemo(() => {
+  // LOGIC GỢI Ý KHÁCH HÀNG TỪ SHEET
+  const customerSuggestions = useMemo(() => {
     const customers: Record<string, { name: string, address: string }> = {};
-    const sorted = [...services].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    sorted.forEach(s => {
-      if (s.phone && !customers[s.phone]) {
-        customers[s.phone] = { 
-          name: s.customerName || '', 
-          address: s.address || '' 
-        };
+    // Sắp xếp phiếu mới nhất lên đầu để lấy thông tin mới nhất
+    const sortedServices = [...services].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    
+    sortedServices.forEach(s => {
+      const phone = String(s.phone || '').trim();
+      if (phone.length >= 3) {
+        if (!customers[phone]) {
+          customers[phone] = { 
+            name: s.customerName || '', 
+            address: s.address || '' 
+          };
+        }
       }
     });
     return Object.entries(customers).map(([phone, info]) => ({ phone, ...info }));
   }, [services]);
 
-  const filteredCustomers = useMemo(() => {
+  const filteredCustomerSuggestions = useMemo(() => {
     const term = formData.phone.trim();
     if (term.length < 3) return [];
-    return customerHistory.filter(c => c.phone.includes(term)).slice(0, 5);
-  }, [customerHistory, formData.phone]);
-
-  const historySuggestions = useMemo(() => {
-    const sugg: Record<string, number> = {};
-    services.forEach(s => {
-      const items = Array.isArray(s.workItems) ? s.workItems : [];
-      items.forEach((i: any) => {
-        if(i.desc) sugg[i.desc.trim()] = Number(i.price) || 0;
-      });
-    });
-    priceList.forEach(p => sugg[p.name.trim()] = p.price);
-    return Object.entries(sugg).map(([name, price]) => ({ name, price }));
-  }, [services, priceList]);
+    return customerSuggestions.filter(c => 
+      c.phone.includes(term)
+    ).slice(0, 5);
+  }, [customerSuggestions, formData.phone]);
 
   const updateField = (f: keyof ServiceFormData, v: any) => {
     setFormData(prev => {
@@ -83,7 +80,7 @@ export const ServiceForm: React.FC<Props> = ({
     });
   };
 
-  const handleSelectCustomer = (c: { phone: string, name: string, address: string }) => {
+  const selectCustomer = (c: { phone: string, name: string, address: string }) => {
     setFormData(prev => ({
       ...prev,
       phone: c.phone,
@@ -165,20 +162,27 @@ export const ServiceForm: React.FC<Props> = ({
             onFocus={() => setShowPhoneSuggestions(true)}
             onBlur={() => setTimeout(() => setShowPhoneSuggestions(false), 200)}
           />
-          {showPhoneSuggestions && filteredCustomers.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-white border border-slate-100 shadow-2xl z-[100] max-h-48 overflow-auto rounded-2xl mt-1 animate-in fade-in zoom-in duration-200">
-               <div className="p-2 border-b border-slate-50 bg-slate-50/50">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Khách hàng cũ</span>
-               </div>
-               {filteredCustomers.map((c, i) => (
-                 <div key={i} onMouseDown={() => handleSelectCustomer(c)} className="p-3 hover:bg-blue-50 border-b last:border-0 cursor-pointer transition-colors">
-                    <div className="flex justify-between items-center">
-                       <span className="font-black text-blue-600 text-xs">{c.phone}</span>
-                       <span className="font-bold text-slate-700 text-xs">{c.name}</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 truncate mt-0.5">{c.address || 'Không có địa chỉ'}</p>
-                 </div>
-               ))}
+          {showPhoneSuggestions && filteredCustomerSuggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-2xl z-[60] max-h-56 overflow-auto rounded-2xl mt-1 animate-in fade-in zoom-in duration-150">
+              <div className="p-2 border-b border-slate-50 bg-slate-50/50">
+                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Gợi ý từ lịch sử</span>
+              </div>
+              {filteredCustomerSuggestions.map((c, i) => (
+                <div 
+                  key={i} 
+                  onMouseDown={() => selectCustomer(c)} 
+                  className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 transition-colors flex flex-col"
+                >
+                  <div className="flex justify-between items-center mb-0.5">
+                    <span className="font-black text-blue-600 text-xs">{c.phone}</span>
+                    <span className="font-bold text-slate-800 text-xs">{c.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-slate-400 text-[10px]">
+                    <MapPin size={10} />
+                    <span className="truncate">{c.address || 'Không có địa chỉ'}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -218,16 +222,6 @@ export const ServiceForm: React.FC<Props> = ({
                   value={item.desc} onFocus={() => setActiveWorkIdx(idx)} onChange={e => updateWorkItem(idx, 'desc', e.target.value)} 
                   onBlur={() => setTimeout(() => setActiveWorkIdx(null), 200)} 
                 />
-                {activeWorkIdx === idx && historySuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-slate-100 shadow-2xl z-50 max-h-40 overflow-auto rounded-xl mt-1">
-                    {historySuggestions.filter(p => p.name.toLowerCase().includes(item.desc.toLowerCase())).map((p, i) => (
-                      <div key={i} onMouseDown={() => { updateWorkItem(idx, 'desc', p.name); updateWorkItem(idx, 'price', p.price); }} className="p-2.5 hover:bg-slate-50 text-xs flex justify-between border-b last:border-0 font-medium cursor-pointer">
-                        <span>{p.name}</span>
-                        <span className="font-bold text-blue-500">{formatCurrency(p.price)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
                 <div className="flex gap-2 text-[11px] font-bold">
                   <div className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg px-2 flex items-center gap-1">SL: <input type="number" className="w-full outline-none font-black text-center bg-transparent" value={item.qty} onChange={e => updateWorkItem(idx, 'qty', e.target.value)} /></div>
                   <div className="flex-[2] bg-white border border-slate-100 p-1.5 rounded-lg px-2 text-right"><input type="text" className="w-full outline-none font-black text-right text-blue-600 bg-transparent" value={formatCurrency(item.price)} onChange={e => updateWorkItem(idx, 'price', e.target.value)} /></div>

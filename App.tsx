@@ -36,6 +36,7 @@ const App: React.FC = () => {
   const [showConfig, setShowConfig] = useState(false);
   const [showTechModal, setShowTechModal] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const [filters, setFilters] = useState({
     dateFrom: getTodayString(),
@@ -60,13 +61,32 @@ const App: React.FC = () => {
         setTimeout(() => splash.remove(), 600);
       }, 500);
     }
+
+    // Lắng nghe sự kiện cài đặt PWA
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+
+    return () => window.removeEventListener('beforeinstallprompt', () => {});
   }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else {
+      alert("Để cài đặt: \n- Android: Chọn 'Thêm vào màn hình chính' trong menu trình duyệt.\n- iOS: Nhấn nút Share rồi chọn 'Thêm vào MH chính'.");
+    }
+  };
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-    setLoading(services.length === 0); // Chỉ hiện loading nếu chưa có cache
+    setLoading(services.length === 0);
     try {
-      // Gọi fetch song song để tăng tốc
       const [resData, resConfig, resPrice] = await Promise.all([
         callSheetAPI(config.sheetUrl, 'read'),
         callSheetAPI(config.sheetUrl, 'read_settings'),
@@ -104,11 +124,9 @@ const App: React.FC = () => {
 
   const filteredServices = useMemo(() => {
     let result = [...services];
-    // Scope cho user
     if (user?.role !== 'admin' && user?.associatedTech) {
       result = result.filter(s => s.technician === user.associatedTech);
     }
-    // Bộ lọc chung
     if (!filters.viewAll) {
       result = result.filter(s => {
         const date = (s.created_at || '').split('T')[0];
@@ -152,16 +170,10 @@ const App: React.FC = () => {
   const resetForm = useCallback(() => {
     setSelectedId(null);
     setFormData({ 
-      customerName: '', 
-      phone: '', 
-      address: '', 
-      status: STATUS_OPTIONS[0], 
-      technician: user?.associatedTech || '', 
-      content: '', 
+      customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
+      technician: user?.associatedTech || '', content: '', 
       workItems: [{ desc: '', qty: 1, price: '', total: 0 }], 
-      revenue: 0, 
-      cost: 0, 
-      debt: 0 
+      revenue: 0, cost: 0, debt: 0 
     });
   }, [user]);
 
@@ -256,6 +268,8 @@ const App: React.FC = () => {
                 setViewAll: (v: boolean) => setFilters(f => ({ ...f, viewAll: v }))
               }}
               currentUser={user}
+              onInstallApp={handleInstallApp}
+              installAvailable={!!deferredPrompt}
             />
           </div>
         </div>
