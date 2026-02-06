@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 
 const distDir = path.join(__dirname, 'dist');
 
-console.log('🚀 Bắt đầu quy trình build Production...');
+console.log('🚀 Bắt đầu quy trình build Web Production...');
 
 // 1. Dọn dẹp dist cũ
 if (fs.existsSync(distDir)) {
@@ -15,7 +15,7 @@ fs.mkdirSync(distDir, { recursive: true });
 
 // 2. Biên dịch index.tsx sang index.js bằng esbuild
 try {
-    console.log('📦 Đang đóng gói mã nguồn (Bundling)...');
+    console.log('📦 Đang đóng gói mã nguồn Web (Bundling)...');
     execSync('npx esbuild index.tsx --bundle --minify --format=esm --outfile=dist/index.js --loader:.tsx=tsx --loader:.ts=ts --external:react --external:react-dom --external:lucide-react --external:html2canvas --external:xlsx');
     console.log('✅ Đã tạo file dist/index.js');
 } catch (err) {
@@ -45,25 +45,16 @@ itemsToCopy.forEach(item => {
     }
 });
 
-// 4. Xử lý Logo đặc biệt từ thư mục public
+// 4. Xử lý Logo
 const publicLogo = path.join(__dirname, 'public', 'logo.png');
-const rootLogo = path.join(__dirname, 'logo.png');
 const destLogo = path.join(distDir, 'logo.png');
 
 if (fs.existsSync(publicLogo)) {
     fs.copyFileSync(publicLogo, destLogo);
     console.log('🖼️ Đã copy logo từ public/logo.png vào dist');
-} else if (fs.existsSync(rootLogo)) {
-    fs.copyFileSync(rootLogo, destLogo);
-    console.log('🖼️ Đã copy logo từ gốc vào dist');
 }
 
-// 5. CNAME
-const cnamePath = path.join(__dirname, 'CNAME');
-if (fs.existsSync(cnamePath)) {
-    fs.copyFileSync(cnamePath, path.join(distDir, 'CNAME'));
-} else {
-    fs.writeFileSync(path.join(distDir, 'CNAME'), 'service.diticoms.vn');
-}
+// 5. CNAME cho Web Domain
+fs.writeFileSync(path.join(distDir, 'CNAME'), 'service.diticoms.vn');
 
-console.log('✨ Build hoàn tất thành công!');
+console.log('✨ Build Web hoàn tất thành công!');

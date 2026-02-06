@@ -1,27 +1,19 @@
 
 {
   "name": "diticoms-service-manager",
-  "version": "1.0.1",
-  "description": "Hệ thống quản lý dịch vụ sửa chữa Diticoms - Mobile & Web",
+  "version": "1.0.45",
+  "description": "Hệ thống quản lý dịch vụ sửa chữa Diticoms - Web & PWA",
   "scripts": {
-    "start": "echo 'Ứng dụng đang chạy...'",
+    "start": "echo 'Ứng dụng đang chạy trên môi trường Web...'",
     "build": "node build.js",
     "version-up": "node -e \"const fs = require('fs'); const v = JSON.parse(fs.readFileSync('version.json')); const parts = v.version.split('.').map(Number); parts[2]++; v.version = parts.join('.'); fs.writeFileSync('version.json', JSON.stringify(v, null, 2)); console.log('Version: ' + v.version);\"",
-    "deploy": "npm run build && npm run version-up && git add . && git commit -m \"Auto-deploy: Cập nhật hệ thống Web & Mobile\" && git pull --rebase origin main && git push origin main",
-    "assets:init": "node generate-assets.js",
-    "assets:generate": "npx @capacitor/assets generate --android --ios",
-    "mobile:prep": "npm run build && npx cap sync",
-    "android:open": "npx cap open android",
-    "android:build": "npm run assets:init && npm run build && npx cap sync android && cd android && ./gradlew assembleRelease",
-    "ios:open": "npx cap open ios"
+    "deploy": "npm run build && npm run version-up && git add . && git commit -m \"Web Deploy: Cập nhật hệ thống\" && git push origin main"
   },
   "keywords": [
     "diticoms",
     "service",
     "manager",
-    "pwa",
-    "android",
-    "ios"
+    "pwa"
   ],
   "author": "Diticoms",
   "license": "MIT",
@@ -31,10 +23,6 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "esbuild": "^0.24.0",
-    "@capacitor/core": "^6.0.0",
-    "@capacitor/cli": "^6.0.0",
-    "@capacitor/android": "^6.0.0",
-    "@capacitor/ios": "^6.0.0",
-    "@capacitor/assets": "^3.0.0"
+    "xlsx": "^0.18.5"
   }
 }
