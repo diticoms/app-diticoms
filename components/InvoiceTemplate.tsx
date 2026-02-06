@@ -14,7 +14,7 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
   const qrUrl = bankInfo ? `https://img.vietqr.io/image/${bankInfo.bankId}-${bankInfo.accountNo}-compact2.png?amount=${total}&addInfo=DITICOMS SERVICE ${formData.customerName.toUpperCase()}&accountName=${encodeURIComponent(bankInfo.accountName)}` : '';
 
   return (
-    <div className="w-[302px] bg-white p-6 mx-auto font-sans shadow-none border-0 block" style={{ height: 'auto', minHeight: 'fit-content' }}>
+    <div className="w-[302px] bg-white p-6 mx-auto font-sans block" style={{ height: 'auto', minHeight: 'fit-content' }}>
       <div className="flex flex-col items-center text-center space-y-1 mb-5">
         <Logo size={52} />
         <h1 className="text-xl font-black uppercase text-blue-600 tracking-tight">DITICOMS SERVICE</h1>
@@ -28,10 +28,6 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
           <span className="font-bold text-slate-900">{formData.customerName}</span>
         </div>
         <div className="flex justify-between border-b border-slate-50 pb-1">
-          <span className="font-bold text-slate-400 uppercase text-[9px]">Điện thoại:</span>
-          <span className="font-bold text-slate-900">{formData.phone}</span>
-        </div>
-        <div className="flex justify-between border-b border-slate-50 pb-1">
           <span className="font-bold text-slate-400 uppercase text-[9px]">Ngày tạo:</span>
           <span className="font-bold text-slate-900">{new Date().toLocaleDateString('vi-VN')}</span>
         </div>
@@ -39,10 +35,10 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
 
       <div className="space-y-3 mb-6">
         <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-l-2 border-blue-500 pl-2">Chi tiết dịch vụ</div>
-        <table className="w-full text-left text-[10px] border-collapse">
+        <table className="w-full text-[10px] border-collapse">
           <thead>
             <tr className="text-[8px] text-slate-400 uppercase border-b border-slate-100">
-              <th className="pb-2 font-black">Nội dung</th>
+              <th className="pb-2 text-left font-black">Nội dung</th>
               <th className="pb-2 text-center font-black px-1">SL</th>
               <th className="pb-2 text-right font-black px-1">Đơn giá</th>
               <th className="pb-2 text-right font-black">T.Tiền</th>
@@ -70,7 +66,7 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
 
       {bankInfo && formData.status !== 'Hoàn thành' && (
         <div className="flex flex-col items-center space-y-2.5 pt-4 border-t border-dashed border-slate-200">
-           <img src={qrUrl} alt="QR Thanh toán" className="w-32 h-32 border-2 border-white shadow-sm rounded-lg" />
+           <img src={qrUrl} alt="QR" className="w-32 h-32 border-2 border-white shadow-sm rounded-lg" />
            <div className="text-center">
              <p className="text-[9px] font-black text-slate-800 uppercase tracking-tighter">{bankInfo.bankId} • {bankInfo.accountNo}</p>
              <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">{bankInfo.accountName}</p>

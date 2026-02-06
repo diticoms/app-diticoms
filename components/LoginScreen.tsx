@@ -17,9 +17,6 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, isLoading }) => {
     if (u && p) onLogin(u, p);
   };
 
-  // Phát hiện xem có đang gõ hay không để tạm dừng animation
-  const isTyping = u.length > 0 || p.length > 0;
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 font-sans text-sm">
       <div className="max-w-md w-full bg-white rounded-[32px] shadow-lg border border-slate-100 p-8 space-y-8 relative overflow-hidden">
@@ -44,7 +41,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, isLoading }) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
-            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={18} />
             <input 
               type="text" 
               placeholder="Tên đăng nhập" 
@@ -57,7 +54,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, isLoading }) => {
             />
           </div>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={18} />
             <input 
               type="password" 
               placeholder="Mật khẩu" 

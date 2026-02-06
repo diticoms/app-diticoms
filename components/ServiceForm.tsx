@@ -1,12 +1,10 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Plus, Trash2, Save, RefreshCw, Activity, 
-  User, Phone, MapPin, ChevronDown, ReceiptText, X, Share2, MessageSquare,
-  DollarSign, CreditCard as CreditIcon, TrendingDown
+  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
-import { ServiceFormData, PriceItem, ServiceTicket, WorkItem } from '../types.ts';
+import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
 import { STATUS_OPTIONS } from '../constants.ts';
 import { formatCurrency, parseCurrency } from '../utils/helpers.ts';
 import { InvoiceTemplate } from './InvoiceTemplate.tsx';
@@ -49,22 +47,20 @@ export const ServiceForm: React.FC<Props> = ({
     return Object.entries(sugg).map(([name, price]) => ({ name, price }));
   }, [services, priceList]);
 
-  // Logic cập nhật trạng thái & công nợ
   const updateField = (f: keyof ServiceFormData, v: any) => {
     setFormData(prev => {
       const newState = { ...prev, [f]: v };
       if (f === 'status') {
         if (v === 'Hoàn thành') {
-          newState.debt = 0; // Xóa nợ khi hoàn thành
+          newState.debt = 0;
         } else {
-          newState.debt = newState.revenue; // Mặc định nợ bằng tổng thu khi chưa xong
+          newState.debt = newState.revenue;
         }
       }
       return newState;
     });
   };
 
-  // Logic cập nhật dòng dịch vụ & tự động tính Tổng thu
   const updateWorkItem = (idx: number, f: string, v: any) => {
     setFormData(prev => {
       const items = [...prev.workItems];
@@ -75,13 +71,11 @@ export const ServiceForm: React.FC<Props> = ({
       items[idx] = item;
       
       const newRevenue = items.reduce((s, i) => s + (Number(i.total) || 0), 0);
-      
       return { 
         ...prev, 
         workItems: items, 
         revenue: newRevenue,
-        // Nếu không phải Hoàn thành, công nợ chạy theo Tổng thu
-        debt: prev.status === 'Hoàn thành' ? prev.debt : newRevenue 
+        debt: prev.status === 'Hoàn thành' ? 0 : newRevenue 
       };
     });
   };
@@ -89,47 +83,29 @@ export const ServiceForm: React.FC<Props> = ({
   const handleShareOrSave = async () => {
     if (!billRef.current) return;
     setIsCapturing(true);
-    await new Promise(r => setTimeout(r, 200));
-
     try {
-      const element = billRef.current;
-      const canvas = await html2canvas(element, { 
-        scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false,
-        width: element.offsetWidth, height: element.scrollHeight,
-        onclone: (clonedDoc) => {
-          const clonedEl = clonedDoc.querySelector('[data-bill-container]');
-          if (clonedEl instanceof HTMLElement) {
-             clonedEl.style.height = 'auto';
-             clonedEl.style.maxHeight = 'none';
-          }
-        }
-      });
-      
-      const fileName = `Bill_${(formData.customerName || 'Khach').toUpperCase().replace(/\s+/g, '_')}.png`;
+      const canvas = await html2canvas(billRef.current, { scale: 3, useCORS: true });
+      const fileName = `Bill_${(formData.customerName || 'Khach').toUpperCase()}.png`;
       canvas.toBlob(async (blob) => {
         if (!blob) return;
         if (navigator.share && navigator.canShare) {
-          try {
-            const file = new File([blob], fileName, { type: 'image/png' });
-            if (navigator.canShare({ files: [file] })) {
-              await navigator.share({ files: [file], title: 'Bill', text: `Hóa đơn: ${formData.customerName}` });
-              setIsCapturing(false);
-              return;
-            }
-          } catch (e) {}
+          const file = new File([blob], fileName, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: 'Invoice' });
+            return;
+          }
         }
         const link = document.createElement('a');
-        link.href = canvas.toDataURL("image/png");
+        link.href = canvas.toDataURL();
         link.download = fileName;
         link.click();
-      }, 'image/png', 1.0);
-    } catch (e) { 
-      alert("Lỗi khi tạo ảnh.");
-    } finally { setIsCapturing(false); }
+      });
+    } catch (e) { alert("Lỗi khi tạo hóa đơn"); }
+    finally { setIsCapturing(false); }
   };
 
   const inputStyle = "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-blue-400 font-medium transition-all text-slate-800";
-  const moneyInputStyle = "w-full pl-1 pr-1 py-2 bg-white border border-slate-100 rounded-xl outline-none focus:border-blue-400 font-black text-slate-800 text-[10px] text-center";
+  const moneyInputStyle = "w-full p-2 bg-white border border-slate-100 rounded-xl outline-none focus:border-blue-400 font-black text-slate-800 text-[10px] text-center";
 
   return (
     <div className="space-y-6">
@@ -143,10 +119,22 @@ export const ServiceForm: React.FC<Props> = ({
       </div>
 
       <div className="space-y-3">
-        <div className="relative"><Phone className="absolute left-3.5 top-3 text-slate-400" size={16} /><input type="tel" placeholder="Số điện thoại" className={inputStyle} value={formData.phone} onChange={e => updateField('phone', e.target.value)} /></div>
-        <div className="relative"><User className="absolute left-3.5 top-3 text-slate-400" size={16} /><input type="text" placeholder="Tên khách hàng" className={inputStyle} value={formData.customerName} onChange={e => updateField('customerName', e.target.value)} /></div>
-        <div className="relative"><MapPin className="absolute left-3.5 top-3 text-slate-400" size={16} /><input type="text" placeholder="Địa chỉ" className={inputStyle} value={formData.address} onChange={e => updateField('address', e.target.value)} /></div>
-        <div className="relative"><MessageSquare className="absolute left-3.5 top-3.5 text-slate-400" size={16} /><textarea placeholder="Yêu cầu dịch vụ..." className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl min-h-[80px] focus:bg-white focus:border-blue-400 outline-none" value={formData.content} onChange={e => updateField('content', e.target.value)} /></div>
+        <div className="relative">
+          <Phone className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} />
+          <input type="tel" placeholder="Số điện thoại" className={inputStyle} value={formData.phone} onChange={e => updateField('phone', e.target.value)} />
+        </div>
+        <div className="relative">
+          <User className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} />
+          <input type="text" placeholder="Tên khách hàng" className={inputStyle} value={formData.customerName} onChange={e => updateField('customerName', e.target.value)} />
+        </div>
+        <div className="relative">
+          <MapPin className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} />
+          <input type="text" placeholder="Địa chỉ" className={inputStyle} value={formData.address} onChange={e => updateField('address', e.target.value)} />
+        </div>
+        <div className="relative">
+          <MessageSquare className="absolute left-3.5 top-3.5 text-slate-400 z-10" size={16} />
+          <textarea placeholder="Yêu cầu dịch vụ..." className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl min-h-[80px] focus:bg-white focus:border-blue-400 outline-none" value={formData.content} onChange={e => updateField('content', e.target.value)} />
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <select className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold appearance-none text-slate-700 outline-none" value={formData.status} onChange={e => updateField('status', e.target.value)}>
@@ -171,7 +159,7 @@ export const ServiceForm: React.FC<Props> = ({
                   value={item.desc} onFocus={() => setActiveWorkIdx(idx)} onChange={e => updateWorkItem(idx, 'desc', e.target.value)} 
                   onBlur={() => setTimeout(() => setActiveWorkIdx(null), 200)} 
                 />
-                {activeWorkIdx === idx && (
+                {activeWorkIdx === idx && historySuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 bg-white border border-slate-100 shadow-2xl z-50 max-h-40 overflow-auto rounded-xl mt-1">
                     {historySuggestions.filter(p => p.name.toLowerCase().includes(item.desc.toLowerCase())).map((p, i) => (
                       <div key={i} onMouseDown={() => { updateWorkItem(idx, 'desc', p.name); updateWorkItem(idx, 'price', p.price); }} className="p-2.5 hover:bg-slate-50 text-xs flex justify-between border-b last:border-0 font-medium cursor-pointer">
@@ -191,45 +179,23 @@ export const ServiceForm: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* THÔNG TIN TÀI CHÍNH - 3 MỤC 1 DÒNG CHO TẤT CẢ USER */}
         <div className="pt-4 space-y-2 bg-slate-100/40 p-3 rounded-[24px] border border-slate-100">
            <div className="flex items-center gap-2 px-1 mb-1">
               <span className="font-black text-slate-400 text-[9px] uppercase tracking-[0.2em]">Thông tin tài chính</span>
            </div>
            
            <div className="grid grid-cols-3 gap-2">
-              {/* Tổng Thu */}
               <div className="flex flex-col gap-1 text-center">
                 <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">Tổng thu</span>
-                <input 
-                  type="text" 
-                  className={`${moneyInputStyle} text-blue-600`}
-                  value={formatCurrency(formData.revenue)} 
-                  onChange={e => updateField('revenue', parseCurrency(e.target.value))} 
-                />
+                <input type="text" className={`${moneyInputStyle} text-blue-600 bg-slate-50`} value={formatCurrency(formData.revenue)} readOnly />
               </div>
-
-              {/* Vốn */}
               <div className="flex flex-col gap-1 text-center">
                 <span className="text-[8px] font-black text-orange-500 uppercase tracking-tighter">Vốn</span>
-                <input 
-                  type="text" 
-                  placeholder="0"
-                  className={`${moneyInputStyle} text-orange-600`}
-                  value={formatCurrency(formData.cost)} 
-                  onChange={e => updateField('cost', parseCurrency(e.target.value))} 
-                />
+                <input type="text" className={`${moneyInputStyle} text-orange-600`} value={formatCurrency(formData.cost)} onChange={e => updateField('cost', parseCurrency(e.target.value))} />
               </div>
-
-              {/* Công nợ */}
               <div className="flex flex-col gap-1 text-center">
                 <span className="text-[8px] font-black text-red-500 uppercase tracking-tighter">Công nợ</span>
-                <input 
-                  type="text" 
-                  className={`${moneyInputStyle} text-red-600`}
-                  value={formatCurrency(formData.debt)} 
-                  onChange={e => updateField('debt', parseCurrency(e.target.value))} 
-                />
+                <input type="text" className={`${moneyInputStyle} text-red-600`} value={formatCurrency(formData.debt)} onChange={e => updateField('debt', parseCurrency(e.target.value))} />
               </div>
            </div>
         </div>
@@ -238,13 +204,11 @@ export const ServiceForm: React.FC<Props> = ({
       <div className="grid grid-cols-2 gap-3 pt-2">
         {!selectedId ? (
           <button disabled={isSubmitting} onClick={onSave} className="col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider text-[12px] active:scale-95 transition-all">
-            {isSubmitting ? <Activity className="animate-spin mx-auto" size={18}/> : 'LƯU PHIẾU MỚI'}
+            {isSubmitting ? 'ĐANG LƯU...' : 'LƯU PHIẾU MỚI'}
           </button>
         ) : (
           <>
-            <button disabled={isSubmitting} onClick={onUpdate} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl uppercase text-[12px] active:scale-95 transition-all">
-              {isSubmitting ? 'ĐANG LƯU...' : 'CẬP NHẬT'}
-            </button>
+            <button disabled={isSubmitting} onClick={onUpdate} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl uppercase text-[12px] active:scale-95 transition-all">CẬP NHẬT</button>
             <button onClick={onClear} className="bg-slate-100 text-slate-600 font-bold py-4 rounded-xl uppercase text-[12px] active:scale-95 transition-all">TIẾP MỚI</button>
           </>
         )}
@@ -259,17 +223,17 @@ export const ServiceForm: React.FC<Props> = ({
       {showBill && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[999999] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-2 max-w-[360px] w-full max-h-[95vh] flex flex-col shadow-2xl relative animate-in fade-in zoom-in duration-300">
-            <button onClick={() => setShowBill(false)} className="absolute top-4 right-4 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 z-[1000001] transition-colors shadow-sm"><X size={20}/></button>
+            <button onClick={() => setShowBill(false)} className="absolute top-4 right-4 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 z-[1000001] transition-colors"><X size={20}/></button>
             <div className="flex-1 overflow-auto p-4 custom-scrollbar bg-slate-100/30 flex justify-center rounded-t-[38px]">
-              <div ref={billRef} data-bill-container className="bg-white shadow-xl ring-1 ring-slate-100 h-fit">
+              <div ref={billRef} className="bg-white shadow-xl h-fit">
                 <InvoiceTemplate formData={formData} bankInfo={bankInfo} />
               </div>
             </div>
             <div className="p-4 bg-white grid grid-cols-2 gap-3 rounded-b-[40px] border-t border-slate-50">
-              <button onClick={handleShareOrSave} disabled={isCapturing} className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl uppercase text-[11px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-green-100">
-                {isCapturing ? <Activity size={18} className="animate-spin"/> : <Share2 size={18}/>} LƯU / CHIA SẺ
+              <button onClick={handleShareOrSave} disabled={isCapturing} className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl uppercase text-[11px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg">
+                {isCapturing ? 'ĐANG TẠO...' : 'LƯU / CHIA SẺ'}
               </button>
-              <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl uppercase text-[11px] active:scale-95 transition-all shadow-lg shadow-blue-100">IN HÓA ĐƠN</button>
+              <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl uppercase text-[11px] active:scale-95 transition-all shadow-lg">IN HÓA ĐƠN</button>
               <button onClick={() => setShowBill(false)} className="col-span-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl uppercase text-[11px] transition-all">ĐÓNG</button>
             </div>
           </div>

@@ -24,7 +24,11 @@ const App: React.FC = () => {
     return { ...parsed, sheetUrl: SHEET_API_URL };
   });
   
-  const [services, setServices] = useState<ServiceTicket[]>([]);
+  const [services, setServices] = useState<ServiceTicket[]>(() => {
+    const cached = localStorage.getItem('diti_services_cache');
+    return cached ? JSON.parse(cached) : [];
+  });
+  
   const [technicians, setTechnicians] = useState<string[]>([]);
   const [priceList, setPriceList] = useState<PriceItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,81 +52,63 @@ const App: React.FC = () => {
     revenue: 0, cost: 0, debt: 0
   });
 
-  // Logic xóa màn hình Splash khi App khởi tạo xong
   useEffect(() => {
-    const removeSplash = () => {
-      const splash = document.getElementById('splash');
-      if (splash) {
+    const splash = document.getElementById('splash');
+    if (splash) {
+      setTimeout(() => {
         splash.style.opacity = '0';
-        setTimeout(() => {
-          if (splash && splash.parentNode) {
-            splash.remove();
-          }
-        }, 600);
-      }
-    };
-    
-    // Đợi 800ms sau khi component mount để trải nghiệm mượt mà hơn
-    const timer = setTimeout(removeSplash, 800);
-    return () => clearTimeout(timer);
+        setTimeout(() => splash.remove(), 600);
+      }, 500);
+    }
   }, []);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
+    setLoading(services.length === 0); // Chỉ hiện loading nếu chưa có cache
     try {
-      const resData = await callSheetAPI(config.sheetUrl, 'read');
+      // Gọi fetch song song để tăng tốc
+      const [resData, resConfig, resPrice] = await Promise.all([
+        callSheetAPI(config.sheetUrl, 'read'),
+        callSheetAPI(config.sheetUrl, 'read_settings'),
+        callSheetAPI(config.sheetUrl, 'read_pricelist')
+      ]);
+
       if (Array.isArray(resData)) {
-        const mapped = resData.map((r: any) => {
-          let parsedWorkItems = [];
-          try {
-            parsedWorkItems = typeof r.work_items === 'string' ? JSON.parse(r.work_items) : (r.work_items || []);
-          } catch (e) {
-            parsedWorkItems = [];
-          }
-          return {
-            ...r,
-            customerName: r.customer_name || r.customerName || '',
-            workItems: Array.isArray(parsedWorkItems) ? parsedWorkItems : [],
-            revenue: Number(r.revenue || 0),
-            cost: Number(r.cost || 0),
-            debt: Number(r.debt || 0),
-            created_at: r.created_at || r.date || new Date().toISOString()
-          };
-        });
+        const mapped = resData.map((r: any) => ({
+          ...r,
+          customerName: r.customer_name || r.customerName || '',
+          workItems: typeof r.work_items === 'string' ? JSON.parse(r.work_items) : (r.work_items || []),
+          revenue: Number(r.revenue || 0),
+          cost: Number(r.cost || 0),
+          debt: Number(r.debt || 0),
+          created_at: r.created_at || r.date || new Date().toISOString()
+        }));
         setServices(mapped);
+        localStorage.setItem('diti_services_cache', JSON.stringify(mapped));
       }
 
-      const resConfig = await callSheetAPI(config.sheetUrl, 'read_settings');
-      if (resConfig) {
-        let techList = [];
-        if (resConfig.technicians) {
-          try {
-            techList = typeof resConfig.technicians === 'string' ? JSON.parse(resConfig.technicians) : resConfig.technicians;
-          } catch (e) {
-            techList = ["KTV Mặc định"];
-          }
-        }
+      if (resConfig?.technicians) {
+        const techList = typeof resConfig.technicians === 'string' ? JSON.parse(resConfig.technicians) : resConfig.technicians;
         setTechnicians(Array.isArray(techList) ? techList : []);
       }
 
-      const resPrice = await callSheetAPI(config.sheetUrl, 'read_pricelist');
       if (Array.isArray(resPrice)) setPriceList(resPrice);
-      
     } catch (e) { 
-      console.error("Fetch Data Error:", e);
+      console.error("Fetch Error:", e);
     } finally { 
       setLoading(false); 
     }
-  }, [user, config.sheetUrl]);
+  }, [user, config.sheetUrl, services.length]);
 
   useEffect(() => { if (user) fetchData(); }, [user, fetchData]);
 
   const filteredServices = useMemo(() => {
     let result = [...services];
+    // Scope cho user
     if (user?.role !== 'admin' && user?.associatedTech) {
       result = result.filter(s => s.technician === user.associatedTech);
     }
+    // Bộ lọc chung
     if (!filters.viewAll) {
       result = result.filter(s => {
         const date = (s.created_at || '').split('T')[0];
@@ -145,49 +131,39 @@ const App: React.FC = () => {
     setLoading(true);
     try {
       const res = await callSheetAPI(config.sheetUrl, 'login', { username, password: pass });
-      if (res && res.status === 'success' && res.user) {
+      if (res?.status === 'success' && res.user) {
         setUser(res.user);
         localStorage.setItem('diti_user', JSON.stringify(res.user));
       } else {
-        alert(res?.error || 'Sai thông tin đăng nhập');
+        alert(res?.error || 'Sai thông tin');
       }
-    } catch (e) { 
-      alert('Không thể kết nối máy chủ');
-    } finally { 
-      setLoading(false); 
-    }
+    } catch (e) { alert('Lỗi kết nối'); }
+    finally { setLoading(false); }
   };
 
   const handleLogout = () => {
-    if (confirm('Đăng xuất khỏi hệ thống?')) {
+    if (confirm('Đăng xuất?')) {
       setUser(null);
-      localStorage.removeItem('diti_user');
+      localStorage.clear();
+      window.location.reload();
     }
   };
 
-  const handleSelectRow = (item: ServiceTicket) => {
-    setSelectedId(item.id);
-    setFormData({
-      customerName: item.customerName, 
-      phone: item.phone, 
-      address: item.address,
-      status: item.status, 
-      technician: item.technician, 
-      content: item.content,
-      workItems: Array.isArray(item.workItems) ? item.workItems : [],
-      revenue: item.revenue, 
-      cost: item.cost, 
-      debt: item.debt
+  const resetForm = useCallback(() => {
+    setSelectedId(null);
+    setFormData({ 
+      customerName: '', 
+      phone: '', 
+      address: '', 
+      status: STATUS_OPTIONS[0], 
+      technician: user?.associatedTech || '', 
+      content: '', 
+      workItems: [{ desc: '', qty: 1, price: '', total: 0 }], 
+      revenue: 0, 
+      cost: 0, 
+      debt: 0 
     });
-    if (window.innerWidth < 1024) window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const prepareDataForScript = (data: ServiceFormData) => ({
-    ...data,
-    customer_name: data.customerName,
-    work_items: data.workItems,
-    search_key: `${data.customerName} ${data.phone} ${data.address}`.toLowerCase()
-  });
+  }, [user]);
 
   if (!user) return <LoginScreen onLogin={handleLogin} isLoading={loading} />;
 
@@ -203,8 +179,8 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowConfig(true)} className="p-2 text-slate-400 hover:text-blue-500 transition-colors"><Settings size={18} /></button>
-            <button onClick={handleLogout} className="p-2 text-red-400 hover:bg-red-50 rounded-full transition-colors"><LogOut size={18} /></button>
+            <button onClick={() => setShowConfig(true)} className="p-2 text-slate-400 hover:text-blue-500"><Settings size={18} /></button>
+            <button onClick={handleLogout} className="p-2 text-red-400"><LogOut size={18} /></button>
           </div>
         </div>
       </header>
@@ -217,63 +193,47 @@ const App: React.FC = () => {
                 formData={formData} setFormData={setFormData} technicians={technicians}
                 priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
                 currentUser={user} services={services} bankInfo={config.bankInfo}
-                onClear={() => { 
-                  setSelectedId(null); 
-                  setFormData({ 
-                    customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
-                    technician: user.associatedTech || '', content: '', 
-                    workItems: [{ desc: '', qty: 1, price: '', total: 0 }], 
-                    revenue: 0, cost: 0, debt: 0 
-                  }); 
-                }}
+                onClear={resetForm}
                 onSave={async () => {
                   setIsSubmitting(true);
                   try {
-                    const payload = prepareDataForScript(formData);
                     const res = await callSheetAPI(config.sheetUrl, 'create', { 
-                      ...payload, 
-                      id: Date.now().toString(), 
-                      created_at: new Date().toISOString() 
+                      ...formData, customer_name: formData.customerName, work_items: formData.workItems,
+                      id: Date.now().toString(), created_at: new Date().toISOString() 
                     });
-                    if(res && res.status === 'success') { 
-                      fetchData(); 
-                      alert("Đã lưu phiếu thành công"); 
-                      setSelectedId(null);
+                    if(res?.status === 'success') { 
+                      await fetchData(); 
+                      resetForm();
+                      alert("Lưu phiếu thành công"); 
                     }
-                  } catch(e) {
-                    alert("Lỗi khi lưu: " + (e instanceof Error ? e.message : "Không rõ lỗi"));
+                  } catch (e) {
+                    alert("Lỗi khi lưu phiếu");
                   } finally { setIsSubmitting(false); }
                 }}
                 onUpdate={async () => {
                   if(!selectedId) return;
                   setIsSubmitting(true);
                   try {
-                    const payload = prepareDataForScript(formData);
-                    const res = await callSheetAPI(config.sheetUrl, 'update', { 
-                      ...payload, 
-                      id: selectedId,
+                    await callSheetAPI(config.sheetUrl, 'update', { 
+                      ...formData, customer_name: formData.customerName, work_items: formData.workItems, id: selectedId,
                       created_at: services.find(s => s.id === selectedId)?.created_at 
                     });
-                    if(res && (res.status === 'updated' || res.status === 'success')) { 
-                      fetchData(); 
-                      alert("Đã cập nhật thành công"); 
-                    }
-                  } catch(e) {
-                    alert("Lỗi khi cập nhật");
+                    await fetchData(); 
+                    resetForm();
+                    alert("Cập nhật phiếu thành công");
+                  } catch (e) {
+                    alert("Lỗi khi cập nhật phiếu");
                   } finally { setIsSubmitting(false); }
                 }}
                 onDelete={async () => {
-                   if(!selectedId || !confirm('Bạn chắc chắn muốn xóa phiếu này?')) return;
+                   if(!selectedId || !confirm('Xóa?')) return;
                    setIsSubmitting(true);
                    try {
-                     const res = await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user.role });
-                     if(res && (res.status === 'deleted' || res.status === 'success')) { 
-                       fetchData(); 
-                       setSelectedId(null); 
-                       alert("Đã xóa phiếu");
-                     } else {
-                       alert(res?.error || "Không thể xóa");
-                     }
+                     await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user.role });
+                     await fetchData(); 
+                     resetForm();
+                   } catch (e) {
+                     alert("Lỗi khi xóa phiếu");
                    } finally { setIsSubmitting(false); }
                 }}
               />
@@ -283,7 +243,11 @@ const App: React.FC = () => {
           <div className="lg:col-span-7 h-full flex flex-col min-h-[500px]">
             <ServiceList 
               data={filteredServices} loading={loading} technicians={technicians}
-              selectedId={selectedId} onSelectRow={handleSelectRow}
+              selectedId={selectedId} onSelectRow={(item) => {
+                setSelectedId(item.id);
+                setFormData({ ...item });
+                if (window.innerWidth < 1024) window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               filters={filters} setFilters={{
                 setDateFrom: (v: string) => setFilters(f => ({ ...f, dateFrom: v, viewAll: false })),
                 setDateTo: (v: string) => setFilters(f => ({ ...f, dateTo: v, viewAll: false })),
@@ -297,27 +261,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {showConfig && (
-        <ConfigModal 
-          config={config} 
-          isAdmin={user.role === 'admin'} 
-          onClose={() => setShowConfig(false)} 
-          onSave={(c) => { 
-            setConfig(c); 
-            localStorage.setItem('diti_config', JSON.stringify(c)); 
-            setShowConfig(false); 
-          }} 
-        />
-      )}
-      
-      {showTechModal && (
-        <TechnicianModal 
-          technicians={technicians} 
-          setTechnicians={setTechnicians} 
-          onClose={() => setShowTechModal(false)} 
-          sheetUrl={config.sheetUrl} 
-        />
-      )}
+      {showConfig && <ConfigModal config={config} isAdmin={user.role === 'admin'} onClose={() => setShowConfig(false)} onSave={(c) => { setConfig(c); localStorage.setItem('diti_config', JSON.stringify(c)); setShowConfig(false); }} />}
     </div>
   );
 };
