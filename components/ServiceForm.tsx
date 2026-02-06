@@ -31,9 +31,31 @@ export const ServiceForm: React.FC<Props> = ({
 }) => {
   const isAdmin = currentUser?.role === 'admin';
   const [activeWorkIdx, setActiveWorkIdx] = useState<number | null>(null);
+  const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
   const [showBill, setShowBill] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const billRef = useRef<HTMLDivElement>(null);
+
+  // Lấy danh sách khách hàng duy nhất từ lịch sử phiếu
+  const customerHistory = useMemo(() => {
+    const customers: Record<string, { name: string, address: string }> = {};
+    const sorted = [...services].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    sorted.forEach(s => {
+      if (s.phone && !customers[s.phone]) {
+        customers[s.phone] = { 
+          name: s.customerName || '', 
+          address: s.address || '' 
+        };
+      }
+    });
+    return Object.entries(customers).map(([phone, info]) => ({ phone, ...info }));
+  }, [services]);
+
+  const filteredCustomers = useMemo(() => {
+    const term = formData.phone.trim();
+    if (term.length < 3) return [];
+    return customerHistory.filter(c => c.phone.includes(term)).slice(0, 5);
+  }, [customerHistory, formData.phone]);
 
   const historySuggestions = useMemo(() => {
     const sugg: Record<string, number> = {};
@@ -59,6 +81,16 @@ export const ServiceForm: React.FC<Props> = ({
       }
       return newState;
     });
+  };
+
+  const handleSelectCustomer = (c: { phone: string, name: string, address: string }) => {
+    setFormData(prev => ({
+      ...prev,
+      phone: c.phone,
+      customerName: c.name,
+      address: c.address
+    }));
+    setShowPhoneSuggestions(false);
   };
 
   const updateWorkItem = (idx: number, f: string, v: any) => {
@@ -121,7 +153,34 @@ export const ServiceForm: React.FC<Props> = ({
       <div className="space-y-3">
         <div className="relative">
           <Phone className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} />
-          <input type="tel" placeholder="Số điện thoại" className={inputStyle} value={formData.phone} onChange={e => updateField('phone', e.target.value)} />
+          <input 
+            type="tel" 
+            placeholder="Số điện thoại" 
+            className={inputStyle} 
+            value={formData.phone} 
+            onChange={e => {
+              updateField('phone', e.target.value);
+              setShowPhoneSuggestions(true);
+            }} 
+            onFocus={() => setShowPhoneSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowPhoneSuggestions(false), 200)}
+          />
+          {showPhoneSuggestions && filteredCustomers.length > 0 && (
+            <div className="absolute top-full left-0 right-0 bg-white border border-slate-100 shadow-2xl z-[100] max-h-48 overflow-auto rounded-2xl mt-1 animate-in fade-in zoom-in duration-200">
+               <div className="p-2 border-b border-slate-50 bg-slate-50/50">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Khách hàng cũ</span>
+               </div>
+               {filteredCustomers.map((c, i) => (
+                 <div key={i} onMouseDown={() => handleSelectCustomer(c)} className="p-3 hover:bg-blue-50 border-b last:border-0 cursor-pointer transition-colors">
+                    <div className="flex justify-between items-center">
+                       <span className="font-black text-blue-600 text-xs">{c.phone}</span>
+                       <span className="font-bold text-slate-700 text-xs">{c.name}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 truncate mt-0.5">{c.address || 'Không có địa chỉ'}</p>
+                 </div>
+               ))}
+            </div>
+          )}
         </div>
         <div className="relative">
           <User className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} />
