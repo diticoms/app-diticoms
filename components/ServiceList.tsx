@@ -60,29 +60,6 @@ export const ServiceList: React.FC<Props> = ({
       };
     });
 
-    if (isAdmin) {
-      const totals = excelData.reduce((acc, curr) => ({
-        revenue: acc.revenue + curr["Doanh thu (đ)"],
-        cost: acc.cost + curr["Giá vốn (đ)"],
-        profit: acc.profit + curr["Lợi nhuận (đ)"],
-        debt: acc.debt + curr["Công nợ (đ)"]
-      }), { revenue: 0, cost: 0, profit: 0, debt: 0 });
-
-      excelData.push({
-        "Ngày nhập": "TỔNG CỘNG",
-        "Khách hàng": "",
-        "Số điện thoại": "",
-        "Địa chỉ": "",
-        "Kỹ thuật viên": "",
-        "Nội dung dịch vụ": "",
-        "Doanh thu (đ)": totals.revenue,
-        "Giá vốn (đ)": totals.cost,
-        "Lợi nhuận (đ)": totals.profit,
-        "Công nợ (đ)": totals.debt,
-        "Trạng thái": ""
-      });
-    }
-
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "BaoCaoDichVu");
@@ -116,8 +93,6 @@ export const ServiceList: React.FC<Props> = ({
   const handlePointerMove = (e: React.PointerEvent) => {
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
-    
-    // Nếu di chuyển quá 10px, coi như đang cuộn
     if (dx > 10 || dy > 10) {
       hasMoved.current = true;
       if (longPressTimer.current) {
@@ -132,8 +107,6 @@ export const ServiceList: React.FC<Props> = ({
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-
-    // Chỉ thực hiện chọn hàng nếu không phải nhấn giữ lâu và không phải đang cuộn trang
     if (!isLongPress.current && !hasMoved.current) {
       onSelectRow(item);
     }
@@ -162,7 +135,7 @@ export const ServiceList: React.FC<Props> = ({
             onClick={() => setFilters.setViewAll(!filters.viewAll)}
             className={`px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 border shadow-sm text-[11px] ${filters.viewAll ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
           >
-            <Filter size={14} /> {filters.viewAll ? 'Tất cả' : 'Lọc'}
+            <Filter size={14} /> {filters.viewAll ? 'Tất cả' : 'Lọc Ngày'}
           </button>
           
           {!filters.viewAll && (
@@ -174,32 +147,29 @@ export const ServiceList: React.FC<Props> = ({
             </div>
           )}
 
-          {isAdmin && (
-            <>
+          <div className="flex-1 flex gap-1.5">
+            {isAdmin && (
               <div className="relative flex-1 min-w-[80px]">
                 <select className="w-full pl-2 pr-6 py-1.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-600 appearance-none h-[34px] cursor-pointer text-[10px] shadow-sm" value={filters.searchTech} onChange={e => setFilters.setSearchTech(e.target.value)}>
                   <option value="">KTV</option>
                   {technicians.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
-              <button 
-                onClick={handleExportExcel}
-                className="h-[34px] px-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider"
-              >
-                <Download size={14} /> EXCEL
-              </button>
-            </>
-          )}
+            )}
+            <button 
+              onClick={handleExportExcel}
+              className="h-[34px] px-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider flex-shrink-0"
+            >
+              <Download size={14} /> EXCEL
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="flex-1 lg:overflow-y-auto space-y-2 pr-1 custom-scrollbar pb-2">
         {loading ? (
           <div className="py-12 flex flex-col items-center justify-center space-y-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-50 rounded-full animate-ping opacity-50 scale-150"></div>
-              <Logo size={48} className="relative z-10 animate-pulse" />
-            </div>
+            <Logo size={48} className="animate-pulse" />
             <span className="font-black text-slate-400 uppercase tracking-[0.2em] text-[10px]">Đang tải...</span>
           </div>
         ) : data.length === 0 ? (
@@ -236,10 +206,6 @@ export const ServiceList: React.FC<Props> = ({
                         </>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-400 line-clamp-1 italic flex items-center gap-1">
-                      <MessageSquare size={10} className="shrink-0" />
-                      <span className="truncate">{item.content || 'Yêu cầu sửa chữa'}</span>
-                    </div>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -266,11 +232,9 @@ export const ServiceList: React.FC<Props> = ({
           {filters.viewAll ? 'Tổng cộng: ' : 'Trong ngày: '} 
           <span className="text-slate-700 ml-1 font-black">{data.length}</span>
         </span>
-        {isAdmin && (
-          <span className="font-black text-blue-600 bg-blue-50 px-4 py-2 rounded-2xl uppercase tracking-[0.1em] border border-blue-100 text-[11px] shadow-sm">
-            Thu: {formatCurrency(data.reduce((s, i) => s + Number(i.revenue || 0), 0))}đ
-          </span>
-        )}
+        <span className="font-black text-blue-600 bg-blue-50 px-4 py-2 rounded-2xl uppercase tracking-[0.1em] border border-blue-100 text-[11px] shadow-sm">
+          Thu: {formatCurrency(data.reduce((s, i) => s + Number(i.revenue || 0), 0))}đ
+        </span>
       </div>
     </div>
   );
