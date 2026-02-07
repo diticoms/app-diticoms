@@ -76,8 +76,8 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
 
       {bankInfo && formData.status !== 'Hoàn thành' && (
         <div className="flex flex-col items-center space-y-3 pt-4 border-t border-dashed border-slate-200">
-           <div className="bg-white p-2 rounded-xl border-2 border-slate-100 shadow-sm">
-             <img src={qrUrl} alt="QR" className="w-36 h-36 aspect-square object-contain" />
+           <div className="bg-white p-2 rounded-xl border-2 border-slate-100 shadow-sm inline-block">
+             <img src={qrUrl} alt="QR" className="w-36 h-36 aspect-square object-contain mx-auto" />
            </div>
            <div className="text-center">
              <p className="text-[10px] font-black text-slate-800 uppercase tracking-tighter">{bankInfo.bankId} • {bankInfo.accountNo}</p>
