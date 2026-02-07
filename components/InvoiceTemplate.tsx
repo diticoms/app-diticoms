@@ -75,10 +75,12 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
       </div>
 
       {bankInfo && formData.status !== 'Hoàn thành' && (
-        <div className="flex flex-col items-center space-y-2.5 pt-4 border-t border-dashed border-slate-200">
-           <img src={qrUrl} alt="QR" className="w-32 h-32 border-2 border-white shadow-sm rounded-lg" />
+        <div className="flex flex-col items-center space-y-3 pt-4 border-t border-dashed border-slate-200">
+           <div className="bg-white p-2 rounded-xl border-2 border-slate-100 shadow-sm">
+             <img src={qrUrl} alt="QR" className="w-36 h-36 aspect-square object-contain" />
+           </div>
            <div className="text-center">
-             <p className="text-[9px] font-black text-slate-800 uppercase tracking-tighter">{bankInfo.bankId} • {bankInfo.accountNo}</p>
+             <p className="text-[10px] font-black text-slate-800 uppercase tracking-tighter">{bankInfo.bankId} • {bankInfo.accountNo}</p>
              <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">{bankInfo.accountName}</p>
            </div>
         </div>
@@ -86,7 +88,6 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
 
       <div className="text-center pt-6 border-t border-slate-50 mt-6">
         <p className="text-[9px] font-bold text-slate-400 uppercase italic tracking-widest">Trân trọng cảm ơn!</p>
-        <p className="text-[7px] text-slate-300 mt-2 font-bold tracking-[0.3em]">SERVICE.DITICOMS.VN</p>
       </div>
     </div>
   );

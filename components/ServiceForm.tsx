@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, Image as ImageIcon, CheckCircle2
+  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, Image as ImageIcon, CheckCircle2, Copy
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
@@ -36,6 +36,7 @@ export const ServiceForm: React.FC<Props> = ({
   const [showSharePopup, setShowSharePopup] = useState(false);
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   
   const billRef = useRef<HTMLDivElement>(null);
 
@@ -114,12 +115,22 @@ export const ServiceForm: React.FC<Props> = ({
     if (!billRef.current) return;
     setIsCapturing(true);
     try {
+      // Chờ ảnh QR được tải hoàn toàn
+      const images = billRef.current.getElementsByTagName('img');
+      await Promise.all(Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+      }));
+
       const canvas = await html2canvas(billRef.current, { 
-        scale: 3, 
+        scale: 2.5, // Giảm nhẹ scale để tối ưu dung lượng cho APK
         useCORS: true,
-        backgroundColor: '#ffffff'
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false
       });
-      const dataUrl = canvas.toDataURL('image/png');
+      
+      const dataUrl = canvas.toDataURL('image/png', 0.9);
       setCapturedDataUrl(dataUrl);
       
       canvas.toBlob((blob) => {
@@ -127,9 +138,10 @@ export const ServiceForm: React.FC<Props> = ({
           setCapturedBlob(blob);
           setShowSharePopup(true);
         }
-      }, 'image/png');
+      }, 'image/png', 0.9);
     } catch (e) { 
-      alert("Lỗi khi tạo hình ảnh hóa đơn"); 
+      console.error(e);
+      alert("Không thể chụp hóa đơn. Vui lòng thử lại hoặc chụp màn hình thủ công."); 
     } finally { 
       setIsCapturing(false); 
     }
@@ -138,33 +150,64 @@ export const ServiceForm: React.FC<Props> = ({
   const handleDownload = () => {
     if (!capturedDataUrl) return;
     const fileName = `Bill_${(formData.customerName || 'Khach').toUpperCase().replace(/\s+/g, '_')}.png`;
-    const link = document.createElement('a');
-    link.href = capturedDataUrl;
-    link.download = fileName;
-    link.click();
-    setShowSharePopup(false);
+    
+    try {
+      const link = document.createElement('a');
+      link.href = capturedDataUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showTemporaryStatus("Đã bắt đầu tải xuống");
+    } catch (e) {
+      // Fallback cho một số trình duyệt Android WebView kén lệnh download
+      window.open(capturedDataUrl, '_blank');
+      showTemporaryStatus("Mở ảnh trong tab mới");
+    }
+  };
+
+  const handleCopyImage = async () => {
+    if (!capturedBlob) return;
+    try {
+      const data = [new ClipboardItem({ [capturedBlob.type]: capturedBlob })];
+      await navigator.clipboard.write(data);
+      showTemporaryStatus("Đã chép ảnh vào bộ nhớ");
+    } catch (err) {
+      showTemporaryStatus("Lỗi copy: Nhấn giữ ảnh để lưu");
+    }
   };
 
   const handleNativeShare = async () => {
     if (!capturedBlob) return;
     const fileName = `Bill_${(formData.customerName || 'Khach').toUpperCase().replace(/\s+/g, '_')}.png`;
+    const file = new File([capturedBlob], fileName, { type: 'image/png' });
+
     try {
-      const file = new File([capturedBlob], fileName, { type: 'image/png' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'Hóa đơn Diticoms Service',
-          text: `Hóa đơn khách hàng: ${formData.customerName}`
+          title: 'Hóa đơn Diticoms',
+          text: `Gửi hóa đơn khách hàng: ${formData.customerName}`
+        });
+      } else if (navigator.share) {
+        // Share văn bản nếu không hỗ trợ share file
+        await navigator.share({
+          title: 'Diticoms Service',
+          text: `Hóa đơn: ${formData.customerName}\nTổng: ${formatCurrency(formData.revenue)}đ`,
+          url: window.location.href
         });
       } else {
-        // Fallback cho trình duyệt không hỗ trợ share file
         handleDownload();
       }
     } catch (e) {
-      console.error("Share failed", e);
+      console.error("Share error", e);
       handleDownload();
     }
-    setShowSharePopup(false);
+  };
+
+  const showTemporaryStatus = (msg: string) => {
+    setStatusMessage(msg);
+    setTimeout(() => setStatusMessage(null), 2500);
   };
 
   const inputStyle = "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-blue-400 font-medium transition-all text-slate-800";
@@ -172,6 +215,12 @@ export const ServiceForm: React.FC<Props> = ({
 
   return (
     <div className="space-y-6">
+      {statusMessage && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10001] bg-blue-600 text-white px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest shadow-2xl animate-in fade-in zoom-in">
+          {statusMessage}
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <h2 className="font-bold text-slate-700 flex items-center gap-2 uppercase tracking-wider text-sm">
           <Activity size={18} className="text-blue-500"/> {selectedId ? 'Cập nhật phiếu' : 'Tiếp nhận mới'}
@@ -202,11 +251,7 @@ export const ServiceForm: React.FC<Props> = ({
                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Gợi ý từ lịch sử</span>
               </div>
               {filteredCustomerSuggestions.map((c, i) => (
-                <div 
-                  key={i} 
-                  onMouseDown={() => selectCustomer(c)} 
-                  className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 transition-colors flex flex-col"
-                >
+                <div key={i} onMouseDown={() => selectCustomer(c)} className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 transition-colors flex flex-col">
                   <div className="flex justify-between items-center mb-0.5">
                     <span className="font-black text-blue-600 text-xs">{c.phone}</span>
                     <span className="font-bold text-slate-800 text-xs">{c.name}</span>
@@ -269,7 +314,6 @@ export const ServiceForm: React.FC<Props> = ({
            <div className="flex items-center gap-2 px-1 mb-1">
               <span className="font-black text-slate-400 text-[9px] uppercase tracking-[0.2em]">Thông tin tài chính</span>
            </div>
-           
            <div className="grid grid-cols-3 gap-2">
               <div className="flex flex-col gap-1 text-center">
                 <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">Tổng thu</span>
@@ -306,24 +350,17 @@ export const ServiceForm: React.FC<Props> = ({
         </button>
       )}
 
-      {/* MODAL XEM HÓA ĐƠN */}
       {showBill && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[9999] flex items-center justify-center p-4 safe-area-padding">
+        <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4 safe-area-padding">
           <div className="bg-white rounded-[40px] p-2 max-w-[360px] w-full max-h-[95vh] flex flex-col shadow-2xl relative animate-in fade-in zoom-in duration-300">
             <button onClick={() => setShowBill(false)} className="absolute top-4 right-4 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 z-[10001] transition-colors"><X size={20}/></button>
-            
             <div className="flex-1 overflow-auto p-4 custom-scrollbar bg-slate-100/30 flex justify-center rounded-t-[38px]">
               <div ref={billRef} className="bg-white shadow-xl h-fit">
                 <InvoiceTemplate formData={formData} bankInfo={bankInfo} />
               </div>
             </div>
-            
             <div className="p-4 bg-white grid grid-cols-2 gap-3 rounded-b-[40px] border-t border-slate-50">
-              <button 
-                onClick={handlePrepareShare} 
-                disabled={isCapturing} 
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl uppercase text-[11px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
-              >
+              <button onClick={handlePrepareShare} disabled={isCapturing} className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl uppercase text-[11px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg">
                 {isCapturing ? 'ĐANG XỬ LÝ...' : 'LƯU / CHIA SẺ'}
               </button>
               <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl uppercase text-[11px] active:scale-95 transition-all shadow-lg">IN HÓA ĐƠN</button>
@@ -332,52 +369,63 @@ export const ServiceForm: React.FC<Props> = ({
         </div>
       )}
 
-      {/* POPUP TÙY CHỌN CHIA SẺ (Bottom Sheet style cho APK) */}
       {showSharePopup && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] flex items-end justify-center">
-          <div className="bg-white w-full max-w-md rounded-t-[32px] p-6 space-y-6 animate-in slide-in-from-bottom duration-300">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-black text-slate-800 uppercase tracking-tight text-sm flex items-center gap-2">
-                <Share2 size={18} className="text-blue-500" /> TÙY CHỌN HÓA ĐƠN
+        <div className="fixed inset-0 bg-black/80 z-[10000] flex items-end justify-center">
+          <div className="bg-white w-full max-w-md rounded-t-[40px] p-6 space-y-5 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-1">
+              <h3 className="font-black text-slate-800 uppercase tracking-tight text-xs flex items-center gap-2">
+                <Share2 size={16} className="text-blue-500" /> TÙY CHỌN HÓA ĐƠN
               </h3>
               <button onClick={() => setShowSharePopup(false)} className="p-2 bg-slate-100 rounded-full text-slate-400"><X size={18}/></button>
             </div>
+
+            <div className="bg-slate-50 p-2 rounded-3xl border border-slate-100 relative group overflow-hidden">
+               {capturedDataUrl && (
+                 <img 
+                   src={capturedDataUrl} 
+                   alt="Preview Bill" 
+                   className="w-full h-auto rounded-2xl shadow-sm max-h-[300px] object-contain mx-auto"
+                   onContextMenu={(e) => e.stopPropagation()} 
+                 />
+               )}
+               <div className="absolute inset-x-0 bottom-4 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="bg-black/60 text-white text-[8px] px-3 py-1 rounded-full backdrop-blur-sm font-bold uppercase">Nhấn giữ ảnh để lưu thủ công</span>
+               </div>
+            </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <button 
-                onClick={handleDownload}
-                className="flex flex-col items-center gap-3 p-5 bg-slate-50 rounded-3xl hover:bg-blue-50 transition-colors border border-slate-100 group"
-              >
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                  <Download size={24} className="text-slate-600" />
+            <div className="grid grid-cols-3 gap-2">
+              <button onClick={handleDownload} className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-2xl hover:bg-blue-50 border border-slate-100 transition-all active:scale-95">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                  <Download size={20} className="text-slate-600" />
                 </div>
-                <span className="font-bold text-[11px] text-slate-700 uppercase">Lưu vào máy</span>
+                <span className="font-bold text-[9px] text-slate-600 uppercase">Lưu File</span>
+              </button>
+
+              <button onClick={handleCopyImage} className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-2xl hover:bg-blue-50 border border-slate-100 transition-all active:scale-95">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                  <Copy size={20} className="text-slate-600" />
+                </div>
+                <span className="font-bold text-[9px] text-slate-600 uppercase">Sao chép</span>
               </button>
               
-              <button 
-                onClick={handleNativeShare}
-                className="flex flex-col items-center gap-3 p-5 bg-blue-600 rounded-3xl hover:bg-blue-700 transition-colors border border-blue-500 group"
-              >
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                  <Share2 size={24} className="text-white" />
+              <button onClick={handleNativeShare} className="flex flex-col items-center gap-2 p-4 bg-blue-600 rounded-2xl hover:bg-blue-700 border border-blue-500 transition-all active:scale-95">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-sm">
+                  <Share2 size={20} className="text-white" />
                 </div>
-                <span className="font-bold text-[11px] text-white uppercase">Gửi qua ứng dụng</span>
+                <span className="font-bold text-[9px] text-white uppercase">Chia sẻ</span>
               </button>
             </div>
             
-            <div className="bg-slate-50 p-4 rounded-2xl flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
-                <CheckCircle2 size={20} className="text-green-600" />
+            <div className="bg-blue-50/50 p-4 rounded-2xl flex items-start gap-3 border border-blue-100">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                <CheckCircle2 size={16} className="text-blue-600" />
               </div>
-              <p className="text-[10px] text-slate-500 font-medium">Hình ảnh hóa đơn đã sẵn sàng. Bạn có thể lưu trữ hoặc gửi trực tiếp cho khách hàng qua Zalo/Facebook.</p>
+              <p className="text-[10px] text-blue-800 font-medium leading-relaxed">
+                Hóa đơn đã được tạo thành công. Bạn có thể <b>Tải xuống</b>, <b>Sao chép</b> hoặc <b>Chia sẻ</b> trực tiếp qua Zalo. Nếu nút không hoạt động (đối với APK), hãy <b>nhấn giữ vào ảnh</b> phía trên để lưu.
+              </p>
             </div>
 
-            <button 
-              onClick={() => setShowSharePopup(false)} 
-              className="w-full py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl uppercase text-[11px] active:scale-95 transition-all"
-            >
-              Đóng
-            </button>
+            <button onClick={() => setShowSharePopup(false)} className="w-full py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl uppercase text-[11px] active:scale-95 transition-all">Đóng</button>
           </div>
         </div>
       )}
