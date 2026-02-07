@@ -132,7 +132,7 @@ export const ServiceList: React.FC<Props> = ({
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
            <button 
             onClick={() => setFilters.setViewAll(!filters.viewAll)}
             className={`px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 border shadow-sm text-[11px] ${filters.viewAll ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
@@ -149,27 +149,19 @@ export const ServiceList: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="flex-1 flex gap-1.5">
-            {isAdmin && (
-              <div className="relative flex-1 min-w-[80px]">
-                <select className="w-full pl-2 pr-6 py-1.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-600 appearance-none h-[34px] cursor-pointer text-[10px] shadow-sm" value={filters.searchTech} onChange={e => setFilters.setSearchTech(e.target.value)}>
-                  <option value="">KTV</option>
-                  {technicians.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
+          <div className="flex items-center gap-2 ml-auto">
+            {onInstallApp && (
+              <button 
+                onClick={onInstallApp}
+                className={`h-[34px] px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider ${installAvailable ? 'bg-slate-800 text-white hover:bg-black' : 'bg-slate-100 text-slate-500'}`}
+              >
+                <Smartphone size={14} /> {installAvailable ? 'CÀI ĐẶT APP' : 'TẢI APP'}
+              </button>
             )}
-            
-            {/* Nút Tải App - Hiển thị cạnh nút EXCEL */}
-            <button 
-              onClick={onInstallApp}
-              className={`h-[34px] px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider flex-shrink-0 ${installAvailable ? 'bg-slate-800 text-white hover:bg-black animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-            >
-              <Smartphone size={14} /> TẢI APP
-            </button>
 
             <button 
               onClick={handleExportExcel}
-              className="h-[34px] px-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider flex-shrink-0"
+              className="h-[34px] px-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider"
             >
               <Download size={14} /> EXCEL
             </button>

@@ -18,15 +18,25 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
       <div className="flex flex-col items-center text-center space-y-1 mb-5">
         <Logo size={52} />
         <h1 className="text-xl font-black uppercase text-blue-600 tracking-tight">DITICOMS SERVICE</h1>
-        <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.2em]">Sửa chữa & Bảo trì Thiết bị</p>
+        <p className="text-[10px] text-slate-800 font-black uppercase tracking-widest">Hotline: 0847.84.84.84</p>
         <div className="w-12 h-0.5 bg-blue-600 rounded-full mt-1.5"></div>
       </div>
 
       <div className="space-y-1.5 mb-5 text-[11px]">
-        <div className="flex justify-between border-b border-slate-50 pb-1">
-          <span className="font-bold text-slate-400 uppercase text-[9px]">Khách hàng:</span>
-          <span className="font-bold text-slate-900">{formData.customerName}</span>
+        <div className="flex justify-between border-b border-slate-50 pb-1 gap-2">
+          <span className="font-bold text-slate-400 uppercase text-[9px] shrink-0">Khách hàng:</span>
+          <span className="font-bold text-slate-900 text-right">{formData.customerName}</span>
         </div>
+        <div className="flex justify-between border-b border-slate-50 pb-1 gap-2">
+          <span className="font-bold text-slate-400 uppercase text-[9px] shrink-0">Điện thoại:</span>
+          <span className="font-bold text-slate-900 text-right">{formData.phone}</span>
+        </div>
+        {formData.address && (
+          <div className="flex justify-between border-b border-slate-50 pb-1 gap-2">
+            <span className="font-bold text-slate-400 uppercase text-[9px] shrink-0">Địa chỉ:</span>
+            <span className="font-bold text-slate-900 text-right truncate max-w-[180px]">{formData.address}</span>
+          </div>
+        )}
         <div className="flex justify-between border-b border-slate-50 pb-1">
           <span className="font-bold text-slate-400 uppercase text-[9px]">Ngày tạo:</span>
           <span className="font-bold text-slate-900">{new Date().toLocaleDateString('vi-VN')}</span>
@@ -76,7 +86,7 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
 
       <div className="text-center pt-6 border-t border-slate-50 mt-6">
         <p className="text-[9px] font-bold text-slate-400 uppercase italic tracking-widest">Trân trọng cảm ơn!</p>
-        <p className="text-[7px] text-slate-300 mt-2 font-bold tracking-[0.3em]">DITICOMS SERVICE MANAGER</p>
+        <p className="text-[7px] text-slate-300 mt-2 font-bold tracking-[0.3em]">SERVICE.DITICOMS.VN</p>
       </div>
     </div>
   );
