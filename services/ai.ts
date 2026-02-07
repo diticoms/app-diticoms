@@ -1,10 +1,23 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// API_KEY được lấy trực tiếp từ môi trường hệ thống, không cần cấu hình thủ công
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Lấy API KEY an toàn để tránh ReferenceError: process is not defined
+const getApiKey = () => {
+  try {
+    return (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : '';
+  } catch (e) {
+    return '';
+  }
+};
+
+const apiKey = getApiKey();
+const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy_key' });
 
 export const diagnoseServiceAction = async (content: string) => {
+  if (!apiKey) {
+    throw new Error("Hệ thống chưa cấu hình API Key cho AI. Vui lòng liên hệ quản trị viên.");
+  }
+
   if (!content || content.length < 5) {
     throw new Error("Mô tả quá ngắn. Vui lòng nhập chi tiết lỗi để AI chẩn đoán chính xác hơn.");
   }
@@ -39,7 +52,6 @@ export const diagnoseServiceAction = async (content: string) => {
   });
 
   try {
-    // Sử dụng getter .text như yêu cầu của SDK
     const jsonStr = response.text || "{}";
     const result = JSON.parse(jsonStr);
     return result.suggestions;

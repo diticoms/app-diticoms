@@ -54,21 +54,13 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
-    const splash = document.getElementById('splash');
-    if (splash) {
-      setTimeout(() => {
-        splash.style.opacity = '0';
-        setTimeout(() => splash.remove(), 600);
-      }, 500);
-    }
-
     // Lắng nghe sự kiện cài đặt PWA
-    window.addEventListener('beforeinstallprompt', (e) => {
+    const handleBeforeInstall = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-    });
-
-    return () => window.removeEventListener('beforeinstallprompt', () => {});
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
   }, []);
 
   const handleInstallApp = async () => {
