@@ -1,9 +1,9 @@
-
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
 const distDir = path.join(__dirname, 'dist');
+const distPublicDir = path.join(distDir, 'public');
 
 console.log('🚀 Bắt đầu quy trình build Web Production...');
 
@@ -12,6 +12,7 @@ if (fs.existsSync(distDir)) {
     fs.rmSync(distDir, { recursive: true, force: true });
 }
 fs.mkdirSync(distDir, { recursive: true });
+fs.mkdirSync(distPublicDir, { recursive: true });
 
 // 2. Biên dịch index.tsx sang index.js bằng esbuild
 try {
@@ -45,13 +46,15 @@ itemsToCopy.forEach(item => {
     }
 });
 
-// 4. Xử lý Logo
+// 4. Xử lý Logo và thư mục Public
 const publicLogo = path.join(__dirname, 'public', 'logo.png');
-const destLogo = path.join(distDir, 'logo.png');
+const destPublicLogo = path.join(distPublicDir, 'logo.png');
+const destRootLogo = path.join(distDir, 'logo.png');
 
 if (fs.existsSync(publicLogo)) {
-    fs.copyFileSync(publicLogo, destLogo);
-    console.log('🖼️ Đã copy logo từ public/logo.png vào dist');
+    fs.copyFileSync(publicLogo, destPublicLogo);
+    fs.copyFileSync(publicLogo, destRootLogo); // Copy cả vào root để đảm bảo tính tương thích
+    console.log('🖼️ Đã copy logo vào dist/public/logo.png và dist/logo.png');
 }
 
 // 5. CNAME cho Web Domain
