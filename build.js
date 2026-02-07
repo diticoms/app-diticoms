@@ -1,3 +1,4 @@
+
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -17,7 +18,8 @@ fs.mkdirSync(distPublicDir, { recursive: true });
 // 2. Biên dịch index.tsx sang index.js bằng esbuild
 try {
     console.log('📦 Đang đóng gói mã nguồn Web (Bundling)...');
-    execSync('npx esbuild index.tsx --bundle --minify --format=esm --outfile=dist/index.js --loader:.tsx=tsx --loader:.ts=ts --external:react --external:react-dom --external:lucide-react --external:html2canvas --external:xlsx');
+    // Đã thêm --external:@google/genai để esbuild bỏ qua việc bundle thư viện này (vì đã được load qua importmap trong index.html)
+    execSync('npx esbuild index.tsx --bundle --minify --format=esm --outfile=dist/index.js --loader:.tsx=tsx --loader:.ts=ts --external:react --external:react-dom --external:lucide-react --external:html2canvas --external:xlsx --external:@google/genai');
     console.log('✅ Đã tạo file dist/index.js');
 } catch (err) {
     console.error('❌ Lỗi biên dịch esbuild:', err.message);
