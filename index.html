@@ -19,8 +19,12 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
     
     <script>
-      // Khởi tạo process.env an toàn cho môi trường browser
-      window.process = { env: { API_KEY: "" } };
+      // Khởi tạo process.env với API Key được cung cấp
+      window.process = { 
+        env: { 
+          API_KEY: "AIzaSyDhBnux0ua8i7jLgT099Hq1r1uYxXbVkI8" 
+        } 
+      };
       
       // Hàm xóa splash screen
       window.removeSplash = function() {
