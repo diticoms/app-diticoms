@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, CheckCircle2, Copy, Sparkles, Loader2
+  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, CheckCircle2, Copy, Sparkles, Loader2, Camera, Save
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
@@ -34,8 +34,6 @@ export const ServiceForm: React.FC<Props> = ({
   const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
   const [showBill, setShowBill] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [showSharePopup, setShowSharePopup] = useState(false);
-  const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isAiDiagnosing, setIsAiDiagnosing] = useState(false);
@@ -144,6 +142,63 @@ export const ServiceForm: React.FC<Props> = ({
     } finally {
       setIsAiDiagnosing(false);
     }
+  };
+
+  const handleCaptureBill = async () => {
+    if (!billRef.current) return;
+    setIsCapturing(true);
+    try {
+      // Đợi ảnh QR load xong nếu có
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const canvas = await html2canvas(billRef.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      setCapturedDataUrl(dataUrl);
+      showTemporaryStatus("Đã tạo ảnh hóa đơn!");
+    } catch (err) {
+      console.error("Lỗi chụp ảnh:", err);
+      alert("Không thể tạo ảnh hóa đơn.");
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!capturedDataUrl) return;
+    try {
+      const blob = await (await fetch(capturedDataUrl)).blob();
+      const file = new File([blob], `Diticoms_Bill_${formData.customerName}.png`, { type: 'image/png' });
+      
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'Hóa đơn Diticoms',
+          text: `Gửi hóa đơn cho khách hàng ${formData.customerName}`
+        });
+      } else {
+        // Fallback: Download
+        const link = document.createElement('a');
+        link.download = `Diticoms_Bill_${formData.customerName}.png`;
+        link.href = capturedDataUrl;
+        link.click();
+      }
+    } catch (err) {
+      console.error("Lỗi chia sẻ:", err);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!capturedDataUrl) return;
+    const link = document.createElement('a');
+    link.download = `Hoadon_${formData.customerName}.png`;
+    link.href = capturedDataUrl;
+    link.click();
   };
 
   const showTemporaryStatus = (msg: string) => {
@@ -276,12 +331,57 @@ export const ServiceForm: React.FC<Props> = ({
       </div>
 
       {selectedId && (
-        <button onClick={() => setShowBill(true)} className="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-2xl uppercase shadow-md flex items-center justify-center gap-3 text-[12px] transition-all">
+        <button onClick={() => { setShowBill(true); setCapturedDataUrl(null); }} className="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-2xl uppercase shadow-md flex items-center justify-center gap-3 text-[12px] transition-all">
           <ReceiptText size={20}/> XUẤT HÓA ĐƠN
         </button>
       )}
 
-      {/* Bill View and Share Logic remains the same... */}
+      {showBill && (
+        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex flex-col p-4 md:p-10 animate-in fade-in">
+          <div className="max-w-md w-full mx-auto flex flex-col h-full">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-white font-black uppercase tracking-widest text-sm">HÓA ĐƠN DỊCH VỤ</h3>
+              <button onClick={() => setShowBill(false)} className="p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all"><X size={20}/></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-100 rounded-[40px] p-6 shadow-2xl relative">
+              {!capturedDataUrl ? (
+                <div ref={billRef} className="bg-white rounded-3xl overflow-hidden shadow-sm origin-top scale-[0.95] sm:scale-100 mx-auto">
+                  <InvoiceTemplate formData={formData} bankInfo={bankInfo} />
+                </div>
+              ) : (
+                <div className="animate-in zoom-in duration-300">
+                   <img src={capturedDataUrl} alt="Hóa đơn" className="w-full rounded-2xl shadow-xl border border-white/50" />
+                   <div className="mt-6 flex flex-col gap-3">
+                      <button onClick={handleShare} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-900/40">
+                        <Share2 size={20} /> CHIA SẺ HÓA ĐƠN
+                      </button>
+                      <button onClick={handleDownload} className="w-full bg-slate-800 text-white font-black py-4 rounded-2xl uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg">
+                        <Download size={20} /> TẢI ẢNH XUỐNG
+                      </button>
+                      <button onClick={() => setCapturedDataUrl(null)} className="w-full bg-white/10 text-white font-bold py-3 rounded-2xl uppercase text-[10px] tracking-widest">
+                        CHỤP LẠI ẢNH
+                      </button>
+                   </div>
+                </div>
+              )}
+            </div>
+
+            {!capturedDataUrl && (
+              <div className="mt-8 flex flex-col gap-3">
+                <button 
+                  onClick={handleCaptureBill} 
+                  disabled={isCapturing}
+                  className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest flex items-center justify-center gap-4 shadow-2xl shadow-blue-600/30 active:scale-95 transition-all"
+                >
+                  {isCapturing ? <Loader2 size={24} className="animate-spin" /> : <Camera size={24} />}
+                  XUẤT ẢNH HÓA ĐƠN
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
