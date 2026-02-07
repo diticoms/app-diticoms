@@ -18,8 +18,23 @@ fs.mkdirSync(distPublicDir, { recursive: true });
 // 2. Biên dịch index.tsx sang index.js bằng esbuild
 try {
     console.log('📦 Đang đóng gói mã nguồn Web (Bundling)...');
-    // Đã thêm --external:@google/genai để esbuild bỏ qua việc bundle thư viện này (vì đã được load qua importmap trong index.html)
-    execSync('npx esbuild index.tsx --bundle --minify --format=esm --outfile=dist/index.js --loader:.tsx=tsx --loader:.ts=ts --external:react --external:react-dom --external:lucide-react --external:html2canvas --external:xlsx --external:@google/genai');
+    
+    // Quan trọng: Phải liệt kê đầy đủ các thư viện và sub-paths trong --external 
+    // để esbuild không cố gắng tìm kiếm chúng trong node_modules địa phương.
+    const externals = [
+        'react',
+        'react/*',
+        'react-dom',
+        'react-dom/*',
+        'lucide-react',
+        'html2canvas',
+        'xlsx',
+        '@google/genai'
+    ].map(lib => `--external:${lib}`).join(' ');
+
+    const command = `npx esbuild index.tsx --bundle --minify --format=esm --outfile=dist/index.js --loader:.tsx=tsx --loader:.ts=ts ${externals}`;
+    
+    execSync(command);
     console.log('✅ Đã tạo file dist/index.js');
 } catch (err) {
     console.error('❌ Lỗi biên dịch esbuild:', err.message);
@@ -55,7 +70,7 @@ const destRootLogo = path.join(distDir, 'logo.png');
 
 if (fs.existsSync(publicLogo)) {
     fs.copyFileSync(publicLogo, destPublicLogo);
-    fs.copyFileSync(publicLogo, destRootLogo); // Copy cả vào root để đảm bảo tính tương thích
+    fs.copyFileSync(publicLogo, destRootLogo);
     console.log('🖼️ Đã copy logo vào dist/public/logo.png và dist/logo.png');
 }
 

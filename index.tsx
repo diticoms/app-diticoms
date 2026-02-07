@@ -3,24 +3,17 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 
-// Đảm bảo Splash Screen biến mất ngay khi JavaScript được nạp thành công
+// Sử dụng hàm đã được định nghĩa trong index.html để đảm bảo tính đồng bộ
 const removeSplash = () => {
-  const splash = document.getElementById('splash');
-  if (splash) {
-    splash.style.opacity = '0';
-    setTimeout(() => splash.remove(), 600);
+  if (typeof (window as any).removeSplash === 'function') {
+    (window as any).removeSplash();
   }
 };
 
-// Khắc phục lỗi "process is not defined" nếu môi trường chưa cung cấp
-if (typeof (window as any).process === 'undefined') {
-  (window as any).process = { env: {} };
-}
-
 const rootElement = document.getElementById('root');
 if (rootElement) {
-  // Xóa splash sau một khoảng ngắn để người dùng thấy logo mượt mà
-  setTimeout(removeSplash, 300);
+  // Xóa splash ngay lập tức khi JavaScript này được thực thi thành công
+  removeSplash();
   
   const root = createRoot(rootElement);
   root.render(

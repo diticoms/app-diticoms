@@ -1,27 +1,35 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Lấy API KEY an toàn để tránh ReferenceError: process is not defined
+// Lấy API KEY an toàn. process.env.API_KEY được hệ thống tự động cung cấp khi deploy.
 const getApiKey = () => {
   try {
-    return (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : '';
+    // Trong môi trường ESM trình duyệt, process.env thường được inject thông qua build tool hoặc script tag
+    return (typeof process !== 'undefined' && process.env && process.env.API_KEY) ? process.env.API_KEY : '';
   } catch (e) {
     return '';
   }
 };
 
 const apiKey = getApiKey();
-const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy_key' });
+
+// Hàm khởi tạo instance AI mới (tránh dùng biến static nếu key chưa sẵn sàng)
+const getAiInstance = () => {
+  const key = getApiKey();
+  return new GoogleGenAI({ apiKey: key || 'dummy_key' });
+};
 
 export const diagnoseServiceAction = async (content: string) => {
-  if (!apiKey) {
-    throw new Error("Hệ thống chưa cấu hình API Key cho AI. Vui lòng liên hệ quản trị viên.");
+  const currentKey = getApiKey();
+  if (!currentKey) {
+    throw new Error("Hệ thống AI chưa sẵn sàng (Thiếu API Key). Vui lòng kiểm tra lại cấu hình hoặc liên hệ admin.");
   }
 
   if (!content || content.length < 5) {
     throw new Error("Mô tả quá ngắn. Vui lòng nhập chi tiết lỗi để AI chẩn đoán chính xác hơn.");
   }
 
+  const ai = getAiInstance();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Khách hàng báo lỗi: "${content}". 
@@ -47,7 +55,7 @@ export const diagnoseServiceAction = async (content: string) => {
         },
         required: ["suggestions"]
       },
-      systemInstruction: "Bạn là trợ lý kỹ thuật thông minh. Chỉ trả về dữ liệu JSON để hệ thống tự động điền vào hóa đơn. Ngôn ngữ: Tiếng Việt."
+      systemInstruction: "Bạn là trợ lý kỹ thuật thông minh của Diticoms. Chỉ trả về dữ liệu JSON để hệ thống tự động điền vào hóa đơn. Ngôn ngữ: Tiếng Việt."
     }
   });
 
@@ -57,6 +65,6 @@ export const diagnoseServiceAction = async (content: string) => {
     return result.suggestions;
   } catch (e) {
     console.error("Lỗi xử lý phản hồi AI:", e);
-    throw new Error("AI phản hồi không đúng định dạng. Vui lòng thử lại.");
+    throw new Error("AI phản hồi không đúng định dạng. Vui lòng thử lại sau.");
   }
 };
