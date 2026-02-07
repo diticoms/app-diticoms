@@ -5,8 +5,8 @@ import { LoginScreen } from './components/LoginScreen.tsx';
 import { ServiceList } from './components/ServiceList.tsx';
 import { ServiceForm } from './components/ServiceForm.tsx';
 import { ConfigModal } from './components/ConfigModal.tsx';
-import { TechnicianModal } from './components/TechnicianModal.tsx';
 import { Logo } from './components/Logo.tsx';
+import { AiChat } from './components/AiChat.tsx';
 import { callSheetAPI } from './services/api.ts';
 import { User, AppConfig, ServiceTicket, ServiceFormData, PriceItem } from './types.ts';
 import { DEFAULT_CONFIG, STATUS_OPTIONS, SHEET_API_URL } from './constants.ts';
@@ -34,7 +34,6 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
-  const [showTechModal, setShowTechModal] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
@@ -54,7 +53,6 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
-    // Lắng nghe sự kiện cài đặt PWA
     const handleBeforeInstall = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -62,18 +60,6 @@ const App: React.FC = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
   }, []);
-
-  const handleInstallApp = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-      }
-    } else {
-      alert("Để cài đặt: \n- Android: Chọn 'Thêm vào màn hình chính' trong menu trình duyệt.\n- iOS: Nhấn nút Share rồi chọn 'Thêm vào MH chính'.");
-    }
-  };
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -103,7 +89,6 @@ const App: React.FC = () => {
         const techList = typeof resConfig.technicians === 'string' ? JSON.parse(resConfig.technicians) : resConfig.technicians;
         setTechnicians(Array.isArray(techList) ? techList : []);
       }
-
       if (Array.isArray(resPrice)) setPriceList(resPrice);
     } catch (e) { 
       console.error("Fetch Error:", e);
@@ -131,7 +116,8 @@ const App: React.FC = () => {
       result = result.filter(s => 
         (s.customerName || '').toLowerCase().includes(term) || 
         (s.phone || '').includes(term) || 
-        (s.address || '').toLowerCase().includes(term)
+        (s.address || '').toLowerCase().includes(term) ||
+        (s.status || '').toLowerCase().includes(term)
       );
     }
     return result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -190,7 +176,7 @@ const App: React.FC = () => {
       </header>
 
       <main className="flex-1 lg:h-[calc(100vh-64px)] overflow-y-auto lg:overflow-hidden">
-        <div className="max-w-7xl mx-auto p-4 lg:p-6 h-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="max-w-7xl mx-auto p-4 lg:p-6 h-full grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
           <div className="lg:col-span-5 h-full bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
               <ServiceForm 
@@ -205,40 +191,24 @@ const App: React.FC = () => {
                       ...formData, customer_name: formData.customerName, work_items: formData.workItems,
                       id: Date.now().toString(), created_at: new Date().toISOString() 
                     });
-                    if(res?.status === 'success') { 
-                      await fetchData(); 
-                      resetForm();
-                      alert("Lưu phiếu thành công"); 
-                    }
-                  } catch (e) {
-                    alert("Lỗi khi lưu phiếu");
-                  } finally { setIsSubmitting(false); }
+                    if(res?.status === 'success') { await fetchData(); resetForm(); alert("Lưu phiếu thành công"); }
+                  } catch (e) { alert("Lỗi lưu phiếu"); } finally { setIsSubmitting(false); }
                 }}
                 onUpdate={async () => {
                   if(!selectedId) return;
                   setIsSubmitting(true);
                   try {
-                    await callSheetAPI(config.sheetUrl, 'update', { 
-                      ...formData, customer_name: formData.customerName, work_items: formData.workItems, id: selectedId,
-                      created_at: services.find(s => s.id === selectedId)?.created_at 
-                    });
-                    await fetchData(); 
-                    resetForm();
-                    alert("Cập nhật phiếu thành công");
-                  } catch (e) {
-                    alert("Lỗi khi cập nhật phiếu");
-                  } finally { setIsSubmitting(false); }
+                    await callSheetAPI(config.sheetUrl, 'update', { ...formData, customer_name: formData.customerName, work_items: formData.workItems, id: selectedId });
+                    await fetchData(); resetForm(); alert("Cập nhật thành công");
+                  } catch (e) { alert("Lỗi cập nhật"); } finally { setIsSubmitting(false); }
                 }}
                 onDelete={async () => {
                    if(!selectedId || !confirm('Xóa?')) return;
                    setIsSubmitting(true);
                    try {
                      await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user.role });
-                     await fetchData(); 
-                     resetForm();
-                   } catch (e) {
-                     alert("Lỗi khi xóa phiếu");
-                   } finally { setIsSubmitting(false); }
+                     await fetchData(); resetForm();
+                   } catch (e) { alert("Lỗi xóa"); } finally { setIsSubmitting(false); }
                 }}
               />
             </div>
@@ -260,12 +230,17 @@ const App: React.FC = () => {
                 setViewAll: (v: boolean) => setFilters(f => ({ ...f, viewAll: v }))
               }}
               currentUser={user}
-              onInstallApp={handleInstallApp}
-              installAvailable={!!deferredPrompt}
             />
           </div>
         </div>
       </main>
+
+      <AiChat 
+        services={services} 
+        onApplyFilter={(aiFilters) => {
+          setFilters(prev => ({ ...prev, ...aiFilters }));
+        }} 
+      />
 
       {showConfig && <ConfigModal config={config} isAdmin={user.role === 'admin'} onClose={() => setShowConfig(false)} onSave={(c) => { setConfig(c); localStorage.setItem('diti_config', JSON.stringify(c)); setShowConfig(false); }} />}
     </div>
