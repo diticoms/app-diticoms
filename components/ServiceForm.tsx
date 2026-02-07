@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Search
+  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, Image as ImageIcon, CheckCircle2
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
@@ -30,16 +30,17 @@ export const ServiceForm: React.FC<Props> = ({
   currentUser, onSave, onUpdate, onDelete, onClear, services, bankInfo
 }) => {
   const isAdmin = currentUser?.role === 'admin';
-  const [activeWorkIdx, setActiveWorkIdx] = useState<number | null>(null);
   const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
   const [showBill, setShowBill] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [showSharePopup, setShowSharePopup] = useState(false);
+  const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
+  const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(null);
+  
   const billRef = useRef<HTMLDivElement>(null);
 
-  // LOGIC GỢI Ý KHÁCH HÀNG TỪ SHEET
   const customerSuggestions = useMemo(() => {
     const customers: Record<string, { name: string, address: string }> = {};
-    // Sắp xếp phiếu mới nhất lên đầu để lấy thông tin mới nhất
     const sortedServices = [...services].sort((a, b) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
@@ -109,28 +110,61 @@ export const ServiceForm: React.FC<Props> = ({
     });
   };
 
-  const handleShareOrSave = async () => {
+  const handlePrepareShare = async () => {
     if (!billRef.current) return;
     setIsCapturing(true);
     try {
-      const canvas = await html2canvas(billRef.current, { scale: 3, useCORS: true });
-      const fileName = `Bill_${(formData.customerName || 'Khach').toUpperCase()}.png`;
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        if (navigator.share && navigator.canShare) {
-          const file = new File([blob], fileName, { type: 'image/png' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'Invoice' });
-            return;
-          }
-        }
-        const link = document.createElement('a');
-        link.href = canvas.toDataURL();
-        link.download = fileName;
-        link.click();
+      const canvas = await html2canvas(billRef.current, { 
+        scale: 3, 
+        useCORS: true,
+        backgroundColor: '#ffffff'
       });
-    } catch (e) { alert("Lỗi khi tạo hóa đơn"); }
-    finally { setIsCapturing(false); }
+      const dataUrl = canvas.toDataURL('image/png');
+      setCapturedDataUrl(dataUrl);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          setCapturedBlob(blob);
+          setShowSharePopup(true);
+        }
+      }, 'image/png');
+    } catch (e) { 
+      alert("Lỗi khi tạo hình ảnh hóa đơn"); 
+    } finally { 
+      setIsCapturing(false); 
+    }
+  };
+
+  const handleDownload = () => {
+    if (!capturedDataUrl) return;
+    const fileName = `Bill_${(formData.customerName || 'Khach').toUpperCase().replace(/\s+/g, '_')}.png`;
+    const link = document.createElement('a');
+    link.href = capturedDataUrl;
+    link.download = fileName;
+    link.click();
+    setShowSharePopup(false);
+  };
+
+  const handleNativeShare = async () => {
+    if (!capturedBlob) return;
+    const fileName = `Bill_${(formData.customerName || 'Khach').toUpperCase().replace(/\s+/g, '_')}.png`;
+    try {
+      const file = new File([capturedBlob], fileName, { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'Hóa đơn Diticoms Service',
+          text: `Hóa đơn khách hàng: ${formData.customerName}`
+        });
+      } else {
+        // Fallback cho trình duyệt không hỗ trợ share file
+        handleDownload();
+      }
+    } catch (e) {
+      console.error("Share failed", e);
+      handleDownload();
+    }
+    setShowSharePopup(false);
   };
 
   const inputStyle = "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-blue-400 font-medium transition-all text-slate-800";
@@ -219,8 +253,7 @@ export const ServiceForm: React.FC<Props> = ({
               <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl space-y-2 relative group hover:border-blue-100 transition-all">
                 <input 
                   type="text" placeholder="Tên dịch vụ..." className="w-full bg-transparent font-bold text-slate-800 outline-none border-b border-transparent focus:border-blue-200" 
-                  value={item.desc} onFocus={() => setActiveWorkIdx(idx)} onChange={e => updateWorkItem(idx, 'desc', e.target.value)} 
-                  onBlur={() => setTimeout(() => setActiveWorkIdx(null), 200)} 
+                  value={item.desc} onChange={e => updateWorkItem(idx, 'desc', e.target.value)} 
                 />
                 <div className="flex gap-2 text-[11px] font-bold">
                   <div className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg px-2 flex items-center gap-1">SL: <input type="number" className="w-full outline-none font-black text-center bg-transparent" value={item.qty} onChange={e => updateWorkItem(idx, 'qty', e.target.value)} /></div>
@@ -273,22 +306,78 @@ export const ServiceForm: React.FC<Props> = ({
         </button>
       )}
 
+      {/* MODAL XEM HÓA ĐƠN */}
       {showBill && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[999999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[9999] flex items-center justify-center p-4 safe-area-padding">
           <div className="bg-white rounded-[40px] p-2 max-w-[360px] w-full max-h-[95vh] flex flex-col shadow-2xl relative animate-in fade-in zoom-in duration-300">
-            <button onClick={() => setShowBill(false)} className="absolute top-4 right-4 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 z-[1000001] transition-colors"><X size={20}/></button>
+            <button onClick={() => setShowBill(false)} className="absolute top-4 right-4 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 z-[10001] transition-colors"><X size={20}/></button>
+            
             <div className="flex-1 overflow-auto p-4 custom-scrollbar bg-slate-100/30 flex justify-center rounded-t-[38px]">
               <div ref={billRef} className="bg-white shadow-xl h-fit">
                 <InvoiceTemplate formData={formData} bankInfo={bankInfo} />
               </div>
             </div>
+            
             <div className="p-4 bg-white grid grid-cols-2 gap-3 rounded-b-[40px] border-t border-slate-50">
-              <button onClick={handleShareOrSave} disabled={isCapturing} className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl uppercase text-[11px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg">
-                {isCapturing ? 'ĐANG TẠO...' : 'LƯU / CHIA SẺ'}
+              <button 
+                onClick={handlePrepareShare} 
+                disabled={isCapturing} 
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl uppercase text-[11px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
+              >
+                {isCapturing ? 'ĐANG XỬ LÝ...' : 'LƯU / CHIA SẺ'}
               </button>
               <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl uppercase text-[11px] active:scale-95 transition-all shadow-lg">IN HÓA ĐƠN</button>
-              <button onClick={() => setShowBill(false)} className="col-span-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl uppercase text-[11px] transition-all">ĐÓNG</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP TÙY CHỌN CHIA SẺ (Bottom Sheet style cho APK) */}
+      {showSharePopup && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] flex items-end justify-center">
+          <div className="bg-white w-full max-w-md rounded-t-[32px] p-6 space-y-6 animate-in slide-in-from-bottom duration-300">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-black text-slate-800 uppercase tracking-tight text-sm flex items-center gap-2">
+                <Share2 size={18} className="text-blue-500" /> TÙY CHỌN HÓA ĐƠN
+              </h3>
+              <button onClick={() => setShowSharePopup(false)} className="p-2 bg-slate-100 rounded-full text-slate-400"><X size={18}/></button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={handleDownload}
+                className="flex flex-col items-center gap-3 p-5 bg-slate-50 rounded-3xl hover:bg-blue-50 transition-colors border border-slate-100 group"
+              >
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                  <Download size={24} className="text-slate-600" />
+                </div>
+                <span className="font-bold text-[11px] text-slate-700 uppercase">Lưu vào máy</span>
+              </button>
+              
+              <button 
+                onClick={handleNativeShare}
+                className="flex flex-col items-center gap-3 p-5 bg-blue-600 rounded-3xl hover:bg-blue-700 transition-colors border border-blue-500 group"
+              >
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                  <Share2 size={24} className="text-white" />
+                </div>
+                <span className="font-bold text-[11px] text-white uppercase">Gửi qua ứng dụng</span>
+              </button>
+            </div>
+            
+            <div className="bg-slate-50 p-4 rounded-2xl flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
+                <CheckCircle2 size={20} className="text-green-600" />
+              </div>
+              <p className="text-[10px] text-slate-500 font-medium">Hình ảnh hóa đơn đã sẵn sàng. Bạn có thể lưu trữ hoặc gửi trực tiếp cho khách hàng qua Zalo/Facebook.</p>
+            </div>
+
+            <button 
+              onClick={() => setShowSharePopup(false)} 
+              className="w-full py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl uppercase text-[11px] active:scale-95 transition-all"
+            >
+              Đóng
+            </button>
           </div>
         </div>
       )}
