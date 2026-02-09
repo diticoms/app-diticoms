@@ -62,16 +62,30 @@ const App: React.FC = () => {
       ]);
 
       if (Array.isArray(resData)) {
-        const mapped = resData.map((r: any) => ({
-          ...r,
-          customerName: r.customer_name || r.customerName || '',
-          workItems: Array.isArray(r.workItems) ? r.workItems : 
-                     (typeof r.work_items === 'string' ? JSON.parse(r.work_items) : (r.work_items || [])),
-          revenue: Number(r.revenue || 0),
-          cost: Number(r.cost || 0),
-          debt: Number(r.debt || 0),
-          created_at: r.created_at || r.date || new Date().toISOString()
-        }));
+        const mapped = resData.map((r: any) => {
+          let parsedWorkItems = [];
+          const rawItems = r.work_items || r.workItems;
+          if (Array.isArray(rawItems)) {
+            parsedWorkItems = rawItems;
+          } else if (typeof rawItems === 'string' && rawItems.trim() !== '') {
+            try { parsedWorkItems = JSON.parse(rawItems); } catch (e) { parsedWorkItems = []; }
+          }
+
+          return {
+            id: String(r.id),
+            created_at: r.created_at || r.date || new Date().toISOString(),
+            customerName: r.customer_name || r.customerName || '',
+            phone: String(r.phone || '').replace(/^'/, ''),
+            address: r.address || '',
+            status: r.status || STATUS_OPTIONS[0],
+            technician: r.technician || '',
+            content: r.content || '',
+            workItems: parsedWorkItems,
+            revenue: Number(r.revenue || 0),
+            cost: Number(r.cost || 0),
+            debt: Number(r.debt || 0)
+          };
+        });
         setServices(mapped);
         localStorage.setItem('diti_services_cache', JSON.stringify(mapped));
       }
@@ -114,26 +128,6 @@ const App: React.FC = () => {
     return result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [services, filters, user]);
 
-  const handleLogin = async (username: string, pass: string) => {
-    setLoading(true);
-    try {
-      const res = await callSheetAPI(config.sheetUrl, 'login', { username, password: pass });
-      if (res?.status === 'success' && res.user) {
-        setUser(res.user);
-        localStorage.setItem('diti_user', JSON.stringify(res.user));
-        resetForm(res.user);
-      } else { alert(res?.error || 'Sai thông tin'); }
-    } catch (e) { alert('Lỗi kết nối'); } finally { setLoading(false); }
-  };
-
-  const handleLogout = () => {
-    if (confirm('Đăng xuất?')) {
-      setUser(null);
-      localStorage.clear();
-      window.location.reload();
-    }
-  };
-
   const resetForm = useCallback((u = user) => {
     setSelectedId(null);
     setFormData({ 
@@ -144,7 +138,60 @@ const App: React.FC = () => {
     });
   }, [user]);
 
-  if (!user) return <LoginScreen onLogin={handleLogin} isLoading={loading} />;
+  const handleSave = async () => {
+    setIsSubmitting(true);
+    try {
+      const payload = { 
+        ...formData, 
+        customer_name: formData.customerName, // Tương thích Apps Script
+        work_items: formData.workItems,      // Tương thích Apps Script
+        id: Date.now().toString(), 
+        created_at: new Date().toISOString() 
+      };
+      const res = await callSheetAPI(config.sheetUrl, 'create', payload);
+      if(res?.status === 'success') { await fetchData(); resetForm(); }
+    } catch (e) { alert("Lỗi lưu phiếu"); } finally { setIsSubmitting(false); }
+  };
+
+  const handleUpdate = async () => {
+    if(!selectedId) return;
+    setIsSubmitting(true);
+    try {
+      const payload = { 
+        ...formData, 
+        customer_name: formData.customerName,
+        work_items: formData.workItems,
+        id: selectedId 
+      };
+      const res = await callSheetAPI(config.sheetUrl, 'update', payload);
+      if (res?.status === 'success' || res?.status === 'updated') {
+        await fetchData(); resetForm();
+      } else { alert(res?.error || "Lỗi cập nhật"); }
+    } catch (e) { alert("Lỗi hệ thống khi cập nhật"); } finally { setIsSubmitting(false); }
+  };
+
+  const handleDelete = async () => {
+    if(!selectedId || !confirm('Xóa phiếu này?')) return;
+    setIsSubmitting(true);
+    try {
+      const res = await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user?.role });
+      if (res?.status === 'success' || res?.status === 'deleted') {
+        await fetchData(); resetForm();
+      } else { alert(res?.error || "Lỗi xóa"); }
+    } catch (e) { alert("Lỗi hệ thống khi xóa"); } finally { setIsSubmitting(false); }
+  };
+
+  if (!user) return <LoginScreen onLogin={async (u, p) => {
+    setLoading(true);
+    try {
+      const res = await callSheetAPI(config.sheetUrl, 'login', { username: u, password: p });
+      if (res?.status === 'success' && res.user) {
+        setUser(res.user);
+        localStorage.setItem('diti_user', JSON.stringify(res.user));
+        resetForm(res.user);
+      } else { alert(res?.error || 'Sai thông tin'); }
+    } catch (e) { alert('Lỗi kết nối'); } finally { setLoading(false); }
+  }} isLoading={loading} />;
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
@@ -159,7 +206,7 @@ const App: React.FC = () => {
           </div>
           <div className="flex gap-2">
             <button onClick={() => setShowConfig(true)} className="p-2 text-slate-400 hover:text-blue-500"><Settings size={18} /></button>
-            <button onClick={handleLogout} className="p-2 text-red-400"><LogOut size={18} /></button>
+            <button onClick={() => { if(confirm('Đăng xuất?')) { setUser(null); localStorage.clear(); window.location.reload(); } }} className="p-2 text-red-400"><LogOut size={18} /></button>
           </div>
         </div>
       </header>
@@ -173,31 +220,9 @@ const App: React.FC = () => {
                 priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
                 currentUser={user} services={services} bankInfo={config.bankInfo}
                 onClear={() => resetForm()}
-                onSave={async () => {
-                  setIsSubmitting(true);
-                  try {
-                    const res = await callSheetAPI(config.sheetUrl, 'create', { 
-                      ...formData, id: Date.now().toString(), created_at: new Date().toISOString() 
-                    });
-                    if(res?.status === 'success') { await fetchData(); resetForm(); }
-                  } catch (e) { alert("Lỗi lưu phiếu"); } finally { setIsSubmitting(false); }
-                }}
-                onUpdate={async () => {
-                  if(!selectedId) return;
-                  setIsSubmitting(true);
-                  try {
-                    await callSheetAPI(config.sheetUrl, 'update', { ...formData, id: selectedId });
-                    await fetchData(); resetForm();
-                  } catch (e) { alert("Lỗi cập nhật"); } finally { setIsSubmitting(false); }
-                }}
-                onDelete={async () => {
-                   if(!selectedId || !confirm('Xóa phiếu này?')) return;
-                   setIsSubmitting(true);
-                   try {
-                     await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user.role });
-                     await fetchData(); resetForm();
-                   } catch (e) { alert("Lỗi xóa"); } finally { setIsSubmitting(false); }
-                }}
+                onSave={handleSave}
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
               />
             </div>
           </div>
@@ -207,7 +232,6 @@ const App: React.FC = () => {
               data={filteredServices} loading={loading} technicians={technicians}
               selectedId={selectedId} onSelectRow={(item) => {
                 setSelectedId(item.id);
-                // CHỐNG CRASH: Luôn đảm bảo workItems là mảng khi nạp vào form
                 setFormData({
                   customerName: item.customerName || '',
                   phone: item.phone || '',
@@ -215,7 +239,7 @@ const App: React.FC = () => {
                   status: item.status || STATUS_OPTIONS[0],
                   technician: item.technician || '',
                   content: item.content || '',
-                  workItems: Array.isArray(item.workItems) ? item.workItems : [],
+                  workItems: Array.isArray(item.workItems) ? [...item.workItems] : [],
                   revenue: Number(item.revenue || 0),
                   cost: Number(item.cost || 0),
                   debt: Number(item.debt || 0)
@@ -237,7 +261,18 @@ const App: React.FC = () => {
 
       <AiChat services={services} onApplyFilter={(aiFilters) => setFilters(prev => ({ ...prev, ...aiFilters }))} />
 
-      {showConfig && <ConfigModal config={config} isAdmin={user.role === 'admin'} onClose={() => setShowConfig(false)} onSave={(c) => { setConfig(c); localStorage.setItem('diti_config', JSON.stringify(c)); setShowConfig(false); }} />}
+      {showConfig && (
+        <ConfigModal 
+          config={config} 
+          isAdmin={user.role === 'admin'} 
+          onClose={() => setShowConfig(false)} 
+          onSave={(c) => { 
+            setConfig(c); 
+            localStorage.setItem('diti_config', JSON.stringify(c)); 
+            setShowConfig(false); 
+          }} 
+        />
+      )}
     </div>
   );
 };
