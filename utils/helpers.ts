@@ -1,3 +1,4 @@
+
 import { WorkItem } from '../types.ts';
 
 export const getTodayString = () => {
@@ -22,12 +23,14 @@ export const formatCurrency = (val: number | string) => {
 
 export const parseCurrency = (val: string | number) => {
   if (typeof val === 'number') return val;
-  const num = parseInt(val.replace(/\D/g, ''), 10);
+  const str = String(val || '0');
+  const num = parseInt(str.replace(/\D/g, ''), 10);
   return isNaN(num) ? 0 : num;
 };
 
-export const calculateTotalEstimate = (items: WorkItem[]) => {
-  return items.reduce((sum, item) => sum + (item.total || 0), 0);
+export const calculateTotalEstimate = (items: WorkItem[] | undefined) => {
+  if (!items || !Array.isArray(items)) return 0;
+  return items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
 };
 
 export const normalizeIdentity = (name: string | undefined) => {

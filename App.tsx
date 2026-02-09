@@ -65,7 +65,8 @@ const App: React.FC = () => {
         const mapped = resData.map((r: any) => ({
           ...r,
           customerName: r.customer_name || r.customerName || '',
-          workItems: typeof r.work_items === 'string' ? JSON.parse(r.work_items) : (r.work_items || []),
+          workItems: Array.isArray(r.workItems) ? r.workItems : 
+                     (typeof r.work_items === 'string' ? JSON.parse(r.work_items) : (r.work_items || [])),
           revenue: Number(r.revenue || 0),
           cost: Number(r.cost || 0),
           debt: Number(r.debt || 0),
@@ -88,11 +89,9 @@ const App: React.FC = () => {
   const filteredServices = useMemo(() => {
     let result = [...services];
     
-    // Phân quyền cơ bản
     if (user?.role !== 'admin' && user?.associatedTech) {
       result = result.filter(s => s.technician === user.associatedTech);
     } else if (filters.searchTech) {
-      // Lọc theo KTV cụ thể nếu là Admin
       result = result.filter(s => s.technician === filters.searchTech);
     }
 
@@ -208,7 +207,19 @@ const App: React.FC = () => {
               data={filteredServices} loading={loading} technicians={technicians}
               selectedId={selectedId} onSelectRow={(item) => {
                 setSelectedId(item.id);
-                setFormData({ ...item });
+                // CHỐNG CRASH: Luôn đảm bảo workItems là mảng khi nạp vào form
+                setFormData({
+                  customerName: item.customerName || '',
+                  phone: item.phone || '',
+                  address: item.address || '',
+                  status: item.status || STATUS_OPTIONS[0],
+                  technician: item.technician || '',
+                  content: item.content || '',
+                  workItems: Array.isArray(item.workItems) ? item.workItems : [],
+                  revenue: Number(item.revenue || 0),
+                  cost: Number(item.cost || 0),
+                  debt: Number(item.debt || 0)
+                });
                 if (window.innerWidth < 1024) window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               filters={filters} setFilters={{

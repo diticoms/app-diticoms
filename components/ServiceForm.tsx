@@ -42,17 +42,19 @@ export const ServiceForm: React.FC<Props> = ({
 
   const customerSuggestions = useMemo(() => {
     const customers: Record<string, { name: string, address: string }> = {};
-    services.forEach(s => {
-      const phone = String(s.phone || '').trim();
-      if (phone.length >= 3 && !customers[phone]) {
-        customers[phone] = { name: s.customerName || '', address: s.address || '' };
-      }
-    });
+    if (Array.isArray(services)) {
+      services.forEach(s => {
+        const phone = String(s.phone || '').trim();
+        if (phone.length >= 3 && !customers[phone]) {
+          customers[phone] = { name: s.customerName || '', address: s.address || '' };
+        }
+      });
+    }
     return Object.entries(customers).map(([phone, info]) => ({ phone, ...info }));
   }, [services]);
 
   const filteredCustomerSuggestions = useMemo(() => {
-    const term = formData.phone.trim();
+    const term = (formData.phone || '').trim();
     if (term.length < 3) return [];
     return customerSuggestions.filter(c => c.phone.includes(term)).slice(0, 5);
   }, [customerSuggestions, formData.phone]);
@@ -68,7 +70,9 @@ export const ServiceForm: React.FC<Props> = ({
 
   const updateWorkItem = (idx: number, f: string, v: any) => {
     setFormData(prev => {
-      const items = [...prev.workItems];
+      const items = prev.workItems ? [...prev.workItems] : [];
+      if (!items[idx]) return prev;
+
       const item = { ...items[idx], [f]: v };
       const price = parseCurrency(f === 'price' ? v : item.price);
       const qty = Number(f === 'qty' ? v : item.qty);
@@ -107,7 +111,6 @@ export const ServiceForm: React.FC<Props> = ({
     if (!billRef.current) return;
     setIsCapturing(true);
     try {
-      // Đợi QR và Logo load hoàn toàn
       await new Promise(r => setTimeout(r, 600));
       const canvas = await html2canvas(billRef.current, {
         scale: 3,
@@ -173,7 +176,7 @@ export const ServiceForm: React.FC<Props> = ({
       <div className="space-y-3">
         <div className="relative">
           <Phone className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} />
-          <input type="tel" placeholder="Số điện thoại" className={inputStyle} value={formData.phone} onChange={e => { updateField('phone', e.target.value); setShowPhoneSuggestions(true); }} onFocus={() => setShowPhoneSuggestions(true)} onBlur={() => setTimeout(() => setShowPhoneSuggestions(false), 200)} />
+          <input type="tel" placeholder="Số điện thoại" className={inputStyle} value={formData.phone || ''} onChange={e => { updateField('phone', e.target.value); setShowPhoneSuggestions(true); }} onFocus={() => setShowPhoneSuggestions(true)} onBlur={() => setTimeout(() => setShowPhoneSuggestions(false), 200)} />
           {showPhoneSuggestions && filteredCustomerSuggestions.length > 0 && (
             <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-2xl z-[60] max-h-56 overflow-auto rounded-2xl mt-1">
               {filteredCustomerSuggestions.map((c, i) => (
@@ -186,12 +189,12 @@ export const ServiceForm: React.FC<Props> = ({
           )}
         </div>
         
-        <div className="relative"><User className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} /><input type="text" placeholder="Tên khách hàng" className={inputStyle} value={formData.customerName} onChange={e => updateField('customerName', e.target.value)} /></div>
-        <div className="relative"><MapPin className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} /><input type="text" placeholder="Địa chỉ" className={inputStyle} value={formData.address} onChange={e => updateField('address', e.target.value)} /></div>
+        <div className="relative"><User className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} /><input type="text" placeholder="Tên khách hàng" className={inputStyle} value={formData.customerName || ''} onChange={e => updateField('customerName', e.target.value)} /></div>
+        <div className="relative"><MapPin className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} /><input type="text" placeholder="Địa chỉ" className={inputStyle} value={formData.address || ''} onChange={e => updateField('address', e.target.value)} /></div>
 
         <div className="relative group">
           <MessageSquare className="absolute left-3.5 top-3.5 text-slate-400 z-10" size={16} />
-          <textarea placeholder="Mô tả lỗi của khách hàng..." className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl min-h-[100px] focus:bg-white focus:border-blue-400 outline-none transition-all" value={formData.content} onChange={e => updateField('content', e.target.value)} />
+          <textarea placeholder="Mô tả lỗi của khách hàng..." className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl min-h-[100px] focus:bg-white focus:border-blue-400 outline-none transition-all" value={formData.content || ''} onChange={e => updateField('content', e.target.value)} />
           <button onClick={handleAiDiagnose} disabled={isAiDiagnosing || !formData.content} className={`absolute right-3 bottom-3 flex items-center gap-2 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all shadow-md ${isAiDiagnosing ? 'bg-slate-200 text-slate-400' : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white'}`}>
             {isAiDiagnosing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI Chẩn đoán
           </button>
@@ -201,7 +204,7 @@ export const ServiceForm: React.FC<Props> = ({
           <select className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-700 outline-none" value={formData.status} onChange={e => updateField('status', e.target.value)}>
             {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <select className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-700 outline-none disabled:opacity-50" value={formData.technician} onChange={e => updateField('technician', e.target.value)} disabled={!isAdmin}>
+          <select className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-700 outline-none disabled:opacity-50" value={formData.technician || ''} onChange={e => updateField('technician', e.target.value)} disabled={!isAdmin}>
             <option value="">Kỹ thuật viên</option>
             {technicians.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
@@ -210,14 +213,14 @@ export const ServiceForm: React.FC<Props> = ({
         <div className="pt-2">
           <div className="flex justify-between items-center mb-2 px-1">
             <span className="font-black text-slate-400 text-[10px] uppercase tracking-widest">Danh sách dịch vụ</span>
-            <button onClick={() => setFormData(p => ({...p, workItems: [...p.workItems, {desc: '', qty: 1, price: '', total: 0}]}))} className="text-blue-500 p-1 hover:bg-blue-50 rounded-lg"><Plus size={18}/></button>
+            <button onClick={() => setFormData(p => ({...p, workItems: p.workItems ? [...p.workItems, {desc: '', qty: 1, price: '', total: 0}] : [{desc: '', qty: 1, price: '', total: 0}]}))} className="text-blue-500 p-1 hover:bg-blue-50 rounded-lg"><Plus size={18}/></button>
           </div>
           <div className="space-y-2">
-            {formData.workItems.map((item, idx) => (
+            {formData.workItems?.map((item, idx) => (
               <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl space-y-2 group hover:border-blue-100 transition-all">
-                <input type="text" placeholder="Tên dịch vụ/linh kiện..." className="w-full bg-transparent font-bold text-slate-800 outline-none border-b border-transparent focus:border-blue-200 text-[13px]" value={item.desc} onChange={e => updateWorkItem(idx, 'desc', e.target.value)} />
+                <input type="text" placeholder="Tên dịch vụ/linh kiện..." className="w-full bg-transparent font-bold text-slate-800 outline-none border-b border-transparent focus:border-blue-200 text-[13px]" value={item.desc || ''} onChange={e => updateWorkItem(idx, 'desc', e.target.value)} />
                 <div className="flex gap-2 text-[11px] font-bold">
-                  <div className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg flex items-center gap-1">SL: <input type="number" className="w-full outline-none font-black text-center bg-transparent" value={item.qty} onChange={e => updateWorkItem(idx, 'qty', e.target.value)} /></div>
+                  <div className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg flex items-center gap-1">SL: <input type="number" className="w-full outline-none font-black text-center bg-transparent" value={item.qty || 1} onChange={e => updateWorkItem(idx, 'qty', e.target.value)} /></div>
                   <div className="flex-[2] bg-white border border-slate-100 p-1.5 rounded-lg px-2 text-right"><input type="text" className="w-full outline-none font-black text-right text-blue-600 bg-transparent" value={formatCurrency(item.price)} onChange={e => updateWorkItem(idx, 'price', e.target.value)} /></div>
                   <button onClick={() => setFormData(p => ({...p, workItems: p.workItems.filter((_, i) => i !== idx)}))} className="text-slate-300 hover:text-red-400 p-1"><Trash2 size={16}/></button>
                 </div>
