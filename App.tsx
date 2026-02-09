@@ -35,7 +35,6 @@ const App: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const [filters, setFilters] = useState({
     dateFrom: getTodayString(),
@@ -51,15 +50,6 @@ const App: React.FC = () => {
     workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
     revenue: 0, cost: 0, debt: 0
   });
-
-  useEffect(() => {
-    const handleBeforeInstall = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -90,15 +80,12 @@ const App: React.FC = () => {
         setTechnicians(Array.isArray(techList) ? techList : []);
       }
       if (Array.isArray(resPrice)) setPriceList(resPrice);
-    } catch (e) { 
-      console.error("Fetch Error:", e);
-    } finally { 
-      setLoading(false); 
-    }
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   }, [user, config.sheetUrl, services.length]);
 
   useEffect(() => { if (user) fetchData(); }, [user, fetchData]);
 
+  // Logic phân quyền: User không phải admin chỉ thấy phiếu của họ
   const filteredServices = useMemo(() => {
     let result = [...services];
     if (user?.role !== 'admin' && user?.associatedTech) {
@@ -110,14 +97,12 @@ const App: React.FC = () => {
         return date >= filters.dateFrom && date <= filters.dateTo;
       });
     }
-    if (filters.searchTech) result = result.filter(s => s.technician === filters.searchTech);
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
       result = result.filter(s => 
         (s.customerName || '').toLowerCase().includes(term) || 
         (s.phone || '').includes(term) || 
-        (s.address || '').toLowerCase().includes(term) ||
-        (s.status || '').toLowerCase().includes(term)
+        (s.address || '').toLowerCase().includes(term)
       );
     }
     return result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -130,11 +115,10 @@ const App: React.FC = () => {
       if (res?.status === 'success' && res.user) {
         setUser(res.user);
         localStorage.setItem('diti_user', JSON.stringify(res.user));
-      } else {
-        alert(res?.error || 'Sai thông tin');
-      }
-    } catch (e) { alert('Lỗi kết nối'); }
-    finally { setLoading(false); }
+        // Reset form để nhận diện KTV mặc định của user mới đăng nhập
+        resetForm(res.user);
+      } else { alert(res?.error || 'Sai thông tin'); }
+    } catch (e) { alert('Lỗi kết nối'); } finally { setLoading(false); }
   };
 
   const handleLogout = () => {
@@ -145,11 +129,11 @@ const App: React.FC = () => {
     }
   };
 
-  const resetForm = useCallback(() => {
+  const resetForm = useCallback((u = user) => {
     setSelectedId(null);
     setFormData({ 
       customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
-      technician: user?.associatedTech || '', content: '', 
+      technician: u?.associatedTech || '', content: '', 
       workItems: [{ desc: '', qty: 1, price: '', total: 0 }], 
       revenue: 0, cost: 0, debt: 0 
     });
@@ -176,34 +160,33 @@ const App: React.FC = () => {
       </header>
 
       <main className="flex-1 lg:h-[calc(100vh-64px)] overflow-y-auto lg:overflow-hidden">
-        <div className="max-w-7xl mx-auto p-4 lg:p-6 h-full grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
+        <div className="max-w-7xl mx-auto p-4 lg:p-6 h-full grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5 h-full bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
               <ServiceForm 
                 formData={formData} setFormData={setFormData} technicians={technicians}
                 priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
                 currentUser={user} services={services} bankInfo={config.bankInfo}
-                onClear={resetForm}
+                onClear={() => resetForm()}
                 onSave={async () => {
                   setIsSubmitting(true);
                   try {
                     const res = await callSheetAPI(config.sheetUrl, 'create', { 
-                      ...formData, customer_name: formData.customerName, work_items: formData.workItems,
-                      id: Date.now().toString(), created_at: new Date().toISOString() 
+                      ...formData, id: Date.now().toString(), created_at: new Date().toISOString() 
                     });
-                    if(res?.status === 'success') { await fetchData(); resetForm(); alert("Lưu phiếu thành công"); }
+                    if(res?.status === 'success') { await fetchData(); resetForm(); }
                   } catch (e) { alert("Lỗi lưu phiếu"); } finally { setIsSubmitting(false); }
                 }}
                 onUpdate={async () => {
                   if(!selectedId) return;
                   setIsSubmitting(true);
                   try {
-                    await callSheetAPI(config.sheetUrl, 'update', { ...formData, customer_name: formData.customerName, work_items: formData.workItems, id: selectedId });
-                    await fetchData(); resetForm(); alert("Cập nhật thành công");
+                    await callSheetAPI(config.sheetUrl, 'update', { ...formData, id: selectedId });
+                    await fetchData(); resetForm();
                   } catch (e) { alert("Lỗi cập nhật"); } finally { setIsSubmitting(false); }
                 }}
                 onDelete={async () => {
-                   if(!selectedId || !confirm('Xóa?')) return;
+                   if(!selectedId || !confirm('Xóa phiếu này?')) return;
                    setIsSubmitting(true);
                    try {
                      await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user.role });
@@ -226,7 +209,6 @@ const App: React.FC = () => {
                 setDateFrom: (v: string) => setFilters(f => ({ ...f, dateFrom: v, viewAll: false })),
                 setDateTo: (v: string) => setFilters(f => ({ ...f, dateTo: v, viewAll: false })),
                 setSearchTerm: (v: string) => setFilters(f => ({ ...f, searchTerm: v })),
-                setSearchTech: (v: string) => setFilters(f => ({ ...f, searchTech: v })),
                 setViewAll: (v: boolean) => setFilters(f => ({ ...f, viewAll: v }))
               }}
               currentUser={user}
@@ -235,12 +217,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <AiChat 
-        services={services} 
-        onApplyFilter={(aiFilters) => {
-          setFilters(prev => ({ ...prev, ...aiFilters }));
-        }} 
-      />
+      <AiChat services={services} onApplyFilter={(aiFilters) => setFilters(prev => ({ ...prev, ...aiFilters }))} />
 
       {showConfig && <ConfigModal config={config} isAdmin={user.role === 'admin'} onClose={() => setShowConfig(false)} onSave={(c) => { setConfig(c); localStorage.setItem('diti_config', JSON.stringify(c)); setShowConfig(false); }} />}
     </div>
