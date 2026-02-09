@@ -63,7 +63,6 @@ const App: React.FC = () => {
 
       if (Array.isArray(resData)) {
         const mapped = resData.map((r: any) => {
-          // PHÂN TÍCH DỮ LIỆU TỪ SHEET CỰC KỲ CẨN THẬN
           let parsedItems = [];
           const rawItems = r.work_items || r.workItems;
           
@@ -73,7 +72,6 @@ const App: React.FC = () => {
             try { 
               parsedItems = JSON.parse(rawItems); 
             } catch (e) { 
-              console.error("Lỗi parse JSON workItems:", e);
               parsedItems = []; 
             }
           }
@@ -82,7 +80,7 @@ const App: React.FC = () => {
             id: String(r.id),
             created_at: r.created_at || r.date || new Date().toISOString(),
             customerName: r.customer_name || r.customerName || '',
-            phone: String(r.phone || '').replace(/^'/, ''), // Xóa dấu ' nếu có khi hiển thị
+            phone: String(r.phone || '').replace(/^'/, ''),
             address: r.address || '',
             status: r.status || STATUS_OPTIONS[0],
             technician: r.technician || '',
@@ -102,7 +100,7 @@ const App: React.FC = () => {
         setTechnicians(Array.isArray(techList) ? techList : []);
       }
       if (Array.isArray(resPrice)) setPriceList(resPrice);
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+    } catch (e) { console.error("Lỗi tải dữ liệu:", e); } finally { setLoading(false); }
   }, [user, config.sheetUrl, services.length]);
 
   useEffect(() => { if (user) fetchData(); }, [user, fetchData]);
@@ -146,21 +144,25 @@ const App: React.FC = () => {
   const handleAction = async (action: 'create' | 'update') => {
     setIsSubmitting(true);
     try {
-      // ĐẢM BẢO DỮ LIỆU GỬI ĐI LÀ MẢNG SẠCH ĐỂ SCRIPT JSON.stringify KHÔNG BỊ DOUBLE ESCAPE
+      // TÌM PHIẾU GỐC ĐỂ LẤY NGÀY CỐ ĐỊNH
+      const originalService = action === 'update' ? services.find(s => s.id === selectedId) : null;
+      
       const payload = { 
         id: action === 'create' ? Date.now().toString() : selectedId,
-        created_at: action === 'create' ? new Date().toISOString() : services.find(s => s.id === selectedId)?.created_at,
+        // GIỮ NGUYÊN NGÀY NẾU LÀ CẬP NHẬT
+        created_at: action === 'create' ? new Date().toISOString() : (originalService?.created_at || new Date().toISOString()),
         customer_name: formData.customerName,
-        phone: formData.phone, // Script của bạn sẽ tự thêm dấu '
+        phone: formData.phone, 
         address: formData.address,
         status: formData.status,
         technician: formData.technician,
         content: formData.content,
+        // ĐẢM BẢO GỬI MẢNG THUẦN (ARRAY), KHÔNG GỬI STRING ĐÃ JSON.stringify
         work_items: Array.isArray(formData.workItems) ? formData.workItems : [],
         revenue: Number(formData.revenue),
         cost: Number(formData.cost),
         debt: Number(formData.debt),
-        search_key: `${formData.customerName} ${formData.phone}`.toLowerCase()
+        search_key: `${formData.customerName} ${formData.phone} ${formData.address}`.toLowerCase()
       };
 
       const res = await callSheetAPI(config.sheetUrl, action, payload);

@@ -11,6 +11,8 @@ export async function callSheetAPI(url: string, action: string, data: any = {}, 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
 
+    // Dữ liệu payload được gửi đi là một object hoàn chỉnh, 
+    // JSON.stringify sẽ được thực hiện một lần duy nhất tại đây.
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -25,7 +27,7 @@ export async function callSheetAPI(url: string, action: string, data: any = {}, 
     const text = await response.text();
     if (!text) throw new Error("Server phản hồi rỗng.");
 
-    // Tối ưu hóa việc tìm khối JSON trong chuỗi phản hồi (phòng trường hợp Apps Script trả về rác)
+    // Xử lý nếu Google Apps Script trả về văn bản thừa trước khối JSON
     const jsonMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);

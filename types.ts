@@ -32,15 +32,15 @@ export interface ServiceFormData {
   technician: string;
   content: string;
   workItems: WorkItem[];
-  revenue: string | number;
-  cost: string | number;
-  debt: string | number;
+  revenue: number;
+  cost: number;
+  debt: number;
 }
 
 export interface ServiceTicket extends ServiceFormData {
   id: string;
-  created_at: string;
-  searchKey?: string;
+  created_at: string; // Ngày nhập phiếu cố định
+  search_key?: string;
 }
 
 export interface PriceItem {
