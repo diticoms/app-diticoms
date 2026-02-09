@@ -63,24 +63,31 @@ const App: React.FC = () => {
 
       if (Array.isArray(resData)) {
         const mapped = resData.map((r: any) => {
-          let parsedWorkItems = [];
+          // PHÂN TÍCH DỮ LIỆU TỪ SHEET CỰC KỲ CẨN THẬN
+          let parsedItems = [];
           const rawItems = r.work_items || r.workItems;
+          
           if (Array.isArray(rawItems)) {
-            parsedWorkItems = rawItems;
-          } else if (typeof rawItems === 'string' && rawItems.trim() !== '') {
-            try { parsedWorkItems = JSON.parse(rawItems); } catch (e) { parsedWorkItems = []; }
+            parsedItems = rawItems;
+          } else if (typeof rawItems === 'string' && rawItems.trim().startsWith('[')) {
+            try { 
+              parsedItems = JSON.parse(rawItems); 
+            } catch (e) { 
+              console.error("Lỗi parse JSON workItems:", e);
+              parsedItems = []; 
+            }
           }
 
           return {
             id: String(r.id),
             created_at: r.created_at || r.date || new Date().toISOString(),
             customerName: r.customer_name || r.customerName || '',
-            phone: String(r.phone || '').replace(/^'/, ''),
+            phone: String(r.phone || '').replace(/^'/, ''), // Xóa dấu ' nếu có khi hiển thị
             address: r.address || '',
             status: r.status || STATUS_OPTIONS[0],
             technician: r.technician || '',
             content: r.content || '',
-            workItems: parsedWorkItems,
+            workItems: parsedItems,
             revenue: Number(r.revenue || 0),
             cost: Number(r.cost || 0),
             debt: Number(r.debt || 0)
@@ -102,7 +109,6 @@ const App: React.FC = () => {
 
   const filteredServices = useMemo(() => {
     let result = [...services];
-    
     if (user?.role !== 'admin' && user?.associatedTech) {
       result = result.filter(s => s.technician === user.associatedTech);
     } else if (filters.searchTech) {
@@ -124,7 +130,6 @@ const App: React.FC = () => {
         (s.address || '').toLowerCase().includes(term)
       );
     }
-
     return result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [services, filters, user]);
 
@@ -138,47 +143,38 @@ const App: React.FC = () => {
     });
   }, [user]);
 
-  const handleSave = async () => {
+  const handleAction = async (action: 'create' | 'update') => {
     setIsSubmitting(true);
     try {
+      // ĐẢM BẢO DỮ LIỆU GỬI ĐI LÀ MẢNG SẠCH ĐỂ SCRIPT JSON.stringify KHÔNG BỊ DOUBLE ESCAPE
       const payload = { 
-        ...formData, 
-        customer_name: formData.customerName, // Tương thích Apps Script
-        work_items: formData.workItems,      // Tương thích Apps Script
-        id: Date.now().toString(), 
-        created_at: new Date().toISOString() 
-      };
-      const res = await callSheetAPI(config.sheetUrl, 'create', payload);
-      if(res?.status === 'success') { await fetchData(); resetForm(); }
-    } catch (e) { alert("Lỗi lưu phiếu"); } finally { setIsSubmitting(false); }
-  };
-
-  const handleUpdate = async () => {
-    if(!selectedId) return;
-    setIsSubmitting(true);
-    try {
-      const payload = { 
-        ...formData, 
+        id: action === 'create' ? Date.now().toString() : selectedId,
+        created_at: action === 'create' ? new Date().toISOString() : services.find(s => s.id === selectedId)?.created_at,
         customer_name: formData.customerName,
-        work_items: formData.workItems,
-        id: selectedId 
+        phone: formData.phone, // Script của bạn sẽ tự thêm dấu '
+        address: formData.address,
+        status: formData.status,
+        technician: formData.technician,
+        content: formData.content,
+        work_items: Array.isArray(formData.workItems) ? formData.workItems : [],
+        revenue: Number(formData.revenue),
+        cost: Number(formData.cost),
+        debt: Number(formData.debt),
+        search_key: `${formData.customerName} ${formData.phone}`.toLowerCase()
       };
-      const res = await callSheetAPI(config.sheetUrl, 'update', payload);
-      if (res?.status === 'success' || res?.status === 'updated') {
-        await fetchData(); resetForm();
-      } else { alert(res?.error || "Lỗi cập nhật"); }
-    } catch (e) { alert("Lỗi hệ thống khi cập nhật"); } finally { setIsSubmitting(false); }
-  };
 
-  const handleDelete = async () => {
-    if(!selectedId || !confirm('Xóa phiếu này?')) return;
-    setIsSubmitting(true);
-    try {
-      const res = await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user?.role });
-      if (res?.status === 'success' || res?.status === 'deleted') {
-        await fetchData(); resetForm();
-      } else { alert(res?.error || "Lỗi xóa"); }
-    } catch (e) { alert("Lỗi hệ thống khi xóa"); } finally { setIsSubmitting(false); }
+      const res = await callSheetAPI(config.sheetUrl, action, payload);
+      if(res?.status === 'success' || res?.status === 'updated') { 
+        await fetchData(); 
+        resetForm(); 
+      } else {
+        alert(res?.error || "Lỗi thao tác Server");
+      }
+    } catch (e) { 
+      alert("Lỗi kết nối Server"); 
+    } finally { 
+      setIsSubmitting(false); 
+    }
   };
 
   if (!user) return <LoginScreen onLogin={async (u, p) => {
@@ -220,9 +216,16 @@ const App: React.FC = () => {
                 priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
                 currentUser={user} services={services} bankInfo={config.bankInfo}
                 onClear={() => resetForm()}
-                onSave={handleSave}
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
+                onSave={() => handleAction('create')}
+                onUpdate={() => handleAction('update')}
+                onDelete={async () => {
+                   if(!selectedId || !confirm('Xóa phiếu này?')) return;
+                   setIsSubmitting(true);
+                   try {
+                     await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user?.role });
+                     await fetchData(); resetForm();
+                   } catch (e) { alert("Lỗi xóa"); } finally { setIsSubmitting(false); }
+                }}
               />
             </div>
           </div>
