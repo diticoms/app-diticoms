@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Search, Loader2, ChevronRight, Calendar, Filter, CheckCircle2, MessageSquare, Phone, MapPin, Download, Smartphone } from 'lucide-react';
+import { Search, Loader2, ChevronRight, Calendar, Filter, CheckCircle2, MessageSquare, Phone, MapPin, Download, Smartphone, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ServiceTicket } from '../types.ts';
 import { formatCurrency, debounce } from '../utils/helpers.ts';
@@ -149,16 +149,23 @@ export const ServiceList: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="flex items-center gap-2 ml-auto">
-            {onInstallApp && (
-              <button 
-                onClick={onInstallApp}
-                className={`h-[34px] px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider ${installAvailable ? 'bg-slate-800 text-white hover:bg-black' : 'bg-slate-100 text-slate-500'}`}
-              >
-                <Smartphone size={14} /> {installAvailable ? 'CÀI ĐẶT APP' : 'TẢI APP'}
-              </button>
-            )}
+          {/* Ô LỌC KỸ THUẬT VIÊN - CHỈ HIỂN THỊ CHO ADMIN HOẶC HIỂN THỊ READ-ONLY CHO USER */}
+          <div className="flex items-center gap-1 bg-white rounded-xl px-2 border border-slate-200 h-[34px] shadow-sm">
+            <Users size={12} className="text-slate-400" />
+            <select 
+              className="bg-transparent font-bold text-slate-600 outline-none text-[10px] border-none focus:ring-0 pr-6"
+              value={isAdmin ? filters.searchTech : (currentUser?.associatedTech || '')}
+              onChange={e => isAdmin && setFilters.setSearchTech(e.target.value)}
+              disabled={!isAdmin}
+            >
+              <option value="">Tất cả KTV</option>
+              {technicians.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
 
+          <div className="flex items-center gap-2 ml-auto">
             <button 
               onClick={handleExportExcel}
               className="h-[34px] px-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-[10px] uppercase tracking-wider"

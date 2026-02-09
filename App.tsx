@@ -85,18 +85,24 @@ const App: React.FC = () => {
 
   useEffect(() => { if (user) fetchData(); }, [user, fetchData]);
 
-  // Logic phân quyền: User không phải admin chỉ thấy phiếu của họ
   const filteredServices = useMemo(() => {
     let result = [...services];
+    
+    // Phân quyền cơ bản
     if (user?.role !== 'admin' && user?.associatedTech) {
       result = result.filter(s => s.technician === user.associatedTech);
+    } else if (filters.searchTech) {
+      // Lọc theo KTV cụ thể nếu là Admin
+      result = result.filter(s => s.technician === filters.searchTech);
     }
+
     if (!filters.viewAll) {
       result = result.filter(s => {
         const date = (s.created_at || '').split('T')[0];
         return date >= filters.dateFrom && date <= filters.dateTo;
       });
     }
+
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
       result = result.filter(s => 
@@ -105,6 +111,7 @@ const App: React.FC = () => {
         (s.address || '').toLowerCase().includes(term)
       );
     }
+
     return result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [services, filters, user]);
 
@@ -115,7 +122,6 @@ const App: React.FC = () => {
       if (res?.status === 'success' && res.user) {
         setUser(res.user);
         localStorage.setItem('diti_user', JSON.stringify(res.user));
-        // Reset form để nhận diện KTV mặc định của user mới đăng nhập
         resetForm(res.user);
       } else { alert(res?.error || 'Sai thông tin'); }
     } catch (e) { alert('Lỗi kết nối'); } finally { setLoading(false); }
@@ -209,6 +215,7 @@ const App: React.FC = () => {
                 setDateFrom: (v: string) => setFilters(f => ({ ...f, dateFrom: v, viewAll: false })),
                 setDateTo: (v: string) => setFilters(f => ({ ...f, dateTo: v, viewAll: false })),
                 setSearchTerm: (v: string) => setFilters(f => ({ ...f, searchTerm: v })),
+                setSearchTech: (v: string) => setFilters(f => ({ ...f, searchTech: v })),
                 setViewAll: (v: boolean) => setFilters(f => ({ ...f, viewAll: v }))
               }}
               currentUser={user}
