@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ServiceFormData, BankConfig } from '../types.ts';
-import { formatCurrency, calculateTotalEstimate } from '../utils/helpers.ts';
+import { formatCurrency } from '../utils/helpers.ts';
 import { Logo } from './Logo.tsx';
 
 interface Props {
@@ -10,8 +10,12 @@ interface Props {
 }
 
 export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
-  const total = calculateTotalEstimate(formData.workItems);
-  const qrUrl = bankInfo ? `https://img.vietqr.io/image/${bankInfo.bankId}-${bankInfo.accountNo}-compact2.png?amount=${total}&addInfo=DITICOMS SERVICE ${formData.customerName.toUpperCase()}&accountName=${encodeURIComponent(bankInfo.accountName)}` : '';
+  const total = Number(formData.revenue || 0);
+  
+  // Chuẩn hóa thông tin chuyển khoản và tạo URL VietQR
+  const qrUrl = bankInfo 
+    ? `https://img.vietqr.io/image/${bankInfo.bankId}-${bankInfo.accountNo}-compact2.png?amount=${total}&addInfo=${encodeURIComponent(`DITICOMS ${formData.customerName.toUpperCase()}`)}&accountName=${encodeURIComponent(bankInfo.accountName)}` 
+    : '';
 
   return (
     <div className="w-[302px] bg-white p-6 mx-auto font-sans block" style={{ height: 'auto', minHeight: 'fit-content' }}>
@@ -38,7 +42,7 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
           </div>
         )}
         <div className="flex justify-between border-b border-slate-50 pb-1">
-          <span className="font-bold text-slate-400 uppercase text-[9px]">Ngày tạo:</span>
+          <span className="font-bold text-slate-400 uppercase text-[9px]">Ngày in:</span>
           <span className="font-bold text-slate-900">{new Date().toLocaleDateString('vi-VN')}</span>
         </div>
       </div>
@@ -50,7 +54,6 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
             <tr className="text-[8px] text-slate-400 uppercase border-b border-slate-100">
               <th className="pb-2 text-left font-black">Nội dung</th>
               <th className="pb-2 text-center font-black px-1">SL</th>
-              <th className="pb-2 text-right font-black px-1">Đơn giá</th>
               <th className="pb-2 text-right font-black">T.Tiền</th>
             </tr>
           </thead>
@@ -61,7 +64,6 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
                   {item.desc}
                 </td>
                 <td className="py-2.5 text-center text-slate-600 font-black px-1">{item.qty}</td>
-                <td className="py-2.5 text-right text-slate-600 font-medium whitespace-nowrap px-1">{formatCurrency(item.price)}</td>
                 <td className="py-2.5 text-right font-black text-slate-900 whitespace-nowrap">{formatCurrency(item.total)}</td>
               </tr>
             ))}
@@ -74,7 +76,8 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
         <span className="text-lg font-black text-blue-600">{formatCurrency(formData.revenue)}đ</span>
       </div>
 
-      {bankInfo && formData.status !== 'Hoàn thành' && (
+      {/* Hiển thị QR nếu có thông tin ngân hàng và số tiền lớn hơn 0 */}
+      {bankInfo && total > 0 && (
         <div className="flex flex-col items-center space-y-3 pt-4 border-t border-dashed border-slate-200">
            <div className="bg-white p-2 rounded-xl border-2 border-slate-100 shadow-sm inline-block">
              <img src={qrUrl} alt="QR" className="w-36 h-36 aspect-square object-contain mx-auto" />

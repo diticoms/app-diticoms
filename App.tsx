@@ -21,6 +21,7 @@ const App: React.FC = () => {
   const [config, setConfig] = useState<AppConfig>(() => {
     const saved = localStorage.getItem('diti_config');
     const parsed = saved ? JSON.parse(saved) : DEFAULT_CONFIG;
+    // Đảm bảo URL luôn được cập nhật từ constants nếu chưa có
     return { ...parsed, sheetUrl: SHEET_API_URL };
   });
   
@@ -144,12 +145,11 @@ const App: React.FC = () => {
   const handleAction = async (action: 'create' | 'update') => {
     setIsSubmitting(true);
     try {
-      // TÌM PHIẾU GỐC ĐỂ LẤY NGÀY CỐ ĐỊNH
       const originalService = action === 'update' ? services.find(s => s.id === selectedId) : null;
       
       const payload = { 
         id: action === 'create' ? Date.now().toString() : selectedId,
-        // GIỮ NGUYÊN NGÀY NẾU LÀ CẬP NHẬT
+        // GIỮ NGUYÊN NGÀY NHẬP GỐC KHI CẬP NHẬT
         created_at: action === 'create' ? new Date().toISOString() : (originalService?.created_at || new Date().toISOString()),
         customer_name: formData.customerName,
         phone: formData.phone, 
@@ -157,7 +157,7 @@ const App: React.FC = () => {
         status: formData.status,
         technician: formData.technician,
         content: formData.content,
-        // ĐẢM BẢO GỬI MẢNG THUẦN (ARRAY), KHÔNG GỬI STRING ĐÃ JSON.stringify
+        // CHUẨN HÓA DỮ LIỆU MẢNG ĐỂ TRÁNH DOUBLE ESCAPING TRÊN SHEET
         work_items: Array.isArray(formData.workItems) ? formData.workItems : [],
         revenue: Number(formData.revenue),
         cost: Number(formData.cost),
