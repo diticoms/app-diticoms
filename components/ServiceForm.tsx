@@ -35,10 +35,18 @@ export const ServiceForm: React.FC<Props> = ({
   const [showBill, setShowBill] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(null);
+  const [activeWorkIdx, setActiveWorkIdx] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isAiDiagnosing, setIsAiDiagnosing] = useState(false);
   
   const billRef = useRef<HTMLDivElement>(null);
+
+  const filteredPriceSuggestions = useMemo(() => {
+    if (activeWorkIdx === null) return [];
+    const term = (formData.workItems[activeWorkIdx]?.desc || '').toLowerCase();
+    if (!term) return [];
+    return priceList.filter(p => p.name.toLowerCase().includes(term)).slice(0, 5);
+  }, [priceList, formData.workItems, activeWorkIdx]);
 
   const customerSuggestions = useMemo(() => {
     const customers: Record<string, { name: string, address: string }> = {};
@@ -60,12 +68,24 @@ export const ServiceForm: React.FC<Props> = ({
   }, [customerSuggestions, formData.phone]);
 
   const updateField = (f: keyof ServiceFormData, v: any) => {
-    setFormData(prev => ({ ...prev, [f]: v }));
+    setFormData(prev => {
+      const newState = { ...prev, [f]: v };
+      if (f === 'status') {
+        newState.debt = v === 'Hoàn thành' ? 0 : prev.revenue;
+      }
+      return newState;
+    });
   };
 
   const selectCustomer = (c: { phone: string, name: string, address: string }) => {
     setFormData(prev => ({ ...prev, phone: c.phone, customerName: c.name, address: c.address }));
     setShowPhoneSuggestions(false);
+  };
+
+  const selectPriceItem = (idx: number, p: PriceItem) => {
+    updateWorkItem(idx, 'desc', p.name);
+    updateWorkItem(idx, 'price', p.price);
+    setActiveWorkIdx(null);
   };
 
   const updateWorkItem = (idx: number, f: string, v: any) => {
@@ -199,8 +219,31 @@ export const ServiceForm: React.FC<Props> = ({
           </div>
           <div className="space-y-2">
             {Array.isArray(formData.workItems) && formData.workItems.map((item, idx) => (
-              <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl space-y-2 group hover:border-blue-100 transition-all">
-                <input type="text" placeholder="Tên dịch vụ..." className="w-full bg-transparent font-bold text-slate-800 outline-none border-b border-transparent focus:border-blue-200 text-[13px]" value={item.desc || ''} onChange={e => updateWorkItem(idx, 'desc', e.target.value)} />
+              <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl space-y-2 group hover:border-blue-100 transition-all relative">
+                <input 
+                  type="text" 
+                  placeholder="Tên dịch vụ..." 
+                  className="w-full bg-transparent font-bold text-slate-800 outline-none border-b border-transparent focus:border-blue-200 text-[13px]" 
+                  value={item.desc || ''} 
+                  onChange={e => {
+                    updateWorkItem(idx, 'desc', e.target.value);
+                    setActiveWorkIdx(idx);
+                  }} 
+                  onFocus={() => setActiveWorkIdx(idx)}
+                  onBlur={() => setTimeout(() => setActiveWorkIdx(null), 200)}
+                />
+                
+                {activeWorkIdx === idx && filteredPriceSuggestions.length > 0 && (
+                  <div className="absolute top-10 left-0 right-0 bg-white border border-slate-200 shadow-2xl z-[60] max-h-48 overflow-auto rounded-xl mt-1">
+                    {filteredPriceSuggestions.map((p, i) => (
+                      <div key={i} onMouseDown={() => selectPriceItem(idx, p)} className="p-2.5 hover:bg-blue-50 cursor-pointer border-b last:border-0 transition-colors flex justify-between items-center">
+                        <span className="font-bold text-slate-800 text-[11px]">{p.name}</span>
+                        <span className="font-black text-blue-600 text-[10px]">{formatCurrency(p.price)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex gap-2 text-[11px] font-bold">
                   <div className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg flex items-center gap-1">SL: <input type="number" className="w-full outline-none font-black text-center bg-transparent" value={item.qty || 1} onChange={e => updateWorkItem(idx, 'qty', e.target.value)} /></div>
                   <div className="flex-[2] bg-white border border-slate-100 p-1.5 rounded-lg px-2 text-right"><input type="text" className="w-full outline-none font-black text-right text-blue-600 bg-transparent" value={formatCurrency(item.price)} onChange={e => updateWorkItem(idx, 'price', e.target.value)} /></div>

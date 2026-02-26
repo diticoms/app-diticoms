@@ -19,7 +19,8 @@ export const DEFAULT_CONFIG: AppConfig = {
 };
 
 export const STATUS_OPTIONS = [
-  'Mới tiếp nhận',
+  'Tiếp nhận',
   'Đang sửa chữa',
+  'Chưa thanh toán',
   'Hoàn thành'
 ];

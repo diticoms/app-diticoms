@@ -160,7 +160,11 @@ export const ServiceList: React.FC<Props> = ({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-black text-slate-400 uppercase tracking-tighter text-[10px] truncate max-w-[90px]">{item.technician || 'CHƯA PHÂN CÔNG'}</span>
-                    <span className={`font-black px-2 py-0.5 rounded-lg uppercase tracking-widest text-[9px] ${item.status === 'Hoàn thành' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>{item.status}</span>
+                    <span className={`font-black px-2 py-0.5 rounded-lg uppercase tracking-widest text-[9px] ${
+                      item.status === 'Hoàn thành' ? 'bg-green-100 text-green-600' : 
+                      item.status === 'Chưa thanh toán' ? 'bg-red-100 text-red-600' :
+                      'bg-blue-100 text-blue-600'
+                    }`}>{item.status}</span>
                   </div>
                 </div>
               </div>
