@@ -131,16 +131,41 @@ export const ServiceForm: React.FC<Props> = ({
     if (!billRef.current) return;
     setIsCapturing(true);
     try {
-      await new Promise(r => setTimeout(r, 800)); // Chờ render hoàn tất
+      // Đảm bảo cuộn lên đầu vùng chứa để tránh lỗi html2canvas cắt ảnh
+      const scrollContainer = billRef.current.parentElement;
+      if (scrollContainer) scrollContainer.scrollTop = 0;
+      
+      await new Promise(r => setTimeout(r, 1000)); // Chờ render và QR load
+      
       const canvas = await html2canvas(billRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         backgroundColor: '#ffffff',
-        logging: false
+        logging: false,
+        width: billRef.current.offsetWidth,
+        height: billRef.current.scrollHeight,
+        windowWidth: 1000, // Đảm bảo cửa sổ ảo đủ rộng
+        windowHeight: billRef.current.scrollHeight + 1000, // Đảm bảo cửa sổ ảo đủ cao
+        onclone: (clonedDoc, element) => {
+          element.style.height = 'auto';
+          element.style.overflow = 'visible';
+          element.style.margin = '0';
+          element.style.padding = '4px';
+          
+          // Đảm bảo các phần tử cha không cắt ảnh trong bản clone
+          let parent = element.parentElement;
+          while (parent && parent !== clonedDoc.body) {
+            parent.style.overflow = 'visible';
+            parent.style.height = 'auto';
+            parent.style.maxHeight = 'none';
+            parent = parent.parentElement;
+          }
+        }
       });
-      setCapturedDataUrl(canvas.toDataURL('image/png'));
+      setCapturedDataUrl(canvas.toDataURL('image/png', 1.0));
       showTemporaryStatus("Đã tạo ảnh hóa đơn!");
     } catch (err) {
+      console.error("Capture error:", err);
       alert("Lỗi khi tạo ảnh hóa đơn.");
     } finally {
       setIsCapturing(false);
@@ -292,7 +317,7 @@ export const ServiceForm: React.FC<Props> = ({
             <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-100 rounded-[40px] p-4 shadow-2xl flex flex-col items-center">
               {!capturedDataUrl ? (
                 <>
-                  <div ref={billRef} className="bg-white rounded-3xl overflow-hidden shadow-sm p-1">
+                  <div ref={billRef} className="bg-white shadow-sm p-1">
                     <InvoiceTemplate formData={formData} bankInfo={bankInfo} />
                   </div>
                   <div className="w-full mt-8 px-4">

@@ -18,7 +18,7 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
     : '';
 
   return (
-    <div className="w-[302px] bg-white p-6 mx-auto font-sans block" style={{ height: 'auto', minHeight: 'fit-content' }}>
+    <div className="w-[302px] bg-white p-6 font-sans block relative" style={{ height: 'auto' }}>
       <div className="flex flex-col items-center text-center space-y-1 mb-5">
         <Logo size={52} />
         <h1 className="text-xl font-black uppercase text-blue-600 tracking-tight">DITICOMS SERVICE</h1>
