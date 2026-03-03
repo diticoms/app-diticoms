@@ -15,6 +15,7 @@ import { QuotationTemplate } from './QuotationTemplate';
 
 const INITIAL_ITEM: QuotationItem = {
   description: '',
+  specs: '',
   unit: 'Cái',
   quantity: 1,
   price: 0,
@@ -31,11 +32,19 @@ const INITIAL_QUOTATION: QuotationData = {
   items: [{ ...INITIAL_ITEM }],
   vatRate: 0,
   totalAmount: 0,
-  notes: ''
+  notes: '',
+  preparedBy: ''
 };
 
-export const QuotationTool: React.FC = () => {
-  const [data, setData] = useState<QuotationData>(INITIAL_QUOTATION);
+interface Props {
+  currentUser: any;
+}
+
+export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
+  const [data, setData] = useState<QuotationData>(() => ({
+    ...INITIAL_QUOTATION,
+    preparedBy: currentUser?.name || ''
+  }));
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -94,13 +103,14 @@ export const QuotationTool: React.FC = () => {
       ["Địa chỉ:", data.customerAddress],
       ["Hiệu lực đến:", data.validUntil],
       [""],
-      ["STT", "Tên hàng hóa, dịch vụ (Description)", "ĐVT (Unit)", "Số lượng (Qty)", "Đơn giá (Price)", "Thành tiền", "Ghi chú"]
+      ["STT", "Tên hàng hóa, dịch vụ (Description)", "Thông số kỹ thuật (Specifications)", "ĐVT (Unit)", "Số lượng (Qty)", "Đơn giá (Price)", "Thành tiền", "Ghi chú"]
     ];
 
     data.items.forEach((item, index) => {
       wsData.push([
         (index + 1).toString(),
         item.description,
+        item.specs,
         item.unit,
         item.quantity.toString(),
         item.price.toString(),
@@ -112,11 +122,12 @@ export const QuotationTool: React.FC = () => {
     const subtotal = data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
     const vatAmount = subtotal * (data.vatRate / 100);
 
-    wsData.push(["", "", "", "", "CỘNG TIỀN HÀNG:", subtotal.toString(), ""]);
+    wsData.push(["", "", "", "", "", "CỘNG TIỀN HÀNG:", subtotal.toString(), ""]);
     if (data.vatRate > 0) {
-      wsData.push(["", "", "", "", `THUẾ VAT (${data.vatRate}%):`, vatAmount.toString(), ""]);
+      wsData.push(["", "", "", "", "", `THUẾ VAT (${data.vatRate}%):`, vatAmount.toString(), ""]);
     }
-    wsData.push(["", "", "", "", "TỔNG CỘNG THANH TOÁN:", data.totalAmount.toString(), ""]);
+    wsData.push(["", "", "", "", "", "TỔNG CỘNG THANH TOÁN:", data.totalAmount.toString(), ""]);
+    wsData.push([""], ["Người lập báo giá:", data.preparedBy]);
     wsData.push([""], ["Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ của Diticoms!"]);
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -167,11 +178,12 @@ export const QuotationTool: React.FC = () => {
           
           importedData.items?.push({
             description: row[1] || '',
-            unit: row[2] || 'Cái',
-            quantity: Number(row[3]) || 1,
-            price: Number(row[4]) || 0,
-            total: Number(row[5]) || 0,
-            note: row[6] || ''
+            specs: row[2] || '',
+            unit: row[3] || 'Cái',
+            quantity: Number(row[4]) || 1,
+            price: Number(row[5]) || 0,
+            total: Number(row[6]) || 0,
+            note: row[7] || ''
           });
         }
 
@@ -305,7 +317,7 @@ export const QuotationTool: React.FC = () => {
             className="hidden" 
           />
           <button 
-            onClick={() => setData(INITIAL_QUOTATION)}
+            onClick={() => setData({ ...INITIAL_QUOTATION, preparedBy: currentUser?.name || '' })}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-100 transition-all border border-red-100"
           >
             <RefreshCw size={16} />
@@ -425,15 +437,27 @@ export const QuotationTool: React.FC = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    <div className="md:col-span-6 space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tên hàng hóa, dịch vụ</label>
-                      <input 
-                        type="text" 
-                        value={item.description}
-                        onChange={e => handleUpdateItem(index, 'description', e.target.value)}
-                        placeholder="Mô tả dịch vụ..."
-                        className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold"
-                      />
+                    <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tên hàng hóa, dịch vụ</label>
+                        <input 
+                          type="text" 
+                          value={item.description}
+                          onChange={e => handleUpdateItem(index, 'description', e.target.value)}
+                          placeholder="Tên sản phẩm/dịch vụ..."
+                          className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Thông số kỹ thuật</label>
+                        <input 
+                          type="text" 
+                          value={item.specs}
+                          onChange={e => handleUpdateItem(index, 'specs', e.target.value)}
+                          placeholder="Thông số, model..."
+                          className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold text-slate-500"
+                        />
+                      </div>
                     </div>
                     <div className="md:col-span-2 space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">ĐVT</label>
@@ -454,7 +478,7 @@ export const QuotationTool: React.FC = () => {
                         className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-bold text-center"
                       />
                     </div>
-                    <div className="md:col-span-2 space-y-1">
+                    <div className="md:col-span-4 space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Đơn giá</label>
                       <input 
                         type="text" 
@@ -463,21 +487,21 @@ export const QuotationTool: React.FC = () => {
                         className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-bold text-right text-blue-600"
                       />
                     </div>
-                    <div className="md:col-span-8 space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Ghi chú</label>
-                      <input 
-                        type="text" 
-                        value={item.note}
-                        onChange={e => handleUpdateItem(index, 'note', e.target.value)}
-                        placeholder="Ghi chú thêm..."
-                        className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-xs italic"
-                      />
-                    </div>
                     <div className="md:col-span-4 space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Thành tiền</label>
                       <div className="w-full bg-blue-100/50 border border-blue-200 rounded-xl py-2.5 px-4 text-sm font-black text-blue-700 text-right">
                         {formatCurrency(item.total)}đ
                       </div>
+                    </div>
+                    <div className="md:col-span-12 space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Ghi chú</label>
+                      <input 
+                        type="text" 
+                        value={item.note}
+                        onChange={e => handleUpdateItem(index, 'note', e.target.value)}
+                        placeholder="Ghi chú thêm cho mục này..."
+                        className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-xs italic"
+                      />
                     </div>
                   </div>
                 </div>

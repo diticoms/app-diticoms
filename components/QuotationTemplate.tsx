@@ -54,18 +54,21 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
           <tr className="bg-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600">
             <th className="border p-3 text-left w-10">STT</th>
             <th className="border p-3 text-left">Tên hàng hóa, dịch vụ (Description)</th>
-            <th className="border p-3 text-center w-20">ĐVT (Unit)</th>
-            <th className="border p-3 text-center w-20">SL (Qty)</th>
-            <th className="border p-3 text-right w-32">Đơn giá (Price)</th>
-            <th className="border p-3 text-right w-32">Thành tiền</th>
-            <th className="border p-3 text-left w-32">Ghi Chú</th>
+            <th className="border p-3 text-center w-16">ĐVT (Unit)</th>
+            <th className="border p-3 text-center w-16">SL (Qty)</th>
+            <th className="border p-3 text-right w-24">Đơn giá (Price)</th>
+            <th className="border p-3 text-right w-28">Thành tiền</th>
+            <th className="border p-3 text-left w-24">Ghi Chú</th>
           </tr>
         </thead>
         <tbody>
           {data.items.map((item, index) => (
             <tr key={index} className="text-xs border-b border-slate-100">
               <td className="border p-3 text-center">{index + 1}</td>
-              <td className="border p-3 font-semibold">{item.description}</td>
+              <td className="border p-3">
+                <div className="font-bold text-slate-900">{item.description}</div>
+                {item.specs && <div className="text-[10px] text-slate-500 mt-1 leading-relaxed">{item.specs}</div>}
+              </td>
               <td className="border p-3 text-center">{item.unit}</td>
               <td className="border p-3 text-center">{item.quantity}</td>
               <td className="border p-3 text-right">{formatCurrency(item.price)}</td>
@@ -116,7 +119,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
         <div className="text-center space-y-16">
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Người lập báo giá</p>
           <div className="space-y-1">
-            <p className="text-sm font-black text-slate-900">DITICOMS SERVICE</p>
+            <p className="text-sm font-black text-slate-900 uppercase">{data.preparedBy || 'DITICOMS SERVICE'}</p>
             <p className="text-[10px] text-slate-400 italic">(Đã ký điện tử)</p>
           </div>
         </div>

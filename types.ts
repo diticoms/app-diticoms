@@ -59,6 +59,7 @@ export interface ApiResponse {
 
 export interface QuotationItem {
   description: string;
+  specs: string;
   unit: string;
   quantity: number;
   price: number;
@@ -77,4 +78,5 @@ export interface QuotationData {
   vatRate: number;
   totalAmount: number;
   notes: string;
+  preparedBy: string;
 }

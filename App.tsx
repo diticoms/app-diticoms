@@ -306,7 +306,7 @@ const App: React.FC = () => {
               </div>
             </div>
           ) : (
-            <QuotationTool />
+            <QuotationTool currentUser={user} />
           )}
         </div>
       </main>
