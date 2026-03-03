@@ -28,6 +28,7 @@ try {
         'react-dom/*',
         'lucide-react',
         'html2canvas',
+        'jspdf',
         'xlsx',
         '@google/genai'
     ].map(lib => `--external:${lib}`).join(' ');

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { QuotationData, QuotationItem } from '../types';
 import { formatCurrency, parseCurrency } from '../utils/helpers';
 import { QuotationTemplate } from './QuotationTemplate';
@@ -77,13 +78,21 @@ export const QuotationTool: React.FC = () => {
 
   const handleExportExcel = () => {
     const wsData = [
-      ["BÁO GIÁ DỊCH VỤ - DITICOMS SERVICE"],
-      ["Ngày lập:", data.date],
-      ["Khách hàng:", data.customerName],
-      ["SĐT:", data.customerPhone],
-      ["Địa chỉ:", data.customerAddress],
+      ["DITICOMS SERVICE - TRUNG TÂM SỬA CHỮA & BẢO TRÌ LAPTOP/PC"],
+      ["Địa chỉ: 123 Đường ABC, Quận XYZ, TP. HCM"],
+      ["Hotline: 0935.71.5151 | Website: service.diticoms.vn"],
       [""],
-      ["STT", "Tên hàng hóa, dịch vụ", "ĐVT", "Số lượng", "Đơn giá", "Thành tiền", "Ghi chú"]
+      ["BÁO GIÁ DỊCH VỤ"],
+      ["Số:", data.id || 'BQ-' + Date.now().toString().slice(-6)],
+      ["Ngày lập:", data.date],
+      [""],
+      ["THÔNG TIN KHÁCH HÀNG"],
+      ["Tên khách hàng:", data.customerName],
+      ["Số điện thoại:", data.customerPhone],
+      ["Địa chỉ:", data.customerAddress],
+      ["Hiệu lực đến:", data.validUntil],
+      [""],
+      ["STT", "Tên hàng hóa, dịch vụ (Description)", "ĐVT (Unit)", "Số lượng (Qty)", "Đơn giá (Price)", "Thành tiền", "Ghi chú"]
     ];
 
     data.items.forEach((item, index) => {
@@ -98,9 +107,20 @@ export const QuotationTool: React.FC = () => {
       ]);
     });
 
-    wsData.push(["", "", "", "", "TỔNG CỘNG:", data.totalAmount.toString(), ""]);
+    wsData.push(["", "", "", "", "TỔNG CỘNG THANH TOÁN:", data.totalAmount.toString(), ""]);
+    wsData.push([""], ["Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ của Diticoms!"]);
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Basic styling/merging for Excel
+    const merges = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // Company Name
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }, // Address
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } }, // Hotline
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 6 } }, // Title
+    ];
+    ws['!merges'] = merges;
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Báo giá");
     XLSX.writeFile(wb, `Bao_Gia_${data.customerName.replace(/\s+/g, '_')}_${data.date}.xlsx`);
@@ -120,19 +140,20 @@ export const QuotationTool: React.FC = () => {
         const ws = wb.Sheets[wsname];
         const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-        // Basic parsing logic based on the export format
+        // Parsing logic for the improved format (items start at row 15)
         const importedData: Partial<QuotationData> = {
-          date: rows[1]?.[1] || new Date().toISOString().split('T')[0],
-          customerName: rows[2]?.[1] || '',
-          customerPhone: rows[3]?.[1] || '',
-          customerAddress: rows[4]?.[1] || '',
+          date: rows[6]?.[1] || new Date().toISOString().split('T')[0],
+          customerName: rows[9]?.[1] || '',
+          customerPhone: rows[10]?.[1] || '',
+          customerAddress: rows[11]?.[1] || '',
+          validUntil: rows[12]?.[1] || '',
           items: []
         };
 
-        // Find where items start (usually row 7)
-        for (let i = 7; i < rows.length; i++) {
+        // Find where items start (row 15, index 14)
+        for (let i = 15; i < rows.length; i++) {
           const row = rows[i];
-          if (!row[1] || row[4] === "TỔNG CỘNG:") break;
+          if (!row[1] || row[4] === "TỔNG CỘNG THANH TOÁN:") break;
           
           importedData.items?.push({
             description: row[1] || '',
@@ -148,7 +169,26 @@ export const QuotationTool: React.FC = () => {
           setData(prev => ({ ...prev, ...importedData as QuotationData }));
           alert("Import báo giá thành công!");
         } else {
-          alert("Không tìm thấy dữ liệu báo giá hợp lệ trong file.");
+          // Fallback to old format (row 7)
+          const fallbackItems = [];
+          for (let i = 7; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row[1] || row[4] === "TỔNG CỘNG:") break;
+            fallbackItems.push({
+              description: row[1] || '',
+              unit: row[2] || 'Cái',
+              quantity: Number(row[3]) || 1,
+              price: Number(row[4]) || 0,
+              total: Number(row[5]) || 0,
+              note: row[6] || ''
+            });
+          }
+          if (fallbackItems.length > 0) {
+            setData(prev => ({ ...prev, items: fallbackItems, customerName: rows[2]?.[1] || '' }));
+            alert("Import báo giá thành công (định dạng cũ)!");
+          } else {
+            alert("Không tìm thấy dữ liệu báo giá hợp lệ trong file.");
+          }
         }
       } catch (err) {
         console.error(err);
@@ -167,7 +207,47 @@ export const QuotationTool: React.FC = () => {
       return;
     }
     setIsGenerating(true);
-    // Give DOM time to render the hidden template
+    setTimeout(async () => {
+      if (templateRef.current) {
+        try {
+          const canvas = await html2canvas(templateRef.current, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+            logging: false
+          });
+          
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+          });
+          
+          const imgWidth = 210; // A4 width in mm
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+          pdf.save(`Bao_Gia_${data.customerName.replace(/\s+/g, '_')}.pdf`);
+          
+          // Also set preview for UI
+          setPreviewImage(imgData);
+        } catch (e) {
+          console.error(e);
+          alert("Lỗi khi tạo PDF báo giá!");
+        } finally {
+          setIsGenerating(false);
+        }
+      }
+    }, 500);
+  };
+
+  const handleGenerateImage = async () => {
+    if (!data.customerName) {
+      alert("Vui lòng nhập tên khách hàng!");
+      return;
+    }
+    setIsGenerating(true);
     setTimeout(async () => {
       if (templateRef.current) {
         try {
@@ -419,6 +499,14 @@ export const QuotationTool: React.FC = () => {
                   className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                 >
                   {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <FileText size={20} />}
+                  XUẤT FILE PDF
+                </button>
+                <button 
+                  onClick={handleGenerateImage}
+                  disabled={isGenerating}
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                >
+                  {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
                   XUẤT ẢNH BÁO GIÁ
                 </button>
                 <button 
