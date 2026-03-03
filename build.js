@@ -64,24 +64,33 @@ itemsToCopy.forEach(item => {
 });
 
 // 4. Xử lý Logo và thư mục Public
-const publicLogo = path.join(__dirname, 'public', 'logo.png');
-const destPublicLogo = path.join(distPublicDir, 'logo.png');
-const destRootLogo = path.join(distDir, 'logo.png');
+const publicLogoPng = path.join(__dirname, 'public', 'logo.png');
+const publicLogoSvg = path.join(__dirname, 'public', 'logo.svg');
+const destRootLogoPng = path.join(distDir, 'logo.png');
+const destRootLogoSvg = path.join(distDir, 'logo.svg');
+const destPublicLogoPng = path.join(distPublicDir, 'logo.png');
 
-// Phục hồi logo nếu bị mất
-if (!fs.existsSync(publicLogo)) {
+// Phục hồi logo.png nếu bị mất
+if (!fs.existsSync(publicLogoPng)) {
     const LOGO_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAADJ0lEQVR4nO2az2sTQRTHP7vZbJNNo0mTrYpW8SJeFfGkFfGgeOtf4EUPXvTiXfGuePCuePFf4EUPHjx4UPGieNBK8SJeREUrWpOmTZumbbLZbGZ8D0I3ySab7O7Mzs78fGBYmJn3mXm/vPdmZ96UUkpYmBAszEwoDPCmMMAr8H8BvAJP7UADGAn07u2V2K616+M6uG4V7K6C3ZWyf8HuvXre2/UfAt4CH4Bv9f09Bf+I9Y6Y2AnvO2IDnInF3vHeV6m0A34CP1n9M6FvX0x8V2ycAn8L/OQG+MB9v09E7/Xf2/fPgn9Z/YvGfxY+YvC98AnDpyT8zOAr4XfCpxS+E77rY7O6r6XGZxW+Fv5Z+Gvht8Kvhd8IvzX4jY8vXz++fP1wFvx18K8NfuPjr4S/En5NfA1+6eN79fE9/vj66+evmY8ZfO3jS+Xz6PNo87fA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8p8D/BPynwP8C/KfA/wL8/wH8D7Hh7OqXWv8OAAAAAElFTkSuQmCC";
     if (!fs.existsSync(path.join(__dirname, 'public'))) {
         fs.mkdirSync(path.join(__dirname, 'public'), { recursive: true });
     }
-    fs.writeFileSync(publicLogo, Buffer.from(LOGO_BASE64, 'base64'));
+    fs.writeFileSync(publicLogoPng, Buffer.from(LOGO_BASE64, 'base64'));
     console.log('✅ Đã phục hồi logo.png từ dữ liệu dự phòng');
 }
 
-if (fs.existsSync(publicLogo)) {
-    fs.copyFileSync(publicLogo, destPublicLogo);
-    fs.copyFileSync(publicLogo, destRootLogo);
-    console.log('🖼️ Đã copy logo vào dist/public/logo.png và dist/logo.png');
+// Copy logo.png
+if (fs.existsSync(publicLogoPng)) {
+    fs.copyFileSync(publicLogoPng, destRootLogoPng);
+    fs.copyFileSync(publicLogoPng, destPublicLogoPng);
+    console.log('🖼️ Đã copy logo.png vào root và public/');
+}
+
+// Copy logo.svg
+if (fs.existsSync(publicLogoSvg)) {
+    fs.copyFileSync(publicLogoSvg, destRootLogoSvg);
+    console.log('🖼️ Đã copy logo.svg vào root dist/');
 }
 
 // 5. CNAME cho Web Domain

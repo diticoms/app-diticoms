@@ -8,7 +8,7 @@ interface LogoProps {
 export const Logo: React.FC<LogoProps> = ({ className = "", size = 64 }) => {
   return (
     <img 
-      src="public/logo.png" 
+      src="logo.png" 
       alt="Logo"
       width={size}
       height={size}
@@ -16,7 +16,6 @@ export const Logo: React.FC<LogoProps> = ({ className = "", size = 64 }) => {
       loading="eager"
       onError={(e) => {
         const target = e.target as HTMLImageElement;
-        // Fallback logic nếu public/logo.png không tải được
         if (target.src.indexOf('public/') !== -1) {
           target.src = 'logo.png';
         }
