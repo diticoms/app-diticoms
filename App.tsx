@@ -7,12 +7,15 @@ import { ServiceForm } from './components/ServiceForm.tsx';
 import { ConfigModal } from './components/ConfigModal.tsx';
 import { Logo } from './components/Logo.tsx';
 import { AiChat } from './components/AiChat.tsx';
+import { QuotationTool } from './components/QuotationTool.tsx';
 import { callSheetAPI } from './services/api.ts';
 import { User, AppConfig, ServiceTicket, ServiceFormData, PriceItem } from './types.ts';
 import { DEFAULT_CONFIG, STATUS_OPTIONS, SHEET_API_URL } from './constants.ts';
 import { getTodayString } from './utils/helpers.ts';
+import { FileText, ClipboardList } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'services' | 'quotation'>('services');
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('diti_user');
     return saved ? JSON.parse(saved) : null;
@@ -195,12 +198,32 @@ const App: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
       <header className="sticky top-0 z-40 bg-white border-b px-4 py-3 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Logo size={32} />
-            <div>
-              <h1 className="font-bold text-slate-800 text-[12px] uppercase">DITICOMS SERVICE</h1>
-              <span className="text-slate-400 text-[10px] uppercase font-bold">{user.name}</span>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <Logo size={32} />
+              <div>
+                <h1 className="font-bold text-slate-800 text-[12px] uppercase">DITICOMS SERVICE</h1>
+                <span className="text-slate-400 text-[10px] uppercase font-bold">{user.name}</span>
+              </div>
             </div>
+
+            {/* Tab Switcher */}
+            <nav className="hidden md:flex bg-slate-100 p-1 rounded-xl gap-1">
+              <button 
+                onClick={() => setActiveTab('services')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all ${activeTab === 'services' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <ClipboardList size={14} />
+                QUẢN LÝ PHIẾU
+              </button>
+              <button 
+                onClick={() => setActiveTab('quotation')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all ${activeTab === 'quotation' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <FileText size={14} />
+                LÀM BÁO GIÁ
+              </button>
+            </nav>
           </div>
           <div className="flex gap-2">
             <button onClick={() => setShowConfig(true)} className="p-2 text-slate-400 hover:text-blue-500"><Settings size={18} /></button>
@@ -210,57 +233,81 @@ const App: React.FC = () => {
       </header>
 
       <main className="flex-1 lg:h-[calc(100vh-64px)] overflow-y-auto lg:overflow-hidden">
-        <div className="max-w-7xl mx-auto p-4 lg:p-6 h-full grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 h-full bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
-            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-              <ServiceForm 
-                formData={formData} setFormData={setFormData} technicians={technicians}
-                priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
-                currentUser={user} services={services} bankInfo={config.bankInfo}
-                onClear={() => resetForm()}
-                onSave={() => handleAction('create')}
-                onUpdate={() => handleAction('update')}
-                onDelete={async () => {
-                   if(!selectedId || !confirm('Xóa phiếu này?')) return;
-                   setIsSubmitting(true);
-                   try {
-                     await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user?.role });
-                     await fetchData(); resetForm();
-                   } catch (e) { alert("Lỗi xóa"); } finally { setIsSubmitting(false); }
-                }}
-              />
-            </div>
+        <div className="max-w-7xl mx-auto p-4 lg:p-6 h-full">
+          {/* Mobile Tab Switcher */}
+          <div className="md:hidden flex bg-white p-1 rounded-2xl border mb-4 gap-1 shadow-sm">
+            <button 
+              onClick={() => setActiveTab('services')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${activeTab === 'services' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-slate-400'}`}
+            >
+              <ClipboardList size={16} />
+              PHIẾU
+            </button>
+            <button 
+              onClick={() => setActiveTab('quotation')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${activeTab === 'quotation' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-slate-400'}`}
+            >
+              <FileText size={16} />
+              BÁO GIÁ
+            </button>
           </div>
 
-          <div className="lg:col-span-7 h-full flex flex-col min-h-[500px]">
-            <ServiceList 
-              data={filteredServices} loading={loading} technicians={technicians}
-              selectedId={selectedId} onSelectRow={(item) => {
-                setSelectedId(item.id);
-                setFormData({
-                  customerName: item.customerName || '',
-                  phone: item.phone || '',
-                  address: item.address || '',
-                  status: item.status || STATUS_OPTIONS[0],
-                  technician: item.technician || '',
-                  content: item.content || '',
-                  workItems: Array.isArray(item.workItems) ? [...item.workItems] : [],
-                  revenue: Number(item.revenue || 0),
-                  cost: Number(item.cost || 0),
-                  debt: Number(item.debt || 0)
-                });
-                if (window.innerWidth < 1024) window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              filters={filters} setFilters={{
-                setDateFrom: (v: string) => setFilters(f => ({ ...f, dateFrom: v, viewAll: false })),
-                setDateTo: (v: string) => setFilters(f => ({ ...f, dateTo: v, viewAll: false })),
-                setSearchTerm: (v: string) => setFilters(f => ({ ...f, searchTerm: v })),
-                setSearchTech: (v: string) => setFilters(f => ({ ...f, searchTech: v })),
-                setViewAll: (v: boolean) => setFilters(f => ({ ...f, viewAll: v }))
-              }}
-              currentUser={user}
-            />
-          </div>
+          {activeTab === 'services' ? (
+            <div className="h-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-5 h-full bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+                  <ServiceForm 
+                    formData={formData} setFormData={setFormData} technicians={technicians}
+                    priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
+                    currentUser={user} services={services} bankInfo={config.bankInfo}
+                    onClear={() => resetForm()}
+                    onSave={() => handleAction('create')}
+                    onUpdate={() => handleAction('update')}
+                    onDelete={async () => {
+                       if(!selectedId || !confirm('Xóa phiếu này?')) return;
+                       setIsSubmitting(true);
+                       try {
+                         await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user?.role });
+                         await fetchData(); resetForm();
+                       } catch (e) { alert("Lỗi xóa"); } finally { setIsSubmitting(false); }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="lg:col-span-7 h-full flex flex-col min-h-[500px]">
+                <ServiceList 
+                  data={filteredServices} loading={loading} technicians={technicians}
+                  selectedId={selectedId} onSelectRow={(item) => {
+                    setSelectedId(item.id);
+                    setFormData({
+                      customerName: item.customerName || '',
+                      phone: item.phone || '',
+                      address: item.address || '',
+                      status: item.status || STATUS_OPTIONS[0],
+                      technician: item.technician || '',
+                      content: item.content || '',
+                      workItems: Array.isArray(item.workItems) ? [...item.workItems] : [],
+                      revenue: Number(item.revenue || 0),
+                      cost: Number(item.cost || 0),
+                      debt: Number(item.debt || 0)
+                    });
+                    if (window.innerWidth < 1024) window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  filters={filters} setFilters={{
+                    setDateFrom: (v: string) => setFilters(f => ({ ...f, dateFrom: v, viewAll: false })),
+                    setDateTo: (v: string) => setFilters(f => ({ ...f, dateTo: v, viewAll: false })),
+                    setSearchTerm: (v: string) => setFilters(f => ({ ...f, searchTerm: v })),
+                    setSearchTech: (v: string) => setFilters(f => ({ ...f, searchTech: v })),
+                    setViewAll: (v: boolean) => setFilters(f => ({ ...f, viewAll: v }))
+                  }}
+                  currentUser={user}
+                />
+              </div>
+            </div>
+          ) : (
+            <QuotationTool />
+          )}
         </div>
       </main>
 
