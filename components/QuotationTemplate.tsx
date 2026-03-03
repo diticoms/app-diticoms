@@ -16,10 +16,11 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
         <div className="flex items-center gap-4">
           <Logo size={80} />
           <div className="text-left">
-            <h1 className="text-2xl font-black text-blue-600 uppercase tracking-tighter">DITICOMS SERVICE</h1>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Trung tâm sửa chữa & Bảo trì Laptop/PC</p>
-            <p className="text-[10px] text-slate-400">Địa chỉ: 123 Đường ABC, Quận XYZ, TP. HCM</p>
-            <p className="text-[10px] text-slate-400">Hotline: 0935.71.5151 | Website: service.diticoms.vn</p>
+            <h1 className="text-2xl font-black text-blue-600 uppercase tracking-tighter">CÔNG TYN TNHH ĐẦU TƯ LỸ THUẬT DITICOMS</h1>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Dịch vụ sửa chữa & Bảo trì máy tính, máy in, Lắp đặt Camera</p>
+            <p className="text-[10px] text-slate-400">MST: 0314369581</p>
+            <p className="text-[10px] text-slate-400">Địa chỉ: 145/38/12 Nguyễn Thiện Thuật, Phường Bàn Cờ, TP. HCM</p>
+            <p className="text-[10px] text-slate-400">Hotline: 0935.71.5151 | Website: diticoms.vn</p>
           </div>
         </div>
         <div className="text-right">
@@ -45,7 +46,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
 
       {/* Thank you message */}
       <div className="mb-6 italic text-sm text-slate-600">
-        Kính gửi Quý khách hàng, Diticoms Service xin chân thành cảm ơn Quý khách đã quan tâm đến dịch vụ của chúng tôi. Dưới đây là nội dung báo giá chi tiết:
+        Kính gửi Quý khách hàng, Diticoms Việt Nam xin chân thành cảm ơn Quý khách đã quan tâm đến dịch vụ của chúng tôi. Dưới đây là nội dung báo giá chi tiết:
       </div>
 
       {/* Quotation Table */}
@@ -131,7 +132,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
         <div className="text-center space-y-16">
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Người lập báo giá</p>
           <div className="space-y-1">
-            <p className="text-sm font-black text-slate-900 uppercase">{data.preparedBy || 'DITICOMS SERVICE'}</p>
+            <p className="text-sm font-black text-slate-900 uppercase">{data.preparedBy || 'DITICOMS VIỆT NAM'}</p>
             <p className="text-[10px] text-slate-400 italic">(Đã ký điện tử)</p>
           </div>
         </div>
