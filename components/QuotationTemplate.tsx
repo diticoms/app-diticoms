@@ -16,7 +16,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
         <div className="flex items-center gap-4">
           <Logo size={80} />
           <div className="text-left">
-            <h1 className="text-2xl font-black text-blue-600 uppercase tracking-tighter">CÔNG TYN TNHH ĐẦU TƯ LỸ THUẬT DITICOMS</h1>
+            <h1 className="text-2xl font-black text-blue-600 uppercase tracking-tighter">CÔNG TY TNHH ĐẦU TƯ-KỸ THUẬT DITICOMS</h1>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Dịch vụ sửa chữa & Bảo trì máy tính, máy in, Lắp đặt Camera</p>
             <p className="text-[10px] text-slate-400">MST: 0314369581</p>
             <p className="text-[10px] text-slate-400">Địa chỉ: 145/38/12 Nguyễn Thiện Thuật, Phường Bàn Cờ, TP. HCM</p>
