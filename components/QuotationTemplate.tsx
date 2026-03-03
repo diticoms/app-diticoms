@@ -67,13 +67,25 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
               <td className="border p-3 text-center">{index + 1}</td>
               <td className="border p-3">
                 <div className="font-bold text-slate-900">{item.description}</div>
-                {item.specs && <div className="text-[10px] text-slate-500 mt-1 leading-relaxed">{item.specs}</div>}
+                {item.specs && <div className="text-[10px] text-slate-500 mt-1 leading-relaxed whitespace-pre-wrap">{item.specs}</div>}
               </td>
               <td className="border p-3 text-center">{item.unit}</td>
               <td className="border p-3 text-center">{item.quantity}</td>
               <td className="border p-3 text-right">{formatCurrency(item.price)}</td>
               <td className="border p-3 text-right font-bold text-blue-600">{formatCurrency(item.total)}</td>
-              <td className="border p-3 text-slate-500 italic">{item.note}</td>
+              <td className="border p-3">
+                <div className="space-y-2">
+                  {item.note && <p className="text-slate-500 italic leading-tight">{item.note}</p>}
+                  {item.image && (
+                    <img 
+                      src={item.image} 
+                      className="max-w-full h-auto rounded border border-slate-100 shadow-sm" 
+                      alt="Product" 
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                </div>
+              </td>
             </tr>
           ))}
           {/* Fill empty rows if needed */}

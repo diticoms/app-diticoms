@@ -87,6 +87,18 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
     setData(prev => ({ ...prev, items: newItems }));
   };
 
+  const handleItemImageUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      handleUpdateItem(index, 'image', base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleExportExcel = () => {
     const wsData = [
       ["DITICOMS SERVICE - TRUNG TÂM SỬA CHỮA & BẢO TRÌ LAPTOP/PC"],
@@ -450,12 +462,12 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Thông số kỹ thuật</label>
-                        <input 
-                          type="text" 
+                        <textarea 
                           value={item.specs}
                           onChange={e => handleUpdateItem(index, 'specs', e.target.value)}
-                          placeholder="Thông số, model..."
-                          className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold text-slate-500"
+                          placeholder="Thông số, model... (Nhấn Enter để xuống dòng)"
+                          rows={3}
+                          className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold text-slate-500 resize-none"
                         />
                       </div>
                     </div>
@@ -494,14 +506,41 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
                       </div>
                     </div>
                     <div className="md:col-span-12 space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Ghi chú</label>
-                      <input 
-                        type="text" 
-                        value={item.note}
-                        onChange={e => handleUpdateItem(index, 'note', e.target.value)}
-                        placeholder="Ghi chú thêm cho mục này..."
-                        className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-xs italic"
-                      />
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Ghi chú & Hình ảnh mô tả</label>
+                      <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1">
+                          <input 
+                            type="text" 
+                            value={item.note}
+                            onChange={e => handleUpdateItem(index, 'note', e.target.value)}
+                            placeholder="Ghi chú thêm cho mục này..."
+                            className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-xs italic"
+                          />
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all cursor-pointer border border-slate-200">
+                            <Upload size={14} />
+                            ẢNH MÔ TẢ
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*"
+                              onChange={e => handleItemImageUpload(index, e)}
+                            />
+                          </label>
+                          {item.image && (
+                            <div className="relative group">
+                              <img src={item.image} className="h-10 w-10 object-cover rounded-lg border border-slate-200" alt="Preview" />
+                              <button 
+                                onClick={() => handleUpdateItem(index, 'image', undefined)}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X size={10} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

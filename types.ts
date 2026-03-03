@@ -65,6 +65,7 @@ export interface QuotationItem {
   price: number;
   total: number;
   note: string;
+  image?: string;
 }
 
 export interface QuotationData {
