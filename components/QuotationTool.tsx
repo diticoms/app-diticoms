@@ -29,6 +29,7 @@ const INITIAL_QUOTATION: QuotationData = {
   date: new Date().toISOString().split('T')[0],
   validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   items: [{ ...INITIAL_ITEM }],
+  vatRate: 0,
   totalAmount: 0,
   notes: ''
 };
@@ -41,11 +42,12 @@ export const QuotationTool: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const templateRef = useRef<HTMLDivElement>(null);
 
-  // Calculate total amount whenever items change
+  // Calculate total amount whenever items or VAT change
   useEffect(() => {
-    const total = data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
-    setData(prev => ({ ...prev, totalAmount: total }));
-  }, [data.items]);
+    const subtotal = data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+    const vatAmount = subtotal * (data.vatRate / 100);
+    setData(prev => ({ ...prev, totalAmount: subtotal + vatAmount }));
+  }, [data.items, data.vatRate]);
 
   const handleAddItem = () => {
     setData(prev => ({
@@ -107,6 +109,13 @@ export const QuotationTool: React.FC = () => {
       ]);
     });
 
+    const subtotal = data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+    const vatAmount = subtotal * (data.vatRate / 100);
+
+    wsData.push(["", "", "", "", "CỘNG TIỀN HÀNG:", subtotal.toString(), ""]);
+    if (data.vatRate > 0) {
+      wsData.push(["", "", "", "", `THUẾ VAT (${data.vatRate}%):`, vatAmount.toString(), ""]);
+    }
     wsData.push(["", "", "", "", "TỔNG CỘNG THANH TOÁN:", data.totalAmount.toString(), ""]);
     wsData.push([""], ["Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ của Diticoms!"]);
 
@@ -147,6 +156,7 @@ export const QuotationTool: React.FC = () => {
           customerPhone: rows[10]?.[1] || '',
           customerAddress: rows[11]?.[1] || '',
           validUntil: rows[12]?.[1] || '',
+          vatRate: 0,
           items: []
         };
 
@@ -487,8 +497,34 @@ export const QuotationTool: React.FC = () => {
             </div>
 
             <div className="space-y-4">
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                <div className="flex justify-between items-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cộng tiền hàng:</p>
+                  <p className="text-sm font-bold text-slate-700">
+                    {formatCurrency(data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0))}đ
+                  </p>
+                </div>
+                <div className="flex justify-between items-center gap-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">Thuế VAT (%):</p>
+                  <input 
+                    type="number" 
+                    value={data.vatRate}
+                    onChange={e => setData(prev => ({ ...prev, vatRate: Number(e.target.value) }))}
+                    className="w-20 bg-white border border-slate-200 rounded-lg py-1 px-2 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-xs font-bold text-right"
+                  />
+                </div>
+                {data.vatRate > 0 && (
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tiền thuế VAT:</p>
+                    <p className="text-sm font-bold text-blue-600">
+                      {formatCurrency(data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0) * (data.vatRate / 100))}đ
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="p-5 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-100 space-y-2">
-                <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Tổng cộng báo giá:</p>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Tổng cộng thanh toán:</p>
                 <p className="text-3xl font-black tracking-tighter">{formatCurrency(data.totalAmount)}đ</p>
               </div>
 

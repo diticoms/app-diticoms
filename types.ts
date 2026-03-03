@@ -56,3 +56,25 @@ export interface ApiResponse {
   technicians?: string[];
   priceList?: PriceItem[];
 }
+
+export interface QuotationItem {
+  description: string;
+  unit: string;
+  quantity: number;
+  price: number;
+  total: number;
+  note: string;
+}
+
+export interface QuotationData {
+  id?: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  date: string;
+  validUntil: string;
+  items: QuotationItem[];
+  vatRate: number;
+  totalAmount: number;
+  notes: string;
+}

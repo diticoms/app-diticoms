@@ -87,9 +87,21 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
           ))}
         </tbody>
         <tfoot>
-          <tr className="bg-slate-50 font-black">
-            <td colSpan={5} className="border p-4 text-right uppercase tracking-widest text-xs">Tổng cộng thanh toán:</td>
-            <td className="border p-4 text-right text-lg text-blue-600">{formatCurrency(data.totalAmount)}đ</td>
+          <tr className="bg-slate-50 font-bold text-xs">
+            <td colSpan={5} className="border p-3 text-right uppercase tracking-widest text-slate-400">Cộng tiền hàng:</td>
+            <td className="border p-3 text-right">{formatCurrency(data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0))}đ</td>
+            <td className="border p-3"></td>
+          </tr>
+          {data.vatRate > 0 && (
+            <tr className="bg-slate-50 font-bold text-xs">
+              <td colSpan={5} className="border p-3 text-right uppercase tracking-widest text-slate-400">Thuế VAT ({data.vatRate}%):</td>
+              <td className="border p-3 text-right">{formatCurrency(data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0) * (data.vatRate / 100))}đ</td>
+              <td className="border p-3"></td>
+            </tr>
+          )}
+          <tr className="bg-blue-50 font-black">
+            <td colSpan={5} className="border p-4 text-right uppercase tracking-widest text-sm text-blue-600">Tổng cộng thanh toán:</td>
+            <td className="border p-4 text-right text-xl text-blue-600">{formatCurrency(data.totalAmount)}đ</td>
             <td className="border p-4"></td>
           </tr>
         </tfoot>
