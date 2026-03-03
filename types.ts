@@ -73,6 +73,7 @@ export interface QuotationData {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
+  customerTaxId?: string;
   date: string;
   validUntil: string;
   items: QuotationItem[];

@@ -16,7 +16,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
         <div className="flex items-center gap-4">
           <Logo size={80} />
           <div className="text-left">
-            <h1 className="text-2xl font-black text-blue-550 uppercase tracking-tighter">CÔNG TY TNHH ĐẦU TƯ-KỸ THUẬT DITICOMS</h1>
+            <h1 className="text-2xl font-black text-blue-600 uppercase tracking-tighter">CÔNG TY TNHH ĐẦU TƯ-KỸ THUẬT DITICOMS</h1>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Dịch vụ sửa chữa & Bảo trì máy tính, máy in, Lắp đặt Camera</p>
             <p className="text-[10px] text-slate-400">MST: 0314369581</p>
             <p className="text-[10px] text-slate-400">Địa chỉ: 145/38/12 Nguyễn Thiện Thuật, Phường Bàn Cờ, TP. HCM</p>
@@ -35,9 +35,9 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
         <div className="space-y-1">
           <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Thông tin khách hàng</h3>
           <p className="text-sm font-bold text-slate-900">{data.customerName || '................................................'}</p>
-          <p className="text-xs text-slate-600">MST: {data.customerNumber || '..........................'}</p>
           <p className="text-xs text-slate-600">SĐT: {data.customerPhone || '..........................'}</p>
           <p className="text-xs text-slate-600">Địa chỉ: {data.customerAddress || '................................................'}</p>
+          <p className="text-xs text-slate-600">MST: {data.customerTaxId || '................................................'}</p>
         </div>
         <div className="text-right space-y-1">
           <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Hiệu lực báo giá</h3>
@@ -47,7 +47,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
 
       {/* Thank you message */}
       <div className="mb-6 italic text-sm text-slate-600">
-        Kính gửi Quý khách hàng, Diticoms Việt Nam xin chân thành cảm ơn Quý khách đã quan tâm đến dịch vụ của chúng tôi. Dưới đây là nội dung báo giá chi tiết:
+        Kính gửi Quý khách hàng, Diticoms Service xin chân thành cảm ơn Quý khách đã quan tâm đến dịch vụ của chúng tôi. Dưới đây là nội dung báo giá chi tiết:
       </div>
 
       {/* Quotation Table */}
@@ -133,7 +133,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
         <div className="text-center space-y-16">
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Người lập báo giá</p>
           <div className="space-y-1">
-            <p className="text-sm font-black text-slate-900 uppercase">{data.preparedBy || 'DITICOMS VIỆT NAM'}</p>
+            <p className="text-sm font-black text-slate-900 uppercase">{data.preparedBy || 'CÔNG TY TNHH ĐẦU TƯ-KỸ THUẬT DITICOMS'}</p>
             <p className="text-[10px] text-slate-400 italic">(Đã ký điện tử)</p>
           </div>
         </div>

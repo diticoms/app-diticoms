@@ -27,6 +27,7 @@ const INITIAL_QUOTATION: QuotationData = {
   customerName: '',
   customerPhone: '',
   customerAddress: '',
+  customerTaxId: '',
   date: new Date().toISOString().split('T')[0],
   validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   items: [{ ...INITIAL_ITEM }],
@@ -101,9 +102,11 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
 
   const handleExportExcel = () => {
     const wsData = [
-      ["DITICOMS SERVICE - TRUNG TÂM SỬA CHỮA & BẢO TRÌ LAPTOP/PC"],
-      ["Địa chỉ: 123 Đường ABC, Quận XYZ, TP. HCM"],
-      ["Hotline: 0935.71.5151 | Website: service.diticoms.vn"],
+      ["CÔNG TY TNHH ĐẦU TƯ-KỸ THUẬT DITICOMS"],
+      ["Dịch vụ sửa chữa & Bảo trì máy tính, máy in, Lắp đặt Camera"],
+      ["MST: 0314369581"],
+      ["Địa chỉ: 145/38/12 Nguyễn Thiện Thuật, Phường Bàn Cờ, TP. HCM"],
+      ["Hotline: 0935.71.5151 | Website: diticoms.vn"],
       [""],
       ["BÁO GIÁ DỊCH VỤ"],
       ["Số:", data.id || 'BQ-' + Date.now().toString().slice(-6)],
@@ -113,6 +116,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
       ["Tên khách hàng:", data.customerName],
       ["Số điện thoại:", data.customerPhone],
       ["Địa chỉ:", data.customerAddress],
+      ["MST Khách hàng:", data.customerTaxId || ''],
       ["Hiệu lực đến:", data.validUntil],
       [""],
       ["STT", "Tên hàng hóa, dịch vụ (Description)", "Thông số kỹ thuật (Specifications)", "ĐVT (Unit)", "Số lượng (Qty)", "Đơn giá (Price)", "Thành tiền", "Ghi chú"]
@@ -174,19 +178,20 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
 
         // Parsing logic for the improved format (items start at row 15)
         const importedData: Partial<QuotationData> = {
-          date: rows[6]?.[1] || new Date().toISOString().split('T')[0],
-          customerName: rows[9]?.[1] || '',
-          customerPhone: rows[10]?.[1] || '',
-          customerAddress: rows[11]?.[1] || '',
-          validUntil: rows[12]?.[1] || '',
+          date: rows[10]?.[1] || new Date().toISOString().split('T')[0],
+          customerName: rows[13]?.[1] || '',
+          customerPhone: rows[14]?.[1] || '',
+          customerAddress: rows[15]?.[1] || '',
+          customerTaxId: rows[16]?.[1] || '',
+          validUntil: rows[17]?.[1] || '',
           vatRate: 0,
           items: []
         };
 
-        // Find where items start (row 15, index 14)
-        for (let i = 15; i < rows.length; i++) {
+        // Find where items start (row 20, index 19)
+        for (let i = 20; i < rows.length; i++) {
           const row = rows[i];
-          if (!row[1] || row[4] === "TỔNG CỘNG THANH TOÁN:") break;
+          if (!row[1] || row[5] === "TỔNG CỘNG THANH TOÁN:") break;
           
           importedData.items?.push({
             description: row[1] || '',
@@ -386,6 +391,19 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
                     value={data.customerAddress}
                     onChange={e => setData(prev => ({ ...prev, customerAddress: e.target.value }))}
                     placeholder="Nhập địa chỉ khách hàng..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">MST Khách hàng</label>
+                <div className="relative">
+                  <Clipboard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input 
+                    type="text" 
+                    value={data.customerTaxId}
+                    onChange={e => setData(prev => ({ ...prev, customerTaxId: e.target.value }))}
+                    placeholder="Nhập MST khách hàng..."
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold"
                   />
                 </div>
