@@ -250,16 +250,16 @@ export const ServiceForm: React.FC<Props> = ({
             )}
             
             {showTechManager && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-slate-200 shadow-2xl z-[70] rounded-2xl p-4 animate-in fade-in slide-in-from-top-2">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Quản lý KTV</span>
-                  <button onClick={() => setShowTechManager(false)} className="text-slate-300 hover:text-slate-500"><X size={14}/></button>
+              <div className="absolute top-full right-0 mt-2 w-52 bg-white border border-slate-200 shadow-2xl z-[70] rounded-2xl p-3 animate-in fade-in slide-in-from-top-2">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Quản lý KTV</span>
+                  <button onClick={() => setShowTechManager(false)} className="text-slate-300 hover:text-slate-500"><X size={12}/></button>
                 </div>
                 
-                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar mb-3 pr-1">
+                <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar mb-2 pr-1">
                   {technicians.map((t, i) => (
-                    <div key={i} className="flex justify-between items-center p-2 bg-slate-50 rounded-lg group">
-                      <span className="text-xs font-bold text-slate-700">{t}</span>
+                    <div key={i} className="flex justify-between items-center p-1.5 bg-slate-50 rounded-lg group">
+                      <span className="text-[11px] font-bold text-slate-700 truncate mr-2">{t}</span>
                       <button 
                         onClick={async () => {
                           if (confirm(`Xóa kỹ thuật viên ${t}?`)) {
@@ -269,20 +269,20 @@ export const ServiceForm: React.FC<Props> = ({
                             setIsUpdatingTech(false);
                           }
                         }} 
-                        className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                        className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
                       >
-                        <Trash2 size={14}/>
+                        <Trash2 size={12}/>
                       </button>
                     </div>
                   ))}
-                  {technicians.length === 0 && <p className="text-[10px] text-slate-400 italic text-center py-2">Chưa có KTV nào</p>}
+                  {technicians.length === 0 && <p className="text-[9px] text-slate-400 italic text-center py-2">Chưa có KTV</p>}
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <input 
                     type="text" 
-                    placeholder="Tên KTV mới..." 
-                    className="flex-1 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-400"
+                    placeholder="Tên KTV..." 
+                    className="flex-1 bg-slate-50 border border-slate-100 rounded-lg px-2 py-1.5 text-[11px] outline-none focus:border-blue-400"
                     value={newTechName}
                     onChange={e => setNewTechName(e.target.value)}
                     onKeyDown={async (e) => {
@@ -308,9 +308,9 @@ export const ServiceForm: React.FC<Props> = ({
                       }
                       setIsUpdatingTech(false);
                     }}
-                    className="bg-blue-600 text-white p-2 rounded-lg disabled:opacity-50"
+                    className="bg-blue-600 text-white p-1.5 rounded-lg disabled:opacity-50 shrink-0"
                   >
-                    {isUpdatingTech ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14}/>}
+                    {isUpdatingTech ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12}/>}
                   </button>
                 </div>
               </div>
