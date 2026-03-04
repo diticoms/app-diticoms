@@ -40,6 +40,22 @@ const App: React.FC = () => {
   const [showConfig, setShowConfig] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const handleUpdateTechnicians = async (newList: string[]) => {
+    try {
+      const res = await callSheetAPI(config.sheetUrl, 'update_settings', { technicians: JSON.stringify(newList) });
+      if (res?.status === 'success') {
+        setTechnicians(newList);
+        return true;
+      } else {
+        alert(res?.error || "Lỗi cập nhật kỹ thuật viên");
+        return false;
+      }
+    } catch (e) {
+      alert("Lỗi kết nối khi cập nhật kỹ thuật viên");
+      return false;
+    }
+  };
+
   const [filters, setFilters] = useState({
     dateFrom: getTodayString(),
     dateTo: getTodayString(),
@@ -263,6 +279,7 @@ const App: React.FC = () => {
                     onClear={() => resetForm()}
                     onSave={() => handleAction('create')}
                     onUpdate={() => handleAction('update')}
+                    onUpdateTechnicians={handleUpdateTechnicians}
                     onDelete={async () => {
                        if(!selectedId || !confirm('Xóa phiếu này?')) return;
                        setIsSubmitting(true);

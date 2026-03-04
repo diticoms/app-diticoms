@@ -22,13 +22,14 @@ interface Props {
   onUpdate: () => void;
   onDelete: () => void;
   onClear: () => void;
+  onUpdateTechnicians: (newList: string[]) => Promise<boolean>;
   services: ServiceTicket[];
   bankInfo?: any;
 }
 
 export const ServiceForm: React.FC<Props> = ({
   formData, setFormData, technicians, priceList, selectedId, isSubmitting, 
-  currentUser, onSave, onUpdate, onDelete, onClear, services, bankInfo
+  currentUser, onSave, onUpdate, onDelete, onClear, onUpdateTechnicians, services, bankInfo
 }) => {
   const isAdmin = currentUser?.role === 'admin';
   const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
@@ -38,6 +39,9 @@ export const ServiceForm: React.FC<Props> = ({
   const [activeWorkIdx, setActiveWorkIdx] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isAiDiagnosing, setIsAiDiagnosing] = useState(false);
+  const [showTechManager, setShowTechManager] = useState(false);
+  const [newTechName, setNewTechName] = useState('');
+  const [isUpdatingTech, setIsUpdatingTech] = useState(false);
   
   const billRef = useRef<HTMLDivElement>(null);
 
@@ -231,10 +235,87 @@ export const ServiceForm: React.FC<Props> = ({
           <select className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-700 outline-none" value={formData.status} onChange={e => updateField('status', e.target.value)}>
             {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <select className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-700 outline-none disabled:opacity-50" value={formData.technician || ''} onChange={e => updateField('technician', e.target.value)} disabled={!isAdmin}>
-            <option value="">Kỹ thuật viên</option>
-            {technicians.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+          <div className="relative flex gap-1">
+            <select className="flex-1 p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-700 outline-none disabled:opacity-50" value={formData.technician || ''} onChange={e => updateField('technician', e.target.value)} disabled={!isAdmin}>
+              <option value="">Kỹ thuật viên</option>
+              {technicians.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            {isAdmin && (
+              <button 
+                onClick={() => setShowTechManager(!showTechManager)} 
+                className={`p-2.5 rounded-xl border transition-all ${showTechManager ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-400 border-slate-100 hover:text-blue-500'}`}
+              >
+                <Plus size={18} />
+              </button>
+            )}
+            
+            {showTechManager && (
+              <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-slate-200 shadow-2xl z-[70] rounded-2xl p-4 animate-in fade-in slide-in-from-top-2">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Quản lý KTV</span>
+                  <button onClick={() => setShowTechManager(false)} className="text-slate-300 hover:text-slate-500"><X size={14}/></button>
+                </div>
+                
+                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar mb-3 pr-1">
+                  {technicians.map((t, i) => (
+                    <div key={i} className="flex justify-between items-center p-2 bg-slate-50 rounded-lg group">
+                      <span className="text-xs font-bold text-slate-700">{t}</span>
+                      <button 
+                        onClick={async () => {
+                          if (confirm(`Xóa kỹ thuật viên ${t}?`)) {
+                            setIsUpdatingTech(true);
+                            const success = await onUpdateTechnicians(technicians.filter(item => item !== t));
+                            if (success) showTemporaryStatus("Đã xóa KTV");
+                            setIsUpdatingTech(false);
+                          }
+                        }} 
+                        className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Trash2 size={14}/>
+                      </button>
+                    </div>
+                  ))}
+                  {technicians.length === 0 && <p className="text-[10px] text-slate-400 italic text-center py-2">Chưa có KTV nào</p>}
+                </div>
+                
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Tên KTV mới..." 
+                    className="flex-1 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-400"
+                    value={newTechName}
+                    onChange={e => setNewTechName(e.target.value)}
+                    onKeyDown={async (e) => {
+                      if (e.key === 'Enter' && newTechName.trim()) {
+                        setIsUpdatingTech(true);
+                        const success = await onUpdateTechnicians([...technicians, newTechName.trim()]);
+                        if (success) {
+                          setNewTechName('');
+                          showTemporaryStatus("Đã thêm KTV");
+                        }
+                        setIsUpdatingTech(false);
+                      }
+                    }}
+                  />
+                  <button 
+                    disabled={isUpdatingTech || !newTechName.trim()}
+                    onClick={async () => {
+                      setIsUpdatingTech(true);
+                      const success = await onUpdateTechnicians([...technicians, newTechName.trim()]);
+                      if (success) {
+                        setNewTechName('');
+                        showTemporaryStatus("Đã thêm KTV");
+                      }
+                      setIsUpdatingTech(false);
+                    }}
+                    className="bg-blue-600 text-white p-2 rounded-lg disabled:opacity-50"
+                  >
+                    {isUpdatingTech ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14}/>}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="pt-2">
