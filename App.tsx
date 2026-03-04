@@ -42,7 +42,7 @@ const App: React.FC = () => {
 
   const handleUpdateTechnicians = async (newList: string[]) => {
     try {
-      const res = await callSheetAPI(config.sheetUrl, 'update_settings', { technicians: JSON.stringify(newList) });
+      const res = await callSheetAPI(config.sheetUrl, 'save_settings', { technicians: JSON.stringify(newList) });
       if (res?.status === 'success') {
         setTechnicians(newList);
         return true;
