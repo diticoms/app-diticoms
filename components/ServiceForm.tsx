@@ -328,7 +328,51 @@ export const ServiceForm: React.FC<Props> = ({
 
       {showBill && (
         <div className="fixed inset-0 z-[10000] bg-black/90 flex flex-col p-4 animate-in fade-in">
-          {/* ... existing bill code ... */}
+          <div className="max-w-md w-full mx-auto flex flex-col h-full">
+            <div className="flex justify-between items-center mb-6">
+              <button onClick={() => setShowBill(false)} className="flex items-center gap-2 text-white/70 font-bold uppercase text-[10px] tracking-widest hover:text-white transition-colors"><ArrowLeft size={16}/> Quay lại</button>
+              <h3 className="text-white font-black uppercase tracking-[0.2em] text-xs">Hóa đơn điện tử</h3>
+              <div className="w-10"></div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-100 rounded-[40px] p-4 shadow-2xl flex flex-col items-center">
+              {!capturedDataUrl ? (
+                <>
+                  <div ref={billRef} className="bg-white shadow-sm p-1">
+                    <InvoiceTemplate formData={formData} bankInfo={bankInfo} />
+                  </div>
+                  <div className="w-full mt-8 px-4">
+                    <button onClick={handleCaptureBill} disabled={isCapturing} className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest flex items-center justify-center gap-4 shadow-2xl active:scale-95 transition-all">
+                      {isCapturing ? <Loader2 size={24} className="animate-spin" /> : <Camera size={24} />} TẠO ẢNH CHIA SẺ
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="animate-in zoom-in duration-300 w-full flex flex-col items-center px-2">
+                   <img src={capturedDataUrl} alt="Invoice" className="w-full rounded-2xl shadow-xl border border-white/50 mb-8" />
+                   <div className="w-full space-y-3 pb-8">
+                      <button onClick={async () => {
+                        const blob = await (await fetch(capturedDataUrl)).blob();
+                        const file = new File([blob], `Bill_${formData.customerName}.png`, { type: 'image/png' });
+                        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+                          await navigator.share({ files: [file], title: 'Hóa đơn Diticoms', text: `Gửi hóa đơn cho ${formData.customerName}` });
+                        } else {
+                          const link = document.createElement('a');
+                          link.download = `Bill_${formData.customerName}.png`;
+                          link.href = capturedDataUrl;
+                          link.click();
+                        }
+                      }} className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all">
+                        <Share2 size={20} /> CHIA SẺ NGAY
+                      </button>
+                      <button onClick={() => setCapturedDataUrl(null)} className="w-full text-slate-400 font-bold py-3 uppercase text-[10px] tracking-widest">
+                        QUAY LẠI CHỈNH SỬA
+                      </button>
+                   </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
