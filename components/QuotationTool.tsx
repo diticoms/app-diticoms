@@ -468,13 +468,6 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
                 </div>
                 <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">Nội dung báo giá</h3>
               </div>
-              <button 
-                onClick={handleAddItem}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
-              >
-                <Plus size={16} />
-                THÊM MỤC
-              </button>
             </div>
 
             <div className="space-y-4">
@@ -587,6 +580,16 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
                   </div>
                 </div>
               ))}
+
+              <div className="flex justify-center pt-2">
+                <button 
+                  onClick={handleAddItem}
+                  className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95"
+                >
+                  <Plus size={18} />
+                  THÊM MỤC HÀNG HÓA MỚI
+                </button>
+              </div>
             </div>
           </div>
         </div>
