@@ -10,13 +10,13 @@ interface Props {
 
 export const QuotationTemplate: React.FC<Props> = ({ data }) => {
   return (
-    <div className="w-[800px] bg-white p-10 font-sans text-slate-800" id="quotation-template">
+    <div className="w-[800px] bg-white p-[1cm] font-sans text-slate-800" id="quotation-template">
       {/* Header: Logo and Company Info */}
       <div className="flex items-center justify-between border-b-2 border-blue-600 pb-6 mb-8">
         <div className="flex items-center gap-4">
           <Logo size={80} />
           <div className="text-left">
-            <h1 className="text-lg font-black text-blue-600 uppercase tracking-tighter">CÔNG TY TNHH ĐẦU TƯ - KỸ THUẬT DITICOMS</h1>
+            <h1 className="text-lg font-black text-blue-600 uppercase tracking-tighter">CÔNG TY TNHH ĐẦU TƯ-KỸ THUẬT DITICOMS</h1>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Dịch vụ sửa chữa & Bảo trì máy tính, máy in, Lắp đặt Camera</p>
             <p className="text-[10px] text-slate-400">MST: 0314369581</p>
             <p className="text-[10px] text-slate-400">Địa chỉ: 145/38/12 Nguyễn Thiện Thuật, Phường Bàn Cờ, TP. HCM</p>

@@ -276,7 +276,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
           const pdf = new jsPDF('p', 'mm', 'a4');
           
           const imgWidth = 210;
-          const pageHeight = 295;
+          const pageHeight = 297;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
           let heightLeft = imgHeight;
           let position = 0;
