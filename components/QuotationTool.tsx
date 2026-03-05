@@ -148,12 +148,26 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 5 },   // STT
+      { wch: 40 },  // Description
+      { wch: 40 },  // Specs
+      { wch: 10 },  // Unit
+      { wch: 10 },  // Qty
+      { wch: 15 },  // Price
+      { wch: 15 },  // Total
+      { wch: 30 }   // Note
+    ];
+
     // Basic styling/merging for Excel
     const merges = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // Company Name
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }, // Address
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } }, // Hotline
-      { s: { r: 4, c: 0 }, e: { r: 4, c: 6 } }, // Title
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // Company Name
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }, // Service
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } }, // MST
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 7 } }, // Address
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 7 } }, // Hotline
+      { s: { r: 6, c: 0 }, e: { r: 6, c: 7 } }, // Title
     ];
     ws['!merges'] = merges;
 
@@ -176,20 +190,20 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
         const ws = wb.Sheets[wsname];
         const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-        // Parsing logic for the improved format (items start at row 15)
+        // Parsing logic for the improved format (items start at row 18, index 17)
         const importedData: Partial<QuotationData> = {
-          date: rows[10]?.[1] || new Date().toISOString().split('T')[0],
-          customerName: rows[13]?.[1] || '',
-          customerPhone: rows[14]?.[1] || '',
-          customerAddress: rows[15]?.[1] || '',
-          customerTaxId: rows[16]?.[1] || '',
-          validUntil: rows[17]?.[1] || '',
+          date: rows[8]?.[1] || new Date().toISOString().split('T')[0],
+          customerName: rows[11]?.[1] || '',
+          customerPhone: rows[12]?.[1] || '',
+          customerAddress: rows[13]?.[1] || '',
+          customerTaxId: rows[14]?.[1] || '',
+          validUntil: rows[15]?.[1] || '',
           vatRate: 0,
           items: []
         };
 
-        // Find where items start (row 20, index 19)
-        for (let i = 20; i < rows.length; i++) {
+        // Find where items start (index 18)
+        for (let i = 18; i < rows.length; i++) {
           const row = rows[i];
           if (!row[1] || row[5] === "TỔNG CỘNG THANH TOÁN:") break;
           
@@ -253,20 +267,30 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
             scale: 2,
             useCORS: true,
             backgroundColor: "#ffffff",
-            logging: false
+            logging: false,
+            windowWidth: templateRef.current.scrollWidth,
+            windowHeight: templateRef.current.scrollHeight
           });
           
           const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-          });
+          const pdf = new jsPDF('p', 'mm', 'a4');
           
-          const imgWidth = 210; // A4 width in mm
+          const imgWidth = 210;
+          const pageHeight = 295;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 0;
+
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+
+          while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
           
-          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
           pdf.save(`Bao_Gia_${data.customerName.replace(/\s+/g, '_')}.pdf`);
           
           // Also set preview for UI
