@@ -30,7 +30,8 @@ try {
         'html2canvas',
         'jspdf',
         'xlsx',
-        '@google/genai'
+        '@google/genai',
+        'react-markdown'
     ].map(lib => `--external:${lib}`).join(' ');
 
     const command = `npx esbuild index.tsx --bundle --minify --format=esm --outfile=dist/index.js --loader:.tsx=tsx --loader:.ts=ts ${externals}`;

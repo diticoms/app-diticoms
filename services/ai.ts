@@ -3,10 +3,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 /**
  * Khởi tạo Gemini AI Assistant
- * Lưu ý: process.env.API_KEY được hệ thống tự động cung cấp.
  */
 const getAiInstance = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'AIzaSyDmjGzw7I_yYRUfOocNeqw98Uc5Xj2hUjk' });
 };
 
 /**
@@ -57,8 +56,29 @@ export const diagnoseServiceAction = async (content: string) => {
 };
 
 /**
- * Trợ lý Chat: Tìm kiếm, lọc và thống kê dữ liệu
+ * Thống kê dữ liệu khách hàng của từng kỹ thuật viên
  */
+export const generateTechnicianStats = async (services: any[]) => {
+  const ai = getAiInstance();
+
+  const contextData = services.map(s => ({
+    khach_hang: s.customerName,
+    ngay: s.created_at?.split('T')[0],
+    ky_thuat: s.technician || "Chưa phân công",
+    doanh_thu: Number(s.revenue || 0),
+    noi_dung: s.content
+  }));
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: `Hãy thống kê dữ liệu khách hàng và doanh thu của từng kỹ thuật viên dựa trên danh sách phiếu dịch vụ sau: ${JSON.stringify(contextData)}. Trình bày rõ ràng, dễ đọc, bao gồm tổng số khách hàng, tổng doanh thu và đánh giá hiệu quả của từng người.`,
+    config: {
+      systemInstruction: "Bạn là chuyên gia phân tích dữ liệu của Diticoms. Hãy thống kê chi tiết, trình bày bằng Markdown (sử dụng in đậm, danh sách) để báo cáo cho quản lý. Không cần giải thích thêm."
+    }
+  });
+
+  return response.text || "Không thể tạo thống kê lúc này.";
+};
 export const queryServiceData = async (userQuery: string, services: any[]) => {
   const ai = getAiInstance();
 

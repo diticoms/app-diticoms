@@ -1,10 +1,12 @@
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Search, Loader2, ChevronRight, Calendar, Filter, CheckCircle2, MessageSquare, Phone, MapPin, Download, Users } from 'lucide-react';
+import { Search, Loader2, ChevronRight, Calendar, Filter, CheckCircle2, MessageSquare, Phone, MapPin, Download, Users, BarChart, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import ReactMarkdown from 'react-markdown';
 import { ServiceTicket } from '../types.ts';
 import { formatCurrency, debounce } from '../utils/helpers.ts';
 import { Logo } from './Logo.tsx';
+import { generateTechnicianStats } from '../services/ai.ts';
 
 interface Props {
   data: ServiceTicket[];
@@ -23,6 +25,9 @@ export const ServiceList: React.FC<Props> = ({
   const isAdmin = currentUser?.role === 'admin';
   const [localSearch, setLocalSearch] = useState(filters.searchTerm);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [statsResult, setStatsResult] = useState<string | null>(null);
+  const [isGeneratingStats, setIsGeneratingStats] = useState(false);
   
   const longPressTimer = useRef<any>(null);
   const isLongPress = useRef(false);
@@ -55,6 +60,20 @@ export const ServiceList: React.FC<Props> = ({
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "BaoCao");
     XLSX.writeFile(workbook, `Diticoms_Report_${new Date().getTime()}.xlsx`);
+  };
+
+  const handleGenerateStats = async () => {
+    if (data.length === 0) return alert("Không có dữ liệu để thống kê!");
+    setIsGeneratingStats(true);
+    setShowStatsModal(true);
+    try {
+      const result = await generateTechnicianStats(data);
+      setStatsResult(result);
+    } catch (error) {
+      setStatsResult("Đã xảy ra lỗi khi tạo thống kê. Vui lòng thử lại sau.");
+    } finally {
+      setIsGeneratingStats(false);
+    }
   };
 
   const copyToClipboard = (item: ServiceTicket) => {
@@ -115,9 +134,16 @@ export const ServiceList: React.FC<Props> = ({
             </select>
           </div>
 
-          <button onClick={handleExportExcel} className="h-[34px] px-3 ml-auto bg-green-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 text-[10px] uppercase shadow-sm">
-            <Download size={14} /> EXCEL
-          </button>
+          <div className="ml-auto flex gap-2">
+            {isAdmin && (
+              <button onClick={handleGenerateStats} disabled={isGeneratingStats} className="h-[34px] px-3 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 text-[10px] uppercase shadow-sm hover:bg-blue-700 transition-all">
+                {isGeneratingStats ? <Loader2 size={14} className="animate-spin" /> : <BarChart size={14} />} AI THỐNG KÊ
+              </button>
+            )}
+            <button onClick={handleExportExcel} className="h-[34px] px-3 bg-green-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 text-[10px] uppercase shadow-sm hover:bg-green-700 transition-all">
+              <Download size={14} /> EXCEL
+            </button>
+          </div>
         </div>
       </div>
 
@@ -186,6 +212,41 @@ export const ServiceList: React.FC<Props> = ({
           Tổng thu: {formatCurrency(data.reduce((s, i) => s + Number(i.revenue || 0), 0))}đ
         </span>
       </div>
+
+      {/* Stats Modal */}
+      {showStatsModal && (
+        <div className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white w-full max-w-2xl max-h-[80vh] rounded-[32px] p-6 shadow-2xl flex flex-col animate-in zoom-in duration-300">
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 text-blue-600 rounded-xl">
+                  <BarChart size={20} />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">AI Thống Kê Kỹ Thuật Viên</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Dựa trên dữ liệu đang hiển thị</p>
+                </div>
+              </div>
+              <button onClick={() => setShowStatsModal(false)} className="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+                <X size={18}/>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+              {isGeneratingStats ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <Loader2 size={40} className="animate-spin text-blue-500" />
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">AI đang phân tích dữ liệu...</p>
+                </div>
+              ) : (
+                <div className="prose prose-sm prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight prose-a:text-blue-600">
+                  <ReactMarkdown>{statsResult || ''}</ReactMarkdown>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
