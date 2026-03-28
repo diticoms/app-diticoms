@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Settings, LogOut } from 'lucide-react';
 import { LoginScreen } from './components/LoginScreen.tsx';
 import { ServiceList } from './components/ServiceList.tsx';
@@ -39,6 +39,7 @@ const App: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const formScrollRef = useRef<HTMLDivElement>(null);
 
   const handleUpdateTechnicians = async (newList: string[]) => {
     try {
@@ -271,12 +272,26 @@ const App: React.FC = () => {
           {activeTab === 'services' ? (
             <div className="h-full grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-5 h-full bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
-                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+                <div ref={formScrollRef} className="flex-1 overflow-y-auto p-5 custom-scrollbar">
                   <ServiceForm 
                     formData={formData} setFormData={setFormData} technicians={technicians}
                     priceList={priceList} selectedId={selectedId} isSubmitting={isSubmitting}
                     currentUser={user} services={services} bankInfo={config.bankInfo}
                     onClear={() => resetForm()}
+                    onCloneCustomer={() => {
+                      setSelectedId(null);
+                      setFormData(prev => ({
+                        ...prev,
+                        status: STATUS_OPTIONS[0],
+                        content: '',
+                        workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
+                        revenue: 0, cost: 0, debt: 0
+                      }));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      if (formScrollRef.current) {
+                        formScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
                     onSave={() => handleAction('create')}
                     onUpdate={() => handleAction('update')}
                     onUpdateTechnicians={handleUpdateTechnicians}
@@ -309,7 +324,10 @@ const App: React.FC = () => {
                       cost: Number(item.cost || 0),
                       debt: Number(item.debt || 0)
                     });
-                    if (window.innerWidth < 1024) window.scrollTo({ top: 0, behavior: 'smooth' });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (formScrollRef.current) {
+                      formScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
                   }}
                   filters={filters} setFilters={{
                     setDateFrom: (v: string) => setFilters(f => ({ ...f, dateFrom: v, viewAll: false })),

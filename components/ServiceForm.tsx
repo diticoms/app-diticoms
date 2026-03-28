@@ -22,6 +22,7 @@ interface Props {
   onUpdate: () => void;
   onDelete: () => void;
   onClear: () => void;
+  onCloneCustomer: () => void;
   onUpdateTechnicians: (newList: string[]) => Promise<boolean>;
   services: ServiceTicket[];
   bankInfo?: any;
@@ -29,7 +30,7 @@ interface Props {
 
 export const ServiceForm: React.FC<Props> = ({
   formData, setFormData, technicians, priceList, selectedId, isSubmitting, 
-  currentUser, onSave, onUpdate, onDelete, onClear, onUpdateTechnicians, services, bankInfo
+  currentUser, onSave, onUpdate, onDelete, onClear, onCloneCustomer, onUpdateTechnicians, services, bankInfo
 }) => {
   const isAdmin = currentUser?.role === 'admin';
   const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
@@ -316,6 +317,9 @@ export const ServiceForm: React.FC<Props> = ({
           <>
             <button disabled={isSubmitting} onClick={onUpdate} className="bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-[12px] active:scale-95 transition-all">CẬP NHẬT</button>
             <button onClick={onClear} className="bg-slate-100 text-slate-600 font-black py-4 rounded-2xl uppercase text-[12px] active:scale-95 transition-all">TIẾP MỚI</button>
+            <button onClick={onCloneCustomer} className="col-span-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl uppercase text-[12px] active:scale-95 transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2">
+               <Plus size={18} /> TẠO PHIẾU MỚI CHO KHÁCH NÀY
+            </button>
           </>
         )}
       </div>
