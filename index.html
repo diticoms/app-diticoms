@@ -14,10 +14,53 @@
     <link rel="apple-touch-icon" href="/logo.png" />
     <link rel="manifest" href="/manifest.json" />
 
+    <script>
+      window.addEventListener('error', function(e) {
+        var errDiv = document.createElement('div');
+        errDiv.style.cssText = 'position:fixed;top:0;left:0;background:red;color:white;z-index:999999;padding:20px;font-size:16px;width:100%;word-wrap:break-word;';
+        errDiv.innerText = 'LỖI: ' + (e.message || e.error);
+        document.body.appendChild(errDiv);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var errDiv = document.createElement('div');
+        errDiv.style.cssText = 'position:fixed;bottom:0;left:0;background:darkred;color:white;z-index:999999;padding:20px;font-size:16px;width:100%;word-wrap:break-word;';
+        errDiv.innerText = 'LỖI Promise: ' + (e.reason ? e.reason.message || e.reason : 'Unknown');
+        document.body.appendChild(errDiv);
+      });
+    </script>
+
     <link rel="stylesheet" href="index.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
-    
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#f0f4ff',
+                100: '#e0eaff',
+                200: '#c7d9ff',
+                300: '#a3c2ff',
+                400: '#7a9fff',
+                500: '#4d70ff',
+                600: '#2b3eff',
+                700: '#1e24fa',
+                800: '#181fc8',
+                900: '#181fa3',
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            boxShadow: {
+              'glass': '0 4px 30px rgba(0, 0, 0, 0.05)',
+              'card': '0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02)',
+            }
+          }
+        }
+      }
+    </script>
     <script>
       // Khởi tạo process.env với API Key được cung cấp
       window.process = { 
@@ -44,21 +87,7 @@
       window.addEventListener('load', window.removeSplash);
     </script>
 
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@^19.2.4",
-        "react/": "https://esm.sh/react@^19.2.4/",
-        "react-dom": "https://esm.sh/react-dom@^19.2.4",
-        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-        "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-        "html2canvas": "https://esm.sh/html2canvas@^1.4.1",
-        "jspdf": "https://esm.sh/jspdf@^2.5.1",
-        "xlsx": "https://esm.sh/xlsx@^0.18.5",
-        "@google/genai": "https://esm.sh/@google/genai@^1.40.0"
-      }
-    }
-    </script>
+
     <style>
       body { background: #f8fafc; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
       .splash-container {

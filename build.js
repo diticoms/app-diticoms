@@ -19,21 +19,7 @@ fs.mkdirSync(distPublicDir, { recursive: true });
 try {
     console.log('📦 Đang đóng gói mã nguồn Web (Bundling)...');
     
-    // Quan trọng: Phải liệt kê đầy đủ các thư viện và sub-paths trong --external 
-    // để esbuild không cố gắng tìm kiếm chúng trong node_modules địa phương.
-    const externals = [
-        'react',
-        'react/*',
-        'react-dom',
-        'react-dom/*',
-        'lucide-react',
-        'html2canvas',
-        'jspdf',
-        'xlsx',
-        '@google/genai'
-    ].map(lib => `--external:${lib}`).join(' ');
-
-    const command = `npx esbuild index.tsx --bundle --minify --format=esm --outfile=dist/index.js --loader:.tsx=tsx --loader:.ts=ts ${externals}`;
+    const command = `npx esbuild index.tsx --bundle --minify --format=esm --outfile=dist/index.js --loader:.tsx=tsx --loader:.ts=ts`;
     
     execSync(command);
     console.log('✅ Đã tạo file dist/index.js');

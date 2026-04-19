@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, CheckCircle2, Copy, Sparkles, Loader2, Camera, Save, ArrowLeft, RefreshCw
+  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, CheckCircle2, Copy, Sparkles, Loader2, Camera, Save, ArrowLeft, RefreshCw, FileText
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
@@ -26,11 +26,12 @@ interface Props {
   onUpdateTechnicians: (newList: string[]) => Promise<boolean>;
   services: ServiceTicket[];
   bankInfo?: any;
+  onGoToQuotation?: (data: any) => void;
 }
 
 export const ServiceForm: React.FC<Props> = ({
   formData, setFormData, technicians, priceList, selectedId, isSubmitting, 
-  currentUser, onSave, onUpdate, onDelete, onClear, onCloneCustomer, onUpdateTechnicians, services, bankInfo
+  currentUser, onSave, onUpdate, onDelete, onClear, onCloneCustomer, onUpdateTechnicians, services, bankInfo, onGoToQuotation
 }) => {
   const isAdmin = currentUser?.role === 'admin';
   const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
@@ -182,8 +183,8 @@ export const ServiceForm: React.FC<Props> = ({
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
-  const inputStyle = "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-blue-400 font-medium transition-all text-slate-800";
-  const moneyInputStyle = "w-full p-2 bg-white border border-slate-100 rounded-xl outline-none focus:border-blue-400 font-black text-slate-800 text-[10px] text-center";
+  const inputStyle = "w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 font-medium smooth-transition text-slate-800 shadow-sm";
+  const moneyInputStyle = "w-full p-2.5 bg-white border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-brand-500/10 focus:border-brand-500 font-black text-slate-800 text-[11px] text-center smooth-transition shadow-sm";
 
   return (
     <div className="space-y-6">
@@ -195,7 +196,7 @@ export const ServiceForm: React.FC<Props> = ({
 
       <div className="flex justify-between items-center">
         <h2 className="font-bold text-slate-700 flex items-center gap-2 uppercase tracking-wider text-sm">
-          <Activity size={18} className="text-blue-500"/> {selectedId ? 'Cập nhật phiếu' : 'Tiếp nhận mới'}
+          <Activity size={18} className="text-brand-500"/> {selectedId ? 'Cập nhật phiếu' : 'Tiếp nhận mới'}
         </h2>
         <div className="flex gap-1">
           {selectedId && <button onClick={onClear} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full"><RefreshCw size={18}/></button>}
@@ -206,8 +207,8 @@ export const ServiceForm: React.FC<Props> = ({
       </div>
 
       <div className="space-y-3">
-        <div className="relative">
-          <Phone className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} />
+        <div className="relative group">
+          <Phone className="absolute left-3.5 top-3.5 text-slate-400 group-focus-within:text-brand-500 smooth-transition z-10" size={18} />
           <input type="tel" placeholder="Số điện thoại" className={inputStyle} value={formData.phone || ''} onChange={e => { updateField('phone', e.target.value); setShowPhoneSuggestions(true); }} onFocus={() => setShowPhoneSuggestions(true)} onBlur={() => setTimeout(() => setShowPhoneSuggestions(false), 200)} />
           {showPhoneSuggestions && filteredCustomerSuggestions.length > 0 && (
             <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-2xl z-[60] max-h-56 overflow-auto rounded-2xl mt-1">
@@ -221,12 +222,12 @@ export const ServiceForm: React.FC<Props> = ({
           )}
         </div>
         
-        <div className="relative"><User className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} /><input type="text" placeholder="Tên khách hàng" className={inputStyle} value={formData.customerName || ''} onChange={e => updateField('customerName', e.target.value)} /></div>
-        <div className="relative"><MapPin className="absolute left-3.5 top-3 text-slate-400 z-10" size={16} /><input type="text" placeholder="Địa chỉ" className={inputStyle} value={formData.address || ''} onChange={e => updateField('address', e.target.value)} /></div>
+        <div className="relative group"><User className="absolute left-3.5 top-3.5 text-slate-400 group-focus-within:text-brand-500 smooth-transition z-10" size={18} /><input type="text" placeholder="Tên khách hàng" className={inputStyle} value={formData.customerName || ''} onChange={e => updateField('customerName', e.target.value)} /></div>
+        <div className="relative group"><MapPin className="absolute left-3.5 top-3.5 text-slate-400 group-focus-within:text-brand-500 smooth-transition z-10" size={18} /><input type="text" placeholder="Địa chỉ" className={inputStyle} value={formData.address || ''} onChange={e => updateField('address', e.target.value)} /></div>
 
         <div className="relative group">
-          <MessageSquare className="absolute left-3.5 top-3.5 text-slate-400 z-10" size={16} />
-          <textarea placeholder="Mô tả lỗi hoặc yêu cầu khách hàng..." className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl min-h-[100px] focus:bg-white focus:border-blue-400 outline-none transition-all" value={formData.content || ''} onChange={e => updateField('content', e.target.value)} />
+          <MessageSquare className="absolute left-3.5 top-3.5 text-slate-400 group-focus-within:text-brand-500 smooth-transition z-10" size={18} />
+          <textarea placeholder="Mô tả lỗi hoặc yêu cầu khách hàng..." className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl min-h-[100px] focus:bg-white focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none smooth-transition shadow-sm" value={formData.content || ''} onChange={e => updateField('content', e.target.value)} />
           <button onClick={handleAiDiagnose} disabled={isAiDiagnosing || !formData.content} className={`absolute right-3 bottom-3 flex items-center gap-2 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all shadow-md ${isAiDiagnosing ? 'bg-slate-200 text-slate-400' : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white'}`}>
             {isAiDiagnosing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI BÁO GIÁ
           </button>
@@ -262,7 +263,7 @@ export const ServiceForm: React.FC<Props> = ({
         <div className="pt-2">
           <div className="flex justify-between items-center mb-2 px-1">
             <span className="font-black text-slate-400 text-[10px] uppercase tracking-widest">Dịch vụ & Linh kiện</span>
-            <button onClick={() => setFormData(p => ({...p, workItems: Array.isArray(p.workItems) ? [...p.workItems, {desc: '', qty: 1, price: '', total: 0}] : [{desc: '', qty: 1, price: '', total: 0}]}))} className="text-blue-500 p-1 hover:bg-blue-50 rounded-lg"><Plus size={18}/></button>
+            <button onClick={() => setFormData(p => ({...p, workItems: Array.isArray(p.workItems) ? [...p.workItems, {desc: '', qty: 1, price: '', total: 0}] : [{desc: '', qty: 1, price: '', total: 0}]}))} className="text-brand-500 p-1 hover:bg-brand-50 rounded-lg smooth-transition"><Plus size={18}/></button>
           </div>
           <div className="space-y-2">
             {Array.isArray(formData.workItems) && formData.workItems.map((item, idx) => (
@@ -293,7 +294,7 @@ export const ServiceForm: React.FC<Props> = ({
 
                 <div className="flex gap-2 text-[11px] font-bold">
                   <div className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg flex items-center gap-1">SL: <input type="number" className="w-full outline-none font-black text-center bg-transparent" value={item.qty || 1} onChange={e => updateWorkItem(idx, 'qty', e.target.value)} /></div>
-                  <div className="flex-[2] bg-white border border-slate-100 p-1.5 rounded-lg px-2 text-right"><input type="text" className="w-full outline-none font-black text-right text-blue-600 bg-transparent" value={formatCurrency(item.price)} onChange={e => updateWorkItem(idx, 'price', e.target.value)} /></div>
+                  <div className="flex-[2] bg-white border border-slate-100 p-1.5 rounded-lg px-2 text-right"><input type="text" className="w-full outline-none font-black text-right text-brand-600 bg-transparent" value={formatCurrency(item.price)} onChange={e => updateWorkItem(idx, 'price', e.target.value)} /></div>
                   <button onClick={() => setFormData(p => ({...p, workItems: p.workItems.filter((_, i) => i !== idx)}))} className="text-slate-300 hover:text-red-400 p-1"><Trash2 size={16}/></button>
                 </div>
               </div>
@@ -301,8 +302,8 @@ export const ServiceForm: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="pt-4 grid grid-cols-3 gap-3 bg-slate-100/40 p-4 rounded-[32px] border border-slate-100">
-          <div className="text-center"><span className="text-[9px] font-black text-blue-500 uppercase">Doanh thu</span><input type="text" className={`${moneyInputStyle} text-blue-600`} value={formatCurrency(formData.revenue)} readOnly /></div>
+        <div className="pt-4 grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-[24px] border border-slate-100 shadow-sm">
+          <div className="text-center"><span className="text-[9px] font-black text-brand-500 uppercase">Doanh thu</span><input type="text" className={`${moneyInputStyle} text-brand-600`} value={formatCurrency(formData.revenue)} readOnly /></div>
           <div className="text-center"><span className="text-[9px] font-black text-orange-500 uppercase">Giá vốn</span><input type="text" className={`${moneyInputStyle} text-orange-600`} value={formatCurrency(formData.cost)} onChange={e => updateField('cost', parseCurrency(e.target.value))} /></div>
           <div className="text-center"><span className="text-[9px] font-black text-red-500 uppercase">Công nợ</span><input type="text" className={`${moneyInputStyle} text-red-600`} value={formatCurrency(formData.debt)} onChange={e => updateField('debt', parseCurrency(e.target.value))} /></div>
         </div>
@@ -310,15 +311,23 @@ export const ServiceForm: React.FC<Props> = ({
 
       <div className="grid grid-cols-2 gap-3 pt-4">
         {!selectedId ? (
-          <button disabled={isSubmitting} onClick={onSave} className="col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg uppercase tracking-widest text-[12px] active:scale-95 transition-all">
-            {isSubmitting ? 'ĐANG LƯU...' : 'LƯU PHIẾU MỚI'}
-          </button>
+          <>
+            <button disabled={isSubmitting} onClick={onSave} className="col-span-2 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 uppercase tracking-widest text-[12px] active:scale-95 smooth-transition">
+              {isSubmitting ? 'ĐANG LƯU...' : 'LƯU PHIẾU MỚI'}
+            </button>
+            <button onClick={() => onGoToQuotation?.({ customerName: formData.customerName, customerPhone: formData.phone, customerAddress: formData.address })} className="col-span-2 bg-slate-100 text-brand-600 font-black py-3 rounded-2xl shadow-sm uppercase tracking-widest text-[11px] active:scale-95 smooth-transition hover:bg-slate-200 flex justify-center items-center gap-2">
+              <FileText size={16} /> TẠO BÁO GIÁ TỪ THÔNG TIN NÀY
+            </button>
+          </>
         ) : (
           <>
-            <button disabled={isSubmitting} onClick={onUpdate} className="bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-[12px] active:scale-95 transition-all">CẬP NHẬT</button>
-            <button onClick={onClear} className="bg-slate-100 text-slate-600 font-black py-4 rounded-2xl uppercase text-[12px] active:scale-95 transition-all">TIẾP MỚI</button>
-            <button onClick={onCloneCustomer} className="col-span-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl uppercase text-[12px] active:scale-95 transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2">
+            <button disabled={isSubmitting} onClick={onUpdate} className="bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl shadow-md shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 uppercase text-[12px] active:scale-95 smooth-transition">CẬP NHẬT</button>
+            <button onClick={onClear} className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-black py-4 rounded-2xl shadow-sm uppercase text-[12px] active:scale-95 smooth-transition">TIẾP MỚI</button>
+            <button onClick={onCloneCustomer} className="col-span-2 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white font-black py-4 rounded-2xl uppercase text-[12px] active:scale-95 smooth-transition shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2">
                <Plus size={18} /> TẠO PHIẾU MỚI CHO KHÁCH NÀY
+            </button>
+            <button onClick={() => onGoToQuotation?.({ customerName: formData.customerName, customerPhone: formData.phone, customerAddress: formData.address })} className="col-span-2 bg-slate-100 text-brand-600 font-black py-3 rounded-2xl shadow-sm uppercase tracking-widest text-[11px] active:scale-95 smooth-transition hover:bg-slate-200 flex justify-center items-center gap-2">
+              <FileText size={16} /> TẠO BÁO GIÁ CHO KHÁCH NÀY
             </button>
           </>
         )}

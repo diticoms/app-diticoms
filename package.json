@@ -1,10 +1,10 @@
-
 {
   "name": "diticoms-service-manager",
   "version": "1.0.46",
   "description": "Hệ thống quản lý dịch vụ sửa chữa Diticoms - Web & Mobile",
   "scripts": {
     "start": "echo 'Ứng dụng đang chạy...'",
+    "dev": "npx esbuild index.tsx --bundle --format=esm --servedir=. --outfile=index.js --loader:.tsx=tsx --loader:.ts=ts",
     "build": "node build.js",
     "generate:icons": "node generate-assets.js",
     "cap:sync": "npx cap sync",
@@ -22,18 +22,20 @@
   "author": "Diticoms",
   "license": "MIT",
   "dependencies": {
-    "lucide-react": "^0.563.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
+    "@google/genai": "^1.50.1",
+    "esbuild": "^0.24.0",
     "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "lucide-react": "^0.563.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "esbuild": "^0.24.0",
-    "xlsx": "^0.18.5",
-    "@capacitor/core": "^6.0.0",
-    "@capacitor/android": "^6.0.0",
-    "@capacitor/ios": "^6.0.0"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0",
-    "@capacitor/assets": "^3.0.0"
+    "@capacitor/assets": "^3.0.0",
+    "@capacitor/cli": "^6.0.0"
   }
 }

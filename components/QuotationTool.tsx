@@ -39,18 +39,30 @@ const INITIAL_QUOTATION: QuotationData = {
 
 interface Props {
   currentUser: any;
+  initialData?: Partial<QuotationData>;
 }
 
-export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
+export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => {
   const [data, setData] = useState<QuotationData>(() => ({
     ...INITIAL_QUOTATION,
-    preparedBy: currentUser?.name || ''
+    preparedBy: currentUser?.name || '',
+    ...initialData
   }));
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const templateRef = useRef<HTMLDivElement>(null);
+
+  // Lắng nghe thay đổi từ initialData
+  useEffect(() => {
+    if (initialData) {
+      setData(prev => ({
+        ...prev,
+        ...initialData
+      }));
+    }
+  }, [initialData]);
 
   // Calculate total amount whenever items or VAT change
   useEffect(() => {
@@ -337,7 +349,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-            <FileSpreadsheet className="text-blue-600" size={24} />
+            <FileSpreadsheet className="text-brand-600" size={24} />
             CÔNG CỤ LẬP BÁO GIÁ
           </h2>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Tạo, Import và Xuất báo giá chuyên nghiệp</p>
@@ -389,70 +401,70 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
                     value={data.customerName}
                     onChange={e => setData(prev => ({ ...prev, customerName: e.target.value }))}
                     placeholder="Nhập tên khách hàng..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 smooth-transition text-sm font-semibold shadow-sm"
                   />
                 </div>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 group">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Số điện thoại</label>
                 <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 smooth-transition" size={16} />
                   <input 
                     type="text" 
                     value={data.customerPhone}
                     onChange={e => setData(prev => ({ ...prev, customerPhone: e.target.value }))}
                     placeholder="Nhập SĐT..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 smooth-transition text-sm font-semibold shadow-sm"
                   />
                 </div>
               </div>
               <div className="md:col-span-2 space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Địa chỉ</label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <div className="relative group">
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 smooth-transition" size={16} />
                   <input 
                     type="text" 
                     value={data.customerAddress}
                     onChange={e => setData(prev => ({ ...prev, customerAddress: e.target.value }))}
                     placeholder="Nhập địa chỉ khách hàng..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 smooth-transition text-sm font-semibold shadow-sm"
                   />
                 </div>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 group">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">MST Khách hàng</label>
                 <div className="relative">
-                  <Clipboard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <Clipboard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 smooth-transition" size={16} />
                   <input 
                     type="text" 
                     value={data.customerTaxId}
                     onChange={e => setData(prev => ({ ...prev, customerTaxId: e.target.value }))}
                     placeholder="Nhập MST khách hàng..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 smooth-transition text-sm font-semibold shadow-sm"
                   />
                 </div>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 group">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ngày báo giá</label>
                 <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 smooth-transition" size={16} />
                   <input 
                     type="date" 
                     value={data.date}
                     onChange={e => setData(prev => ({ ...prev, date: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 smooth-transition text-sm font-semibold shadow-sm"
                   />
                 </div>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 group">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hiệu lực đến</label>
                 <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 smooth-transition" size={16} />
                   <input 
                     type="date" 
                     value={data.validUntil}
                     onChange={e => setData(prev => ({ ...prev, validUntil: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 smooth-transition text-sm font-semibold shadow-sm"
                   />
                 </div>
               </div>
@@ -474,10 +486,10 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
               {data.items.map((item, index) => (
                 <div key={index} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4 animate-in slide-in-from-left-2 duration-300">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest">Mục #{index + 1}</span>
+                    <span className="text-[10px] font-black text-brand-600 bg-brand-50 border border-brand-100 px-3 py-1 rounded-full uppercase tracking-widest">Mục #{index + 1}</span>
                     <button 
                       onClick={() => handleRemoveItem(index)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg smooth-transition"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -536,7 +548,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
                     </div>
                     <div className="md:col-span-4 space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Thành tiền</label>
-                      <div className="w-full bg-blue-100/50 border border-blue-200 rounded-xl py-2.5 px-4 text-sm font-black text-blue-700 text-right">
+                      <div className="w-full bg-brand-50 border border-brand-200 rounded-xl py-2.5 px-4 text-sm font-black text-brand-700 text-right shadow-sm">
                         {formatCurrency(item.total)}đ
                       </div>
                     </div>
@@ -584,7 +596,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
               <div className="flex justify-center pt-2">
                 <button 
                   onClick={handleAddItem}
-                  className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95"
+                  className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 active:scale-95 smooth-transition"
                 >
                   <Plus size={18} />
                   THÊM MỤC HÀNG HÓA MỚI
@@ -631,7 +643,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
                 )}
               </div>
 
-              <div className="p-5 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-100 space-y-2">
+              <div className="p-5 bg-gradient-to-r from-brand-600 to-brand-500 rounded-2xl text-white shadow-xl shadow-brand-500/30 space-y-2 border border-white/20">
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Tổng cộng thanh toán:</p>
                 <p className="text-3xl font-black tracking-tighter">{formatCurrency(data.totalAmount)}đ</p>
               </div>
@@ -648,14 +660,14 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
                 <button 
                   onClick={handleGenerateImage}
                   disabled={isGenerating}
-                  className="w-full flex items-center justify-center gap-3 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-md shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 smooth-transition"
                 >
                   {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
                   XUẤT ẢNH BÁO GIÁ
                 </button>
                 <button 
                   onClick={handleExportExcel}
-                  className="w-full flex items-center justify-center gap-3 py-4 bg-emerald-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg active:scale-95"
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-md shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 active:scale-95 smooth-transition"
                 >
                   <FileSpreadsheet size={20} />
                   XUẤT FILE EXCEL
@@ -709,7 +721,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser }) => {
                   link.href = previewImage; 
                   link.click(); 
                 }} 
-                className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+                className="flex-1 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 smooth-transition active:scale-95"
               >
                 <Download size={20}/> TẢI ẢNH VỀ MÁY
               </button>

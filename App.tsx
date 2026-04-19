@@ -17,20 +17,34 @@ import { FileText, ClipboardList } from 'lucide-react';
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'services' | 'quotation'>('services');
   const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('diti_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('diti_user');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error("Lỗi đọc user từ localStorage", e);
+      return null;
+    }
   });
 
   const [config, setConfig] = useState<AppConfig>(() => {
-    const saved = localStorage.getItem('diti_config');
-    const parsed = saved ? JSON.parse(saved) : DEFAULT_CONFIG;
-    // Đảm bảo URL luôn được cập nhật từ constants nếu chưa có
-    return { ...parsed, sheetUrl: SHEET_API_URL };
+    try {
+      const saved = localStorage.getItem('diti_config');
+      const parsed = saved && saved !== 'undefined' ? JSON.parse(saved) : DEFAULT_CONFIG;
+      return { ...parsed, sheetUrl: SHEET_API_URL };
+    } catch (e) {
+      console.error("Lỗi đọc config từ localStorage", e);
+      return { ...DEFAULT_CONFIG, sheetUrl: SHEET_API_URL };
+    }
   });
   
   const [services, setServices] = useState<ServiceTicket[]>(() => {
-    const cached = localStorage.getItem('diti_services_cache');
-    return cached ? JSON.parse(cached) : [];
+    try {
+      const saved = localStorage.getItem('diti_services_cache');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Lỗi đọc services từ localStorage", e);
+      return [];
+    }
   });
   
   const [technicians, setTechnicians] = useState<string[]>([]);
@@ -71,6 +85,8 @@ const App: React.FC = () => {
     workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
     revenue: 0, cost: 0, debt: 0
   });
+
+  const [quotationInitialData, setQuotationInitialData] = useState<any>(null);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -212,39 +228,39 @@ const App: React.FC = () => {
   }} isLoading={loading} />;
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
-      <header className="sticky top-0 z-40 bg-white border-b px-4 py-3 shadow-sm">
+    <div className="flex flex-col min-h-screen bg-slate-50/50 font-sans selection:bg-brand-500/30">
+      <header className="sticky top-0 z-40 glass-effect border-b border-white/50 px-4 py-3">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <Logo size={32} />
               <div>
-                <h1 className="font-bold text-slate-800 text-[12px] uppercase">DITICOMS SERVICE</h1>
-                <span className="text-slate-400 text-[10px] uppercase font-bold">{user.name}</span>
+                <h1 className="font-black text-slate-800 text-[14px] uppercase tracking-tight">DITICOMS <span className="gradient-text">SERVICE</span></h1>
+                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">{user.name}</span>
               </div>
             </div>
 
             {/* Tab Switcher */}
-            <nav className="hidden md:flex bg-slate-100 p-1 rounded-xl gap-1">
+            <nav className="hidden md:flex bg-slate-100/80 p-1 rounded-xl gap-1 border border-slate-200/50">
               <button 
                 onClick={() => setActiveTab('services')}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all ${activeTab === 'services' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'services' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
               >
-                <ClipboardList size={14} />
+                <ClipboardList size={16} />
                 QUẢN LÝ PHIẾU
               </button>
               <button 
                 onClick={() => setActiveTab('quotation')}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all ${activeTab === 'quotation' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'quotation' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
               >
-                <FileText size={14} />
+                <FileText size={16} />
                 LÀM BÁO GIÁ
               </button>
             </nav>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowConfig(true)} className="p-2 text-slate-400 hover:text-blue-500"><Settings size={18} /></button>
-            <button onClick={() => { if(confirm('Đăng xuất?')) { setUser(null); localStorage.clear(); window.location.reload(); } }} className="p-2 text-red-400"><LogOut size={18} /></button>
+            <button onClick={() => setShowConfig(true)} className="p-2 text-slate-400 hover:text-brand-500 hover:bg-brand-50 rounded-xl smooth-transition"><Settings size={20} /></button>
+            <button onClick={() => { if(confirm('Đăng xuất?')) { setUser(null); localStorage.clear(); window.location.reload(); } }} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl smooth-transition"><LogOut size={20} /></button>
           </div>
         </div>
       </header>
@@ -252,26 +268,26 @@ const App: React.FC = () => {
       <main className="flex-1 lg:h-[calc(100vh-64px)] overflow-y-auto lg:overflow-hidden">
         <div className="max-w-7xl mx-auto p-4 lg:p-6 h-full">
           {/* Mobile Tab Switcher */}
-          <div className="md:hidden flex bg-white p-1 rounded-2xl border mb-4 gap-1 shadow-sm">
+          <div className="md:hidden flex bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/50 mb-5 gap-1.5 shadow-sm">
             <button 
               onClick={() => setActiveTab('services')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${activeTab === 'services' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-slate-400'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[12px] font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'services' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
             >
-              <ClipboardList size={16} />
+              <ClipboardList size={18} />
               PHIẾU
             </button>
             <button 
               onClick={() => setActiveTab('quotation')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${activeTab === 'quotation' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-slate-400'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[12px] font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'quotation' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
             >
-              <FileText size={16} />
+              <FileText size={18} />
               BÁO GIÁ
             </button>
           </div>
 
           {activeTab === 'services' ? (
             <div className="h-full grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-5 h-full bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
+              <div className="lg:col-span-5 h-full bg-white rounded-[24px] shadow-card border border-slate-100 overflow-hidden flex flex-col">
                 <div ref={formScrollRef} className="flex-1 overflow-y-auto p-5 custom-scrollbar">
                   <ServiceForm 
                     formData={formData} setFormData={setFormData} technicians={technicians}
@@ -302,6 +318,10 @@ const App: React.FC = () => {
                          await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user?.role });
                          await fetchData(); resetForm();
                        } catch (e) { alert("Lỗi xóa"); } finally { setIsSubmitting(false); }
+                    }}
+                    onGoToQuotation={(data) => {
+                      setQuotationInitialData(data);
+                      setActiveTab('quotation');
                     }}
                   />
                 </div>
@@ -341,7 +361,7 @@ const App: React.FC = () => {
               </div>
             </div>
           ) : (
-            <QuotationTool currentUser={user} />
+            <QuotationTool currentUser={user} initialData={quotationInitialData} />
           )}
         </div>
       </main>
