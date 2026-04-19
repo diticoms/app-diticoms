@@ -5,7 +5,7 @@ import { GoogleGenAI, Type } from "@google/genai";
  * Khởi tạo Gemini AI Assistant
  */
 const getAiInstance = () => {
-  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'AIzaSyDmjGzw7I_yYRUfOocNeqw98Uc5Xj2hUjk' });
+  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'AIzaSyDyAc6595RaRB5_7SkwOpC5iVvI2urxqzQ' });
 };
 
 /**

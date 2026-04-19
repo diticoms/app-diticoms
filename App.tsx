@@ -12,7 +12,7 @@ import { callSheetAPI } from './services/api.ts';
 import { User, AppConfig, ServiceTicket, ServiceFormData, PriceItem } from './types.ts';
 import { DEFAULT_CONFIG, STATUS_OPTIONS, SHEET_API_URL } from './constants.ts';
 import { getTodayString } from './utils/helpers.ts';
-import { FileText, ClipboardList } from 'lucide-react';
+import { FileText, ClipboardList, CheckCircle2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'services' | 'quotation'>('services');
@@ -54,6 +54,12 @@ const App: React.FC = () => {
   const [showConfig, setShowConfig] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const formScrollRef = useRef<HTMLDivElement>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  }, []);
 
   const handleUpdateTechnicians = async (newList: string[]) => {
     try {
@@ -83,7 +89,7 @@ const App: React.FC = () => {
     customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0],
     technician: '', content: '',
     workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
-    revenue: 0, cost: 0, debt: 0
+    revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0
   });
 
   const [quotationInitialData, setQuotationInitialData] = useState<any>(null);
@@ -125,6 +131,7 @@ const App: React.FC = () => {
             workItems: parsedItems,
             revenue: Number(r.revenue || 0),
             cost: Number(r.cost || 0),
+            costPayer: r.cost_payer || r.costPayer || 'Công ty',
             debt: Number(r.debt || 0)
           };
         });
@@ -174,7 +181,7 @@ const App: React.FC = () => {
       customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
       technician: u?.associatedTech || '', content: '', 
       workItems: [{ desc: '', qty: 1, price: '', total: 0 }], 
-      revenue: 0, cost: 0, debt: 0 
+      revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0 
     });
   }, [user]);
 
@@ -197,6 +204,7 @@ const App: React.FC = () => {
         work_items: Array.isArray(formData.workItems) ? formData.workItems : [],
         revenue: Number(formData.revenue),
         cost: Number(formData.cost),
+        cost_payer: formData.costPayer || 'Công ty',
         debt: Number(formData.debt),
         search_key: `${formData.customerName} ${formData.phone} ${formData.address}`.toLowerCase()
       };
@@ -205,6 +213,7 @@ const App: React.FC = () => {
       if(res?.status === 'success' || res?.status === 'updated') { 
         await fetchData(); 
         resetForm(); 
+        showToast(action === 'create' ? 'Đã lưu phiếu thành công!' : 'Đã cập nhật thành công!');
       } else {
         alert(res?.error || "Lỗi thao tác Server");
       }
@@ -229,6 +238,11 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50/50 font-sans selection:bg-brand-500/30">
+      {toastMessage && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[10005] bg-emerald-600 text-white px-6 py-3 rounded-full text-[12px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-5 shadow-2xl flex items-center gap-2">
+          <CheckCircle2 size={16} /> {toastMessage}
+        </div>
+      )}
       <header className="sticky top-0 z-40 glass-effect border-b border-white/50 px-4 py-3">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-6">
@@ -301,7 +315,7 @@ const App: React.FC = () => {
                         status: STATUS_OPTIONS[0],
                         content: '',
                         workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
-                        revenue: 0, cost: 0, debt: 0
+                        revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0
                       }));
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                       if (formScrollRef.current) {
@@ -317,6 +331,7 @@ const App: React.FC = () => {
                        try {
                          await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user?.role });
                          await fetchData(); resetForm();
+                         showToast('Đã xóa phiếu thành công!');
                        } catch (e) { alert("Lỗi xóa"); } finally { setIsSubmitting(false); }
                     }}
                     onGoToQuotation={(data) => {
@@ -329,7 +344,7 @@ const App: React.FC = () => {
 
               <div className="lg:col-span-7 h-full flex flex-col min-h-[500px]">
                 <ServiceList 
-                  data={filteredServices} loading={loading} technicians={technicians}
+                  data={filteredServices} rawServices={services} loading={loading} technicians={technicians}
                   selectedId={selectedId} onSelectRow={(item) => {
                     setSelectedId(item.id);
                     setFormData({
@@ -342,6 +357,7 @@ const App: React.FC = () => {
                       workItems: Array.isArray(item.workItems) ? [...item.workItems] : [],
                       revenue: Number(item.revenue || 0),
                       cost: Number(item.cost || 0),
+                      costPayer: item.costPayer || 'Công ty',
                       debt: Number(item.debt || 0)
                     });
                     window.scrollTo({ top: 0, behavior: 'smooth' });

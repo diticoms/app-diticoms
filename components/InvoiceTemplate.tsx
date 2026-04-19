@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ServiceFormData, BankConfig } from '../types.ts';
-import { formatCurrency } from '../utils/helpers.ts';
+import { formatCurrency, removeVietnameseTones } from '../utils/helpers.ts';
 import { Logo } from './Logo.tsx';
 
 interface Props {
@@ -13,8 +13,12 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
   const total = Number(formData.revenue || 0);
   
   // Chuẩn hóa thông tin chuyển khoản và tạo URL VietQR
+  const safeCustomerName = removeVietnameseTones(formData.customerName || 'KHACH HANG').toUpperCase();
+  const addInfo = `DITICOMS ${safeCustomerName}`.substring(0, 50).trim();
+  const safeAccountName = removeVietnameseTones(bankInfo?.accountName || '').toUpperCase();
+  
   const qrUrl = bankInfo 
-    ? `https://img.vietqr.io/image/${bankInfo.bankId}-${bankInfo.accountNo}-compact2.png?amount=${total}&addInfo=${encodeURIComponent(`DITICOMS ${formData.customerName.toUpperCase()}`)}&accountName=${encodeURIComponent(bankInfo.accountName)}` 
+    ? `https://img.vietqr.io/image/${bankInfo.bankId}-${bankInfo.accountNo}-compact2.png?amount=${total}&addInfo=${encodeURIComponent(addInfo)}&accountName=${encodeURIComponent(safeAccountName)}` 
     : '';
 
   return (
@@ -54,16 +58,18 @@ export const InvoiceTemplate: React.FC<Props> = ({ formData, bankInfo }) => {
             <tr className="text-[8px] text-slate-400 uppercase border-b border-slate-100">
               <th className="pb-2 text-left font-black">Nội dung</th>
               <th className="pb-2 text-center font-black px-1">SL</th>
+              <th className="pb-2 text-right font-black px-1">Đ.Giá</th>
               <th className="pb-2 text-right font-black">T.Tiền</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-dashed divide-slate-200 border-b border-dashed border-slate-200">
             {formData.workItems.map((item, idx) => (
               <tr key={idx} className="align-middle">
                 <td className="py-2.5 text-slate-800 font-bold leading-tight pr-1">
                   {item.desc}
                 </td>
                 <td className="py-2.5 text-center text-slate-600 font-black px-1">{item.qty}</td>
+                <td className="py-2.5 text-right text-slate-600 font-bold px-1 whitespace-nowrap">{formatCurrency(item.price)}</td>
                 <td className="py-2.5 text-right font-black text-slate-900 whitespace-nowrap">{formatCurrency(item.total)}</td>
               </tr>
             ))}

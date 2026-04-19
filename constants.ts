@@ -22,5 +22,6 @@ export const STATUS_OPTIONS = [
   'Tiếp nhận',
   'Đang sửa chữa',
   'Chưa thanh toán',
-  'Hoàn thành'
+  'Hoàn thành',
+  'Đã tất toán'
 ];

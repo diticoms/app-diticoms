@@ -77,7 +77,7 @@ export const ServiceForm: React.FC<Props> = ({
     setFormData(prev => {
       const newState = { ...prev, [f]: v };
       if (f === 'status') {
-        newState.debt = v === 'Hoàn thành' ? 0 : prev.revenue;
+        newState.debt = (v === 'Hoàn thành' || v === 'Đã tất toán') ? 0 : prev.revenue;
       }
       return newState;
     });
@@ -110,7 +110,7 @@ export const ServiceForm: React.FC<Props> = ({
         ...prev, 
         workItems: items, 
         revenue: newRevenue,
-        debt: prev.status === 'Hoàn thành' ? 0 : newRevenue 
+        debt: (prev.status === 'Hoàn thành' || prev.status === 'Đã tất toán') ? 0 : newRevenue 
       };
     });
   };
@@ -125,7 +125,7 @@ export const ServiceForm: React.FC<Props> = ({
         const newRevenue = newItems.reduce((acc: number, cur: any) => acc + cur.total, 0);
         setFormData(prev => ({
           ...prev, workItems: newItems, revenue: newRevenue,
-          debt: prev.status === 'Hoàn thành' ? 0 : newRevenue
+          debt: (prev.status === 'Hoàn thành' || prev.status === 'Đã tất toán') ? 0 : newRevenue
         }));
         showTemporaryStatus("AI đã báo giá hoàn tất!");
       }
@@ -234,14 +234,16 @@ export const ServiceForm: React.FC<Props> = ({
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Trạng thái</label>
+          <div className="space-y-1 flex flex-col justify-end">
+            <div className="flex justify-between items-center px-1 h-6">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Trạng thái</label>
+            </div>
             <select className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-700 outline-none" value={formData.status} onChange={e => updateField('status', e.target.value)}>
               {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-          <div className="space-y-1">
-            <div className="flex justify-between items-center px-1">
+          <div className="space-y-1 flex flex-col justify-end">
+            <div className="flex justify-between items-center px-1 h-6">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Kỹ thuật viên</label>
               {isAdmin && (
                 <button 
@@ -295,7 +297,18 @@ export const ServiceForm: React.FC<Props> = ({
                 <div className="flex gap-2 text-[11px] font-bold">
                   <div className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg flex items-center gap-1">SL: <input type="number" className="w-full outline-none font-black text-center bg-transparent" value={item.qty || 1} onChange={e => updateWorkItem(idx, 'qty', e.target.value)} /></div>
                   <div className="flex-[2] bg-white border border-slate-100 p-1.5 rounded-lg px-2 text-right"><input type="text" className="w-full outline-none font-black text-right text-brand-600 bg-transparent" value={formatCurrency(item.price)} onChange={e => updateWorkItem(idx, 'price', e.target.value)} /></div>
-                  <button onClick={() => setFormData(p => ({...p, workItems: p.workItems.filter((_, i) => i !== idx)}))} className="text-slate-300 hover:text-red-400 p-1"><Trash2 size={16}/></button>
+                  <button onClick={() => {
+                    setFormData(prev => {
+                      const newItems = prev.workItems.filter((_, i) => i !== idx);
+                      const newRevenue = newItems.reduce((s, item) => s + (Number(item.total) || 0), 0);
+                      return {
+                        ...prev,
+                        workItems: newItems,
+                        revenue: newRevenue,
+                        debt: (prev.status === 'Hoàn thành' || prev.status === 'Đã tất toán') ? 0 : newRevenue
+                      };
+                    });
+                  }} className="text-slate-300 hover:text-red-400 p-1"><Trash2 size={16}/></button>
                 </div>
               </div>
             ))}
@@ -304,7 +317,20 @@ export const ServiceForm: React.FC<Props> = ({
 
         <div className="pt-4 grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-[24px] border border-slate-100 shadow-sm">
           <div className="text-center"><span className="text-[9px] font-black text-brand-500 uppercase">Doanh thu</span><input type="text" className={`${moneyInputStyle} text-brand-600`} value={formatCurrency(formData.revenue)} readOnly /></div>
-          <div className="text-center"><span className="text-[9px] font-black text-orange-500 uppercase">Giá vốn</span><input type="text" className={`${moneyInputStyle} text-orange-600`} value={formatCurrency(formData.cost)} onChange={e => updateField('cost', parseCurrency(e.target.value))} /></div>
+          <div className="text-center">
+            <span className="text-[9px] font-black text-orange-500 uppercase">Giá vốn</span>
+            <input type="text" className={`${moneyInputStyle} text-orange-600`} value={formatCurrency(formData.cost)} onChange={e => updateField('cost', parseCurrency(e.target.value))} />
+            <div className="mt-2 flex justify-center items-center gap-3">
+              <label className="flex items-center gap-1 cursor-pointer group">
+                <input type="radio" name="costPayer" value="Công ty" checked={(formData.costPayer || 'Công ty') === 'Công ty'} onChange={e => updateField('costPayer', e.target.value)} className="w-3 h-3 accent-orange-500" />
+                <span className={`text-[10px] font-black ${formData.costPayer !== 'Kỹ thuật' ? 'text-orange-600' : 'text-slate-400 group-hover:text-slate-600'}`}>CT</span>
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer group">
+                <input type="radio" name="costPayer" value="Kỹ thuật" checked={formData.costPayer === 'Kỹ thuật'} onChange={e => updateField('costPayer', e.target.value)} className="w-3 h-3 accent-orange-500" />
+                <span className={`text-[10px] font-black ${formData.costPayer === 'Kỹ thuật' ? 'text-orange-600' : 'text-slate-400 group-hover:text-slate-600'}`}>KT</span>
+              </label>
+            </div>
+          </div>
           <div className="text-center"><span className="text-[9px] font-black text-red-500 uppercase">Công nợ</span><input type="text" className={`${moneyInputStyle} text-red-600`} value={formatCurrency(formData.debt)} onChange={e => updateField('debt', parseCurrency(e.target.value))} /></div>
         </div>
       </div>
@@ -312,8 +338,8 @@ export const ServiceForm: React.FC<Props> = ({
       <div className="grid grid-cols-2 gap-3 pt-4">
         {!selectedId ? (
           <>
-            <button disabled={isSubmitting} onClick={onSave} className="col-span-2 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 uppercase tracking-widest text-[12px] active:scale-95 smooth-transition">
-              {isSubmitting ? 'ĐANG LƯU...' : 'LƯU PHIẾU MỚI'}
+            <button disabled={isSubmitting} onClick={onSave} className="col-span-2 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 uppercase tracking-widest text-[12px] active:scale-95 smooth-transition flex justify-center items-center gap-2">
+              {isSubmitting ? <><Loader2 size={18} className="animate-spin" /> ĐANG LƯU...</> : 'LƯU PHIẾU MỚI'}
             </button>
             <button onClick={() => onGoToQuotation?.({ customerName: formData.customerName, customerPhone: formData.phone, customerAddress: formData.address })} className="col-span-2 bg-slate-100 text-brand-600 font-black py-3 rounded-2xl shadow-sm uppercase tracking-widest text-[11px] active:scale-95 smooth-transition hover:bg-slate-200 flex justify-center items-center gap-2">
               <FileText size={16} /> TẠO BÁO GIÁ TỪ THÔNG TIN NÀY
@@ -321,7 +347,9 @@ export const ServiceForm: React.FC<Props> = ({
           </>
         ) : (
           <>
-            <button disabled={isSubmitting} onClick={onUpdate} className="bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl shadow-md shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 uppercase text-[12px] active:scale-95 smooth-transition">CẬP NHẬT</button>
+            <button disabled={isSubmitting} onClick={onUpdate} className="bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl shadow-md shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 uppercase text-[12px] active:scale-95 smooth-transition flex justify-center items-center gap-2">
+              {isSubmitting ? <><Loader2 size={18} className="animate-spin" /> ĐANG CẬP NHẬT...</> : 'CẬP NHẬT'}
+            </button>
             <button onClick={onClear} className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-black py-4 rounded-2xl shadow-sm uppercase text-[12px] active:scale-95 smooth-transition">TIẾP MỚI</button>
             <button onClick={onCloneCustomer} className="col-span-2 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white font-black py-4 rounded-2xl uppercase text-[12px] active:scale-95 smooth-transition shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2">
                <Plus size={18} /> TẠO PHIẾU MỚI CHO KHÁCH NÀY

@@ -34,6 +34,7 @@ export interface ServiceFormData {
   workItems: WorkItem[];
   revenue: number;
   cost: number;
+  costPayer?: 'Công ty' | 'Kỹ thuật';
   debt: number;
 }
 
