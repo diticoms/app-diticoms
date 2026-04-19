@@ -79,6 +79,7 @@ export interface QuotationData {
   validUntil: string;
   items: QuotationItem[];
   vatRate: number;
+  vatType?: 'add' | 'included' | 'none';
   totalAmount: number;
   notes: string;
   preparedBy: string;

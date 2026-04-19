@@ -32,6 +32,7 @@ const INITIAL_QUOTATION: QuotationData = {
   validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   items: [{ ...INITIAL_ITEM }],
   vatRate: 0,
+  vatType: 'add',
   totalAmount: 0,
   notes: '',
   preparedBy: ''
@@ -64,12 +65,12 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
     }
   }, [initialData]);
 
-  // Calculate total amount whenever items or VAT change
+  // Calculate total amount whenever items, VAT rate, or VAT inclusion changes
   useEffect(() => {
     const subtotal = data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
-    const vatAmount = subtotal * (data.vatRate / 100);
+    const vatAmount = (!data.vatType || data.vatType === 'add') ? subtotal * (data.vatRate / 100) : 0;
     setData(prev => ({ ...prev, totalAmount: subtotal + vatAmount }));
-  }, [data.items, data.vatRate]);
+  }, [data.items, data.vatRate, data.vatType]);
 
   const handleAddItem = () => {
     setData(prev => ({
@@ -91,7 +92,8 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
     if (field === 'price' || field === 'quantity') {
       const val = field === 'price' ? parseCurrency(value) : Number(value);
       item[field] = val as never;
-      item.total = Number(item.quantity) * Number(item.price);
+      // Total is calculated as Selling Price (Cost * 1.2) * quantity
+      item.total = Number(item.quantity) * Number(item.price) * 1.2;
     } else {
       item[field] = value as never;
     }
@@ -141,7 +143,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
         item.specs,
         item.unit,
         item.quantity.toString(),
-        item.price.toString(),
+        (item.price * 1.2).toString(),
         item.total.toString(),
         item.note
       ]);
@@ -224,7 +226,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
             specs: row[2] || '',
             unit: row[3] || 'Cái',
             quantity: Number(row[4]) || 1,
-            price: Number(row[5]) || 0,
+            price: Number(row[5]) / 1.2 || 0, // Restore Cost Price from Selling Price in Excel
             total: Number(row[6]) || 0,
             note: row[7] || ''
           });
@@ -275,38 +277,43 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
     setTimeout(async () => {
       if (templateRef.current) {
         try {
-          const canvas = await html2canvas(templateRef.current, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: "#ffffff",
-            logging: false,
-            windowWidth: templateRef.current.scrollWidth,
-            windowHeight: templateRef.current.scrollHeight
-          });
-          
-          const imgData = canvas.toDataURL('image/png');
           const pdf = new jsPDF('p', 'mm', 'a4');
+          const pages = templateRef.current.querySelectorAll('.pdf-page');
           
-          const imgWidth = 210;
-          const pageHeight = 297;
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          let heightLeft = imgHeight;
-          let position = 0;
+          if (pages.length === 0) throw new Error("No pages found");
 
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
+          for (let i = 0; i < pages.length; i++) {
+            const page = pages[i] as HTMLElement;
+            const canvas = await html2canvas(page, {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: "#ffffff",
+              logging: false,
+              windowWidth: page.scrollWidth,
+              windowHeight: page.scrollHeight
+            });
+            
+            const imgData = canvas.toDataURL('image/png');
+            let finalWidth = 210;
+            let finalHeight = (canvas.height * 210) / canvas.width;
+            
+            // If content overflows A4 height, scale it down proportionally to fit the page perfectly
+            if (finalHeight > 297) {
+              const ratio = 297 / finalHeight;
+              finalHeight = 297;
+              finalWidth = 210 * ratio;
+            }
 
-          while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
+            const xOffset = (210 - finalWidth) / 2;
+            if (i > 0) pdf.addPage();
+            pdf.addImage(imgData, 'PNG', xOffset, 0, finalWidth, finalHeight);
           }
           
           pdf.save(`Bao_Gia_${data.customerName.replace(/\s+/g, '_')}.pdf`);
           
-          // Also set preview for UI
-          setPreviewImage(imgData);
+          // Show preview of the first page
+          const firstPageCanvas = await html2canvas(pages[0] as HTMLElement, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff", logging: false });
+          setPreviewImage(firstPageCanvas.toDataURL('image/png'));
         } catch (e) {
           console.error(e);
           alert("Lỗi khi tạo PDF báo giá!");
@@ -329,8 +336,10 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
           const canvas = await html2canvas(templateRef.current, {
             scale: 2,
             useCORS: true,
-            backgroundColor: "#ffffff",
-            logging: false
+            backgroundColor: "#f8fafc",
+            logging: false,
+            windowWidth: templateRef.current.scrollWidth,
+            windowHeight: templateRef.current.scrollHeight
           });
           setPreviewImage(canvas.toDataURL('image/png'));
         } catch (e) {
@@ -538,13 +547,14 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
                       />
                     </div>
                     <div className="md:col-span-4 space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Đơn giá</label>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Đơn giá (Giá vốn)</label>
                       <input 
                         type="text" 
                         value={formatCurrency(item.price)}
                         onChange={e => handleUpdateItem(index, 'price', e.target.value)}
                         className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-bold text-right text-blue-600"
                       />
+                      <div className="text-[9px] text-slate-400 text-right px-1 font-bold">Giá báo khách: {formatCurrency(item.price * 1.2)}đ</div>
                     </div>
                     <div className="md:col-span-4 space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Thành tiền</label>
@@ -633,7 +643,43 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
                     className="w-20 bg-white border border-slate-200 rounded-lg py-1 px-2 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-xs font-bold text-right"
                   />
                 </div>
+                
                 {data.vatRate > 0 && (
+                  <div className="flex gap-4 pt-1 justify-end">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="vatType" 
+                        checked={!data.vatType || data.vatType === 'add'} 
+                        onChange={() => setData(prev => ({ ...prev, vatType: 'add' }))} 
+                        className="accent-blue-600"
+                      />
+                      <span className="text-[9px] font-bold text-slate-600 uppercase">Cộng VAT</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="vatType" 
+                        checked={data.vatType === 'included'} 
+                        onChange={() => setData(prev => ({ ...prev, vatType: 'included' }))} 
+                        className="accent-blue-600"
+                      />
+                      <span className="text-[9px] font-bold text-slate-600 uppercase">Đã gồm VAT</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="vatType" 
+                        checked={data.vatType === 'none'} 
+                        onChange={() => setData(prev => ({ ...prev, vatType: 'none' }))} 
+                        className="accent-blue-600"
+                      />
+                      <span className="text-[9px] font-bold text-slate-600 uppercase">Không VAT</span>
+                    </label>
+                  </div>
+                )}
+
+                {data.vatRate > 0 && (!data.vatType || data.vatType === 'add') && (
                   <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tiền thuế VAT:</p>
                     <p className="text-sm font-bold text-blue-600">
