@@ -21,7 +21,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
     if (item.note && item.note.length > 0) u += Math.ceil(item.note.length / 70) * 0.5;
 
     const isFirstPage = chunks.length === 0;
-    const maxUnits = isFirstPage ? 12 : 16; // Safe limits for A4
+    const maxUnits = isFirstPage ? 14 : 20; // Increased limits for A4
 
     if (currentUnits + u > maxUnits && currentChunk.length > 0) {
       chunks.push(currentChunk);
@@ -47,14 +47,14 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
     return sum + u;
   }, 0);
 
-  const maxLastUnits = chunks.length === 1 ? 6 : 10; // Needs ~6 units of space for totals & signatures
+  const maxLastUnits = chunks.length === 1 ? 12 : 16; // Needs space for totals & signatures
   if (lastChunkUnits > maxLastUnits) {
     chunks.push([]); // Empty chunk just for footer to go to new page
   }
   // -----------------------------
 
   const PageHeader = () => (
-    <div className="flex items-center justify-between border-b-2 border-blue-600 pb-6 mb-6 shrink-0">
+    <div className="flex items-center justify-between border-b-2 border-blue-600 pb-4 mb-4 shrink-0">
       <div className="flex items-center gap-4">
         <Logo size={80} />
         <div className="text-left">
@@ -91,20 +91,20 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
             {/* Customer Info ONLY on Page 1 */}
             {isFirstPage && (
               <>
-                <div className="grid grid-cols-2 gap-8 mb-6 shrink-0">
+                <div className="grid grid-cols-2 gap-6 mb-4 shrink-0">
                   <div className="space-y-1">
-                    <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Thông tin khách hàng</h3>
+                    <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Thông tin khách hàng</h3>
                     <p className="text-sm font-bold text-slate-900">{data.customerName || '................................................'}</p>
                     <p className="text-xs text-slate-600">SĐT: {data.customerPhone || '..........................'}</p>
                     <p className="text-xs text-slate-600">Địa chỉ: {data.customerAddress || '................................................'}</p>
                     <p className="text-xs text-slate-600">MST: {data.customerTaxId || '................................................'}</p>
                   </div>
                   <div className="text-right space-y-1">
-                    <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Hiệu lực báo giá</h3>
+                    <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Hiệu lực báo giá</h3>
                     <p className="text-xs text-slate-600">Báo giá có giá trị đến ngày: {data.validUntil || '..........................'}</p>
                   </div>
                 </div>
-                <div className="mb-4 italic text-sm text-slate-600 shrink-0">
+                <div className="mb-3 italic text-sm text-slate-600 shrink-0">
                   Kính gửi Quý khách hàng, Diticoms Service xin chân thành cảm ơn Quý khách đã quan tâm đến dịch vụ của chúng tôi. Dưới đây là nội dung báo giá chi tiết:
                 </div>
               </>
@@ -115,28 +115,28 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600">
-                    <th className="border border-slate-200 p-3 text-left w-10">STT</th>
-                    <th className="border border-slate-200 p-3 text-left">Tên hàng hóa, dịch vụ</th>
-                    <th className="border border-slate-200 p-3 text-center w-12">ĐVT</th>
-                    <th className="border border-slate-200 p-3 text-center w-12">SL</th>
-                    <th className="border border-slate-200 p-3 text-right w-24">Đơn giá</th>
-                    <th className="border border-slate-200 p-3 text-right w-28">Thành tiền</th>
-                    <th className="border border-slate-200 p-3 text-left w-24">Ghi Chú</th>
+                    <th className="border border-slate-200 p-2 text-left w-10">STT</th>
+                    <th className="border border-slate-200 p-2 text-left">Tên hàng hóa, dịch vụ</th>
+                    <th className="border border-slate-200 p-2 text-center w-12">ĐVT</th>
+                    <th className="border border-slate-200 p-2 text-center w-12">SL</th>
+                    <th className="border border-slate-200 p-2 text-right w-24">Đơn giá</th>
+                    <th className="border border-slate-200 p-2 text-right w-28">Thành tiền</th>
+                    <th className="border border-slate-200 p-2 text-left w-24">Ghi Chú</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pageItems.map((item, idx) => (
                     <tr key={idx} className="text-xs border-b border-slate-100">
-                      <td className="border border-slate-200 p-3 text-center">{startingItemIndex + idx + 1}</td>
-                      <td className="border border-slate-200 p-3">
+                      <td className="border border-slate-200 p-2 text-center">{startingItemIndex + idx + 1}</td>
+                      <td className="border border-slate-200 p-2">
                         <div className="font-bold text-slate-900">{item.description}</div>
                         {item.specs && <div className="text-[10px] text-slate-500 mt-1 leading-relaxed whitespace-pre-wrap">{item.specs}</div>}
                       </td>
-                      <td className="border border-slate-200 p-3 text-center">{item.unit}</td>
-                      <td className="border border-slate-200 p-3 text-center">{item.quantity}</td>
-                      <td className="border border-slate-200 p-3 text-right">{formatCurrency(item.price * 1.2)}</td>
-                      <td className="border border-slate-200 p-3 text-right font-bold text-blue-600">{formatCurrency(item.total)}</td>
-                      <td className="border border-slate-200 p-3">
+                      <td className="border border-slate-200 p-2 text-center">{item.unit}</td>
+                      <td className="border border-slate-200 p-2 text-center">{item.quantity}</td>
+                      <td className="border border-slate-200 p-2 text-right">{formatCurrency(item.price * 1.2)}</td>
+                      <td className="border border-slate-200 p-2 text-right font-bold text-blue-600">{formatCurrency(item.total)}</td>
+                      <td className="border border-slate-200 p-2">
                         <div className="space-y-2">
                           {item.note && <p className="text-slate-500 italic leading-tight">{item.note}</p>}
                           {item.image && (
@@ -155,9 +155,9 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
                   {/* Fill empty rows if only 1 page to make table look nice */}
                   {isLastPage && chunks.length === 1 && data.items.length < 5 && Array.from({ length: 5 - data.items.length }).map((_, i) => (
                     <tr key={'empty-' + i} className="h-10 border-b border-slate-50">
-                      <td className="border border-slate-200 p-3"></td><td className="border border-slate-200 p-3"></td><td className="border border-slate-200 p-3"></td>
-                      <td className="border border-slate-200 p-3"></td><td className="border border-slate-200 p-3"></td><td className="border border-slate-200 p-3"></td>
-                      <td className="border border-slate-200 p-3"></td>
+                      <td className="border border-slate-200 p-2"></td><td className="border border-slate-200 p-2"></td><td className="border border-slate-200 p-2"></td>
+                      <td className="border border-slate-200 p-2"></td><td className="border border-slate-200 p-2"></td><td className="border border-slate-200 p-2"></td>
+                      <td className="border border-slate-200 p-2"></td>
                     </tr>
                   ))}
                 </tbody>
@@ -166,21 +166,21 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
                 {isLastPage && (
                   <tfoot>
                     <tr className="bg-slate-50 font-bold text-xs">
-                      <td colSpan={5} className="border border-slate-200 p-3 text-right uppercase tracking-widest text-slate-400">Cộng tiền hàng:</td>
-                      <td className="border border-slate-200 p-3 text-right">{formatCurrency(data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0))}đ</td>
-                      <td className="border border-slate-200 p-3"></td>
+                      <td colSpan={5} className="border border-slate-200 p-2 text-right uppercase tracking-widest text-slate-400">Cộng tiền hàng:</td>
+                      <td className="border border-slate-200 p-2 text-right">{formatCurrency(data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0))}đ</td>
+                      <td className="border border-slate-200 p-2"></td>
                     </tr>
                     {data.vatRate > 0 && (!data.vatType || data.vatType === 'add') && (
                       <tr className="bg-slate-50 font-bold text-xs">
-                        <td colSpan={5} className="border border-slate-200 p-3 text-right uppercase tracking-widest text-slate-400">Thuế VAT ({data.vatRate}%):</td>
-                        <td className="border border-slate-200 p-3 text-right">{formatCurrency(data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0) * (data.vatRate / 100))}đ</td>
-                        <td className="border border-slate-200 p-3"></td>
+                        <td colSpan={5} className="border border-slate-200 p-2 text-right uppercase tracking-widest text-slate-400">Thuế VAT ({data.vatRate}%):</td>
+                        <td className="border border-slate-200 p-2 text-right">{formatCurrency(data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0) * (data.vatRate / 100))}đ</td>
+                        <td className="border border-slate-200 p-2"></td>
                       </tr>
                     )}
                     <tr className="bg-blue-50 font-black">
-                      <td colSpan={5} className="border border-slate-200 p-4 text-right uppercase tracking-widest text-sm text-blue-600">Tổng cộng thanh toán:</td>
-                      <td className="border border-slate-200 p-4 text-right text-xl text-blue-600">{formatCurrency(data.totalAmount)}đ</td>
-                      <td className="border border-slate-200 p-4"></td>
+                      <td colSpan={5} className="border border-slate-200 p-3 text-right uppercase tracking-widest text-sm text-blue-600">Tổng cộng thanh toán:</td>
+                      <td className="border border-slate-200 p-3 text-right text-xl text-blue-600">{formatCurrency(data.totalAmount)}đ</td>
+                      <td className="border border-slate-200 p-3"></td>
                     </tr>
                     {data.vatRate > 0 && (data.vatType === 'included' || data.vatType === 'none') && (
                       <tr>
@@ -204,13 +204,13 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
 
             {/* Footer Signatures ONLY on Last Page */}
             {isLastPage && (
-              <div className="mt-auto pt-6 shrink-0">
+              <div className="mt-auto pt-4 shrink-0">
                 <div className="grid grid-cols-2 gap-10">
-                  <div className="text-center space-y-16">
+                  <div className="text-center space-y-12">
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Khách hàng xác nhận</p>
                     <p className="text-xs text-slate-300">(Ký và ghi rõ họ tên)</p>
                   </div>
-                  <div className="text-center space-y-16">
+                  <div className="text-center space-y-12">
                     <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Người lập báo giá</p>
                     <div className="space-y-1">
                       <p className="text-sm font-black text-slate-900 uppercase">{data.preparedBy || 'CÔNG TY TNHH ĐẦU TƯ-KỸ THUẬT DITICOMS'}</p>
@@ -219,7 +219,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
                   </div>
                 </div>
 
-                <div className="mt-12 pt-6 border-t border-slate-100 text-center">
+                <div className="mt-8 pt-4 border-t border-slate-100 text-center">
                   <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em]">Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ của Diticoms!</p>
                 </div>
               </div>

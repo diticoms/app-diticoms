@@ -51,9 +51,11 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
   }));
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isPreviewingPdf, setIsPreviewingPdf] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const templateRef = useRef<HTMLDivElement>(null);
+  const pdfRef = useRef<jsPDF | null>(null);
 
   // Lắng nghe thay đổi từ initialData
   useEffect(() => {
@@ -309,7 +311,8 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
             pdf.addImage(imgData, 'PNG', xOffset, 0, finalWidth, finalHeight);
           }
           
-          pdf.save(`Bao_Gia_${data.customerName.replace(/\s+/g, '_')}.pdf`);
+          pdfRef.current = pdf;
+          setIsPreviewingPdf(true);
           
           // Show preview of the first page
           const firstPageCanvas = await html2canvas(pages[0] as HTMLElement, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff", logging: false });
@@ -341,6 +344,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
             windowWidth: templateRef.current.scrollWidth,
             windowHeight: templateRef.current.scrollHeight
           });
+          setIsPreviewingPdf(false);
           setPreviewImage(canvas.toDataURL('image/png'));
         } catch (e) {
           console.error(e);
@@ -750,7 +754,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
             <div className="flex justify-between items-center">
               <h3 className="font-black text-slate-900 uppercase tracking-tight">Xem trước báo giá</h3>
               <button 
-                onClick={() => setPreviewImage(null)} 
+                onClick={() => { setPreviewImage(null); setIsPreviewingPdf(false); }} 
                 className="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X size={20}/>
@@ -760,19 +764,34 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
               <img src={previewImage} alt="Preview Quotation" className="w-full h-auto" />
             </div>
             <div className="flex gap-3">
+              {isPreviewingPdf ? (
+                <button 
+                  onClick={() => { 
+                    if (pdfRef.current) {
+                      const safeName = (data.customerName || 'Khach_Hang').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, '_');
+                      pdfRef.current.save(`Bao_Gia_${safeName}.pdf`); 
+                    }
+                  }} 
+                  className="flex-1 bg-slate-900 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:-translate-y-0.5 smooth-transition active:scale-95"
+                >
+                  <FileText size={20}/> TẢI FILE PDF VỀ MÁY
+                </button>
+              ) : (
+                <button 
+                  onClick={() => { 
+                    const link = document.createElement('a'); 
+                    const safeName = (data.customerName || 'Khach_Hang').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, '_');
+                    link.download = `Bao_Gia_${safeName}.png`; 
+                    link.href = previewImage; 
+                    link.click(); 
+                  }} 
+                  className="flex-1 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 smooth-transition active:scale-95"
+                >
+                  <Download size={20}/> TẢI ẢNH VỀ MÁY
+                </button>
+              )}
               <button 
-                onClick={() => { 
-                  const link = document.createElement('a'); 
-                  link.download = `BaoGia_${data.customerName.replace(/\s+/g, '_')}.png`; 
-                  link.href = previewImage; 
-                  link.click(); 
-                }} 
-                className="flex-1 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 smooth-transition active:scale-95"
-              >
-                <Download size={20}/> TẢI ẢNH VỀ MÁY
-              </button>
-              <button 
-                onClick={() => setPreviewImage(null)} 
+                onClick={() => { setPreviewImage(null); setIsPreviewingPdf(false); }} 
                 className="px-8 bg-slate-100 text-slate-600 font-black rounded-2xl hover:bg-slate-200 transition-all"
               >
                 ĐÓNG
