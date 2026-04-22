@@ -291,7 +291,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
               useCORS: true,
               backgroundColor: "#ffffff",
               logging: false,
-              windowWidth: page.scrollWidth,
+              windowWidth: 800,
               windowHeight: page.scrollHeight
             });
             
@@ -341,7 +341,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
             useCORS: true,
             backgroundColor: "#f8fafc",
             logging: false,
-            windowWidth: templateRef.current.scrollWidth,
+            windowWidth: 800,
             windowHeight: templateRef.current.scrollHeight
           });
           setIsPreviewingPdf(false);
@@ -741,9 +741,11 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
       </div>
 
       {/* Hidden Template for html2canvas */}
-      <div className="fixed -left-[9999px] top-0">
-        <div ref={templateRef}>
-          <QuotationTemplate data={data} />
+      <div className="fixed -left-[9999px] top-0 pointer-events-none">
+        <div style={{ width: '800px', WebkitTextSizeAdjust: 'none', textSizeAdjust: 'none' }}>
+          <div ref={templateRef}>
+            <QuotationTemplate data={data} />
+          </div>
         </div>
       </div>
 
