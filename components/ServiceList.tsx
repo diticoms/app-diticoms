@@ -275,8 +275,14 @@ export const ServiceList: React.FC<Props> = ({
                 startPos.current = { x: e.clientX, y: e.clientY };
                 longPressTimer.current = setTimeout(() => { if (!hasMoved.current) { isLongPress.current = true; copyToClipboard(item); } }, 600);
               }}
-              onPointerMove={(e) => { if (Math.abs(e.clientX - startPos.current.x) > 10) hasMoved.current = true; }}
+              onPointerMove={(e) => { 
+                if (Math.abs(e.clientX - startPos.current.x) > 10 || Math.abs(e.clientY - startPos.current.y) > 10) {
+                  hasMoved.current = true; 
+                }
+              }}
               onPointerUp={() => { clearTimeout(longPressTimer.current); if (!isLongPress.current && !hasMoved.current) onSelectRow(item); }}
+              onPointerCancel={() => { clearTimeout(longPressTimer.current); hasMoved.current = true; }}
+              onPointerLeave={() => { clearTimeout(longPressTimer.current); hasMoved.current = true; }}
               className={`p-4 rounded-[24px] border transition-all cursor-pointer flex items-center justify-between group relative select-none touch-pan-y ${selectedId === item.id ? 'bg-brand-50/50 border-brand-200 ring-2 ring-brand-100 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 card-hover'}`}
             >
               <div className="flex gap-3.5 items-center flex-1 min-w-0">
