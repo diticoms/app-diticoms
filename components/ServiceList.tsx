@@ -211,7 +211,7 @@ export const ServiceList: React.FC<Props> = ({
         <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 smooth-transition" size={18} />
           <input 
-            type="text" placeholder="Tìm tên, SĐT hoặc địa chỉ..." className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 smooth-transition font-medium shadow-sm"
+            type="text" placeholder="Tìm tên, SĐT, địa chỉ, hoặc mã vé..." className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 smooth-transition font-medium shadow-sm"
             value={localSearch} onChange={handleSearchChange}
           />
         </div>
@@ -291,7 +291,10 @@ export const ServiceList: React.FC<Props> = ({
                   <span className="opacity-60 text-[10px]">T{(item.created_at || '').split('T')[0]?.split('-')[1] || '--'}</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-bold text-slate-800 leading-tight mb-0.5 truncate text-[14px]">{item.customerName}</div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <div className="font-bold text-slate-800 leading-tight truncate text-[14px]">{item.customerName}</div>
+                    {item.ticketNumber && <span className="text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">{item.ticketNumber}</span>}
+                  </div>
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium mb-1.5">
                     <Phone size={10} className="text-brand-400" /> {item.phone}
                     <span className="text-slate-200">|</span>

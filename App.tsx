@@ -8,14 +8,15 @@ import { ConfigModal } from './components/ConfigModal.tsx';
 import { Logo } from './components/Logo.tsx';
 import { AiChat } from './components/AiChat.tsx';
 import { QuotationTool } from './components/QuotationTool.tsx';
+import { TelesaleTree } from './components/TelesaleTree.tsx';
 import { callSheetAPI } from './services/api.ts';
 import { User, AppConfig, ServiceTicket, ServiceFormData, PriceItem } from './types.ts';
 import { DEFAULT_CONFIG, STATUS_OPTIONS, SHEET_API_URL } from './constants.ts';
 import { getTodayString } from './utils/helpers.ts';
-import { FileText, ClipboardList, CheckCircle2 } from 'lucide-react';
+import { FileText, ClipboardList, CheckCircle2, MonitorCheck } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'services' | 'quotation'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'quotation' | 'telesale'>('services');
   const [user, setUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem('diti_user');
@@ -85,8 +86,24 @@ const App: React.FC = () => {
     viewAll: false
   });
 
+  const generateTicketNumber = () => {
+    const existingNumbers = services
+      .map(s => s.ticketNumber || '')
+      .filter(t => /^#\d{6}$/.test(t))
+      .map(t => parseInt(t.replace('#', ''), 10))
+      .filter(n => !isNaN(n));
+      
+    if (existingNumbers.length > 0) {
+      const maxNum = Math.max(...existingNumbers);
+      return `#${String(maxNum + 1).padStart(6, '0')}`;
+    }
+    
+    const randomStr = Math.floor(100000 + Math.random() * 900000).toString();
+    return `#${randomStr}`;
+  };
+
   const [formData, setFormData] = useState<ServiceFormData>({
-    customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0],
+    ticketNumber: '', customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0],
     technician: '', content: '',
     workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
     revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0
@@ -121,6 +138,7 @@ const App: React.FC = () => {
 
           return {
             id: String(r.id),
+            ticketNumber: r.ticket_number || r.ticketNumber || '',
             created_at: r.created_at || r.date || new Date().toISOString(),
             customerName: r.customer_name || r.customerName || '',
             phone: String(r.phone || '').replace(/^'/, ''),
@@ -169,7 +187,8 @@ const App: React.FC = () => {
       result = result.filter(s => 
         (s.customerName || '').toLowerCase().includes(term) || 
         (s.phone || '').includes(term) || 
-        (s.address || '').toLowerCase().includes(term)
+        (s.address || '').toLowerCase().includes(term) ||
+        (s.ticketNumber || '').toLowerCase().includes(term)
       );
     }
     return result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -178,7 +197,7 @@ const App: React.FC = () => {
   const resetForm = useCallback((u = user) => {
     setSelectedId(null);
     setFormData({ 
-      customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
+      ticketNumber: '', customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
       technician: u?.associatedTech || '', content: '', 
       workItems: [{ desc: '', qty: 1, price: '', total: 0 }], 
       revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0 
@@ -192,6 +211,7 @@ const App: React.FC = () => {
       
       const payload = { 
         id: action === 'create' ? Date.now().toString() : selectedId,
+        ticket_number: action === 'create' ? (formData.ticketNumber || generateTicketNumber()) : (originalService?.ticketNumber || ''),
         // GIỮ NGUYÊN NGÀY NHẬP GỐC KHI CẬP NHẬT
         created_at: action === 'create' ? new Date().toISOString() : (originalService?.created_at || new Date().toISOString()),
         customer_name: formData.customerName,
@@ -254,8 +274,14 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Tab Switcher */}
             <nav className="hidden md:flex bg-slate-100/80 p-1 rounded-xl gap-1 border border-slate-200/50">
+              <button 
+                onClick={() => setActiveTab('telesale')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'telesale' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
+              >
+                <MonitorCheck size={16} />
+                CHẨN ĐOÁN LỖI
+              </button>
               <button 
                 onClick={() => setActiveTab('services')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'services' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
@@ -281,18 +307,24 @@ const App: React.FC = () => {
 
       <main className="flex-1 lg:h-[calc(100vh-64px)] overflow-y-auto lg:overflow-hidden">
         <div className="max-w-7xl mx-auto p-4 lg:p-6 h-full">
-          {/* Mobile Tab Switcher */}
           <div className="md:hidden flex bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/50 mb-5 gap-1.5 shadow-sm">
             <button 
+              onClick={() => setActiveTab('telesale')}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-[12px] font-bold text-[10px] uppercase tracking-wider smooth-transition ${activeTab === 'telesale' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
+            >
+              <MonitorCheck size={18} />
+              CHẨN ĐOÁN
+            </button>
+            <button 
               onClick={() => setActiveTab('services')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[12px] font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'services' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-[12px] font-bold text-[10px] uppercase tracking-wider smooth-transition ${activeTab === 'services' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
             >
               <ClipboardList size={18} />
               PHIẾU
             </button>
             <button 
               onClick={() => setActiveTab('quotation')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[12px] font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'quotation' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-[12px] font-bold text-[10px] uppercase tracking-wider smooth-transition ${activeTab === 'quotation' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
             >
               <FileText size={18} />
               BÁO GIÁ
@@ -312,6 +344,7 @@ const App: React.FC = () => {
                       setSelectedId(null);
                       setFormData(prev => ({
                         ...prev,
+                        ticketNumber: generateTicketNumber(),
                         status: STATUS_OPTIONS[0],
                         content: '',
                         workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
@@ -348,6 +381,7 @@ const App: React.FC = () => {
                   selectedId={selectedId} onSelectRow={(item) => {
                     setSelectedId(item.id);
                     setFormData({
+                      ticketNumber: item.ticketNumber || '',
                       customerName: item.customerName || '',
                       phone: item.phone || '',
                       address: item.address || '',
@@ -376,8 +410,25 @@ const App: React.FC = () => {
                 />
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'quotation' ? (
             <QuotationTool currentUser={user} initialData={quotationInitialData} />
+          ) : (
+            <div className="h-full bg-transparent">
+              <TelesaleTree onCreateTicket={(data) => {
+                resetForm();
+                setFormData(prev => ({
+                  ...prev,
+                  ticketNumber: generateTicketNumber(),
+                  content: data.content,
+                  workItems: [{ desc: data.content, qty: 1, price: '', total: 0 }]
+                }));
+                setActiveTab('services');
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  if (formScrollRef.current) formScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 100);
+              }} />
+            </div>
           )}
         </div>
       </main>
