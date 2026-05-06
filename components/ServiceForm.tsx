@@ -7,6 +7,7 @@ import html2canvas from 'html2canvas';
 import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
 import { STATUS_OPTIONS } from '../constants.ts';
 import { formatCurrency, parseCurrency } from '../utils/helpers.ts';
+import { exportNativeFile } from '../utils/fileExport.ts';
 import { InvoiceTemplate } from './InvoiceTemplate.tsx';
 import { diagnoseServiceAction } from '../services/ai.ts';
 
@@ -393,16 +394,7 @@ export const ServiceForm: React.FC<Props> = ({
                    <img src={capturedDataUrl} alt="Invoice" className="w-full rounded-2xl shadow-xl border border-white/50 mb-8" />
                    <div className="w-full space-y-3 pb-8">
                       <button onClick={async () => {
-                        const blob = await (await fetch(capturedDataUrl)).blob();
-                        const file = new File([blob], `Bill_${formData.customerName}.png`, { type: 'image/png' });
-                        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-                          await navigator.share({ files: [file], title: 'Hóa đơn Diticoms', text: `Gửi hóa đơn cho ${formData.customerName}` });
-                        } else {
-                          const link = document.createElement('a');
-                          link.download = `Bill_${formData.customerName}.png`;
-                          link.href = capturedDataUrl;
-                          link.click();
-                        }
+                        exportNativeFile(`Bill_${formData.customerName}.png`, capturedDataUrl, 'image/png', capturedDataUrl);
                       }} className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all">
                         <Share2 size={20} /> CHIA SẺ NGAY
                       </button>

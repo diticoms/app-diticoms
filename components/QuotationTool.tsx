@@ -11,6 +11,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { QuotationData, QuotationItem } from '../types';
 import { formatCurrency, parseCurrency } from '../utils/helpers';
+import { exportNativeFile } from '../utils/fileExport';
 import { QuotationTemplate } from './QuotationTemplate';
 
 const INITIAL_ITEM: QuotationItem = {
@@ -189,7 +190,8 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Báo giá");
-    XLSX.writeFile(wb, `Bao_Gia_${data.customerName.replace(/\s+/g, '_')}_${data.date}.xlsx`);
+    const base64Excel = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+    exportNativeFile(`Bao_Gia_${data.customerName.replace(/\s+/g, '_')}_${data.date}.xlsx`, base64Excel, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   };
 
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -771,7 +773,8 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
                   onClick={() => { 
                     if (pdfRef.current) {
                       const safeName = (data.customerName || 'Khach_Hang').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, '_');
-                      pdfRef.current.save(`Bao_Gia_${safeName}.pdf`); 
+                      const base64Pdf = pdfRef.current.output('datauristring');
+                      exportNativeFile(`Bao_Gia_${safeName}.pdf`, base64Pdf, 'application/pdf', base64Pdf);
                     }
                   }} 
                   className="flex-1 bg-slate-900 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:-translate-y-0.5 smooth-transition active:scale-95"
@@ -781,11 +784,8 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
               ) : (
                 <button 
                   onClick={() => { 
-                    const link = document.createElement('a'); 
                     const safeName = (data.customerName || 'Khach_Hang').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, '_');
-                    link.download = `Bao_Gia_${safeName}.png`; 
-                    link.href = previewImage; 
-                    link.click(); 
+                    exportNativeFile(`Bao_Gia_${safeName}.png`, previewImage, 'image/png', previewImage);
                   }} 
                   className="flex-1 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 smooth-transition active:scale-95"
                 >

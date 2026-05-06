@@ -4,6 +4,7 @@ import { Search, Loader2, ChevronRight, Calendar, Filter, CheckCircle2, MessageS
 import * as XLSX from 'xlsx';
 import { ServiceTicket } from '../types.ts';
 import { formatCurrency, debounce } from '../utils/helpers.ts';
+import { exportNativeFile } from '../utils/fileExport.ts';
 import { Logo } from './Logo.tsx';
 
 interface Props {
@@ -135,7 +136,8 @@ export const ServiceList: React.FC<Props> = ({
       fileName = `Diticoms_BaoCao_${filters.dateFrom}_den_${filters.dateTo}.xlsx`;
     }
     
-    XLSX.writeFile(workbook, fileName);
+    const base64Excel = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+    exportNativeFile(fileName, base64Excel, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   };
 
   const copyToClipboard = (item: ServiceTicket) => {
