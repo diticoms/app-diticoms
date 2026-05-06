@@ -56,6 +56,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const templateRef = useRef<HTMLDivElement>(null);
+  const templateImageRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<jsPDF | null>(null);
 
   // Lắng nghe thay đổi từ initialData
@@ -289,7 +290,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
           for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
             const canvas = await html2canvas(page, {
-              scale: 2,
+              scale: 1.5,
               useCORS: true,
               backgroundColor: "#ffffff",
               logging: false,
@@ -297,7 +298,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
               windowHeight: page.scrollHeight
             });
             
-            const imgData = canvas.toDataURL('image/png');
+            const imgData = canvas.toDataURL('image/jpeg', 0.8);
             let finalWidth = 210;
             let finalHeight = (canvas.height * 210) / canvas.width;
             
@@ -310,15 +311,15 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
 
             const xOffset = (210 - finalWidth) / 2;
             if (i > 0) pdf.addPage();
-            pdf.addImage(imgData, 'PNG', xOffset, 0, finalWidth, finalHeight);
+            pdf.addImage(imgData, 'JPEG', xOffset, 0, finalWidth, finalHeight);
           }
           
           pdfRef.current = pdf;
           setIsPreviewingPdf(true);
           
           // Show preview of the first page
-          const firstPageCanvas = await html2canvas(pages[0] as HTMLElement, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff", logging: false });
-          setPreviewImage(firstPageCanvas.toDataURL('image/png'));
+          const firstPageCanvas = await html2canvas(pages[0] as HTMLElement, { scale: 1.2, useCORS: true, backgroundColor: "#ffffff", logging: false });
+          setPreviewImage(firstPageCanvas.toDataURL('image/jpeg', 0.8));
         } catch (e) {
           console.error(e);
           alert("Lỗi khi tạo PDF báo giá!");
@@ -336,18 +337,18 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
     }
     setIsGenerating(true);
     setTimeout(async () => {
-      if (templateRef.current) {
+      if (templateImageRef.current) {
         try {
-          const canvas = await html2canvas(templateRef.current, {
-            scale: 2,
+          const canvas = await html2canvas(templateImageRef.current, {
+            scale: 1.5,
             useCORS: true,
             backgroundColor: "#f8fafc",
             logging: false,
             windowWidth: 800,
-            windowHeight: templateRef.current.scrollHeight
+            windowHeight: templateImageRef.current.scrollHeight
           });
           setIsPreviewingPdf(false);
-          setPreviewImage(canvas.toDataURL('image/png'));
+          setPreviewImage(canvas.toDataURL('image/jpeg', 0.9));
         } catch (e) {
           console.error(e);
           alert("Lỗi khi tạo ảnh báo giá!");
@@ -747,6 +748,9 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
         <div style={{ width: '800px', WebkitTextSizeAdjust: 'none', textSizeAdjust: 'none' }}>
           <div ref={templateRef}>
             <QuotationTemplate data={data} />
+          </div>
+          <div ref={templateImageRef}>
+            <QuotationTemplate data={data} isImageMode={true} />
           </div>
         </div>
       </div>

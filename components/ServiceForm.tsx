@@ -145,7 +145,7 @@ export const ServiceForm: React.FC<Props> = ({
       await new Promise(r => setTimeout(r, 1000)); // Chờ render và QR load
       
       const canvas = await html2canvas(billRef.current, {
-        scale: 3,
+        scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
@@ -169,7 +169,7 @@ export const ServiceForm: React.FC<Props> = ({
           }
         }
       });
-      setCapturedDataUrl(canvas.toDataURL('image/png', 1.0));
+      setCapturedDataUrl(canvas.toDataURL('image/jpeg', 0.9));
       showTemporaryStatus("Đã tạo ảnh hóa đơn!");
     } catch (err) {
       console.error("Capture error:", err);
@@ -394,7 +394,7 @@ export const ServiceForm: React.FC<Props> = ({
                    <img src={capturedDataUrl} alt="Invoice" className="w-full rounded-2xl shadow-xl border border-white/50 mb-8" />
                    <div className="w-full space-y-3 pb-8">
                       <button onClick={async () => {
-                        exportNativeFile(`Bill_${formData.customerName}.png`, capturedDataUrl, 'image/png', capturedDataUrl);
+                        exportNativeFile(`Bill_${formData.customerName}.jpg`, capturedDataUrl, 'image/jpeg', capturedDataUrl);
                       }} className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all">
                         <Share2 size={20} /> CHIA SẺ NGAY
                       </button>

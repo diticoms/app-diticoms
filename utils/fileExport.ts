@@ -17,8 +17,7 @@ export const exportNativeFile = async (
 ) => {
   if (Capacitor.isNativePlatform()) {
     try {
-      // Bỏ đi phần prefix "data:image/png;base64," nếu có bị dính vào base64Data
-      const cleanBase64 = base64Data.replace(/^data:[a-z-]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)?;base64,/, '');
+      const cleanBase64 = base64Data.replace(/^data:.*?;base64,/, '');
 
       // Ghi file vào thư mục Cache (hoặc Documents tùy chọn)
       const savedFile = await Filesystem.writeFile({

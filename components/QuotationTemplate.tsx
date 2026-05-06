@@ -5,51 +5,56 @@ import { formatCurrency } from '../utils/helpers.ts';
 
 interface Props {
   data: QuotationData;
+  isImageMode?: boolean;
 }
 
-export const QuotationTemplate: React.FC<Props> = ({ data }) => {
+export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
   // --- Smart Chunking Logic ---
   const chunks: QuotationItem[][] = [];
   let currentChunk: QuotationItem[] = [];
   let currentUnits = 0;
   
-  for (let i = 0; i < data.items.length; i++) {
-    const item = data.items[i];
-    let u = 1; // base unit for 1 standard row (~45px)
-    if (item.image) u += 6; // Image is unpredictable, reserve more space
-    if (item.specs && item.specs.length > 0) u += Math.ceil(item.specs.length / 70) * 0.5;
-    if (item.note && item.note.length > 0) u += Math.ceil(item.note.length / 70) * 0.5;
+  if (isImageMode) {
+    chunks.push([...data.items]);
+  } else {
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i];
+      let u = 1; // base unit for 1 standard row (~45px)
+      if (item.image) u += 6; // Image is unpredictable, reserve more space
+      if (item.specs && item.specs.length > 0) u += Math.ceil(item.specs.length / 70) * 0.5;
+      if (item.note && item.note.length > 0) u += Math.ceil(item.note.length / 70) * 0.5;
 
-    const isFirstPage = chunks.length === 0;
-    const maxUnits = isFirstPage ? 14 : 20; // Increased limits for A4
+      const isFirstPage = chunks.length === 0;
+      const maxUnits = isFirstPage ? 14 : 20; // Increased limits for A4
 
-    if (currentUnits + u > maxUnits && currentChunk.length > 0) {
-      chunks.push(currentChunk);
-      currentChunk = [item];
-      currentUnits = u;
-    } else {
-      currentChunk.push(item);
-      currentUnits += u;
+      if (currentUnits + u > maxUnits && currentChunk.length > 0) {
+        chunks.push(currentChunk);
+        currentChunk = [item];
+        currentUnits = u;
+      } else {
+        currentChunk.push(item);
+        currentUnits += u;
+      }
     }
-  }
-  
-  if (currentChunk.length > 0) {
-    chunks.push(currentChunk);
-  }
+    
+    if (currentChunk.length > 0) {
+      chunks.push(currentChunk);
+    }
 
-  // Check if last chunk has enough space for the summary and footer
-  const lastChunk = chunks[chunks.length - 1] || [];
-  let lastChunkUnits = lastChunk.reduce((sum, item) => {
-    let u = 1;
-    if (item.image) u += 6;
-    if (item.specs && item.specs.length > 0) u += Math.ceil(item.specs.length / 70) * 0.5;
-    if (item.note && item.note.length > 0) u += Math.ceil(item.note.length / 70) * 0.5;
-    return sum + u;
-  }, 0);
+    // Check if last chunk has enough space for the summary and footer
+    const lastChunk = chunks[chunks.length - 1] || [];
+    let lastChunkUnits = lastChunk.reduce((sum, item) => {
+      let u = 1;
+      if (item.image) u += 6;
+      if (item.specs && item.specs.length > 0) u += Math.ceil(item.specs.length / 70) * 0.5;
+      if (item.note && item.note.length > 0) u += Math.ceil(item.note.length / 70) * 0.5;
+      return sum + u;
+    }, 0);
 
-  const maxLastUnits = chunks.length === 1 ? 12 : 16; // Needs space for totals & signatures
-  if (lastChunkUnits > maxLastUnits) {
-    chunks.push([]); // Empty chunk just for footer to go to new page
+    const maxLastUnits = chunks.length === 1 ? 12 : 16; // Needs space for totals & signatures
+    if (lastChunkUnits > maxLastUnits) {
+      chunks.push([]); // Empty chunk just for footer to go to new page
+    }
   }
   // -----------------------------
 
@@ -85,7 +90,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
         }
 
         return (
-          <div key={pageIndex} className="pdf-page w-[800px] min-h-[1131px] bg-white p-[1cm] font-sans text-slate-800 flex flex-col relative box-border shadow-lg">
+          <div key={pageIndex} className={`pdf-page w-[800px] bg-white p-[1cm] font-sans text-slate-800 flex flex-col relative box-border shadow-lg ${isImageMode ? '' : 'min-h-[1131px]'}`}>
             <PageHeader />
 
             {/* Customer Info ONLY on Page 1 */}
@@ -226,9 +231,11 @@ export const QuotationTemplate: React.FC<Props> = ({ data }) => {
             )}
             
             {/* Page number */}
-            <div className="absolute bottom-4 right-8 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-              Trang {pageIndex + 1}/{chunks.length}
-            </div>
+            {!isImageMode && (
+              <div className="absolute bottom-4 right-8 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                Trang {pageIndex + 1}/{chunks.length}
+              </div>
+            )}
           </div>
         );
       })}
