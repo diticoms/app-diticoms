@@ -102,12 +102,12 @@ const App: React.FC = () => {
     return `#${randomStr}`;
   };
 
-  const [formData, setFormData] = useState<ServiceFormData>({
+  const [formData, setFormData] = useState<ServiceFormData>(() => ({
     ticketNumber: '', customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0],
-    technician: '', content: '',
+    technician: user?.associatedTech || user?.name || '', content: '',
     workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
     revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0
-  });
+  }));
 
   const [quotationInitialData, setQuotationInitialData] = useState<any>(null);
 
@@ -198,7 +198,7 @@ const App: React.FC = () => {
     setSelectedId(null);
     setFormData({ 
       ticketNumber: '', customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
-      technician: u?.associatedTech || '', content: '', 
+      technician: u?.associatedTech || u?.name || '', content: '', 
       workItems: [{ desc: '', qty: 1, price: '', total: 0 }], 
       revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0 
     });
@@ -345,6 +345,7 @@ const App: React.FC = () => {
                       setFormData(prev => ({
                         ...prev,
                         ticketNumber: generateTicketNumber(),
+                        technician: user?.associatedTech || user?.name || '',
                         status: STATUS_OPTIONS[0],
                         content: '',
                         workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
