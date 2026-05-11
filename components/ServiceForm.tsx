@@ -9,7 +9,7 @@ import { STATUS_OPTIONS } from '../constants.ts';
 import { formatCurrency, parseCurrency } from '../utils/helpers.ts';
 import { exportNativeFile } from '../utils/fileExport.ts';
 import { InvoiceTemplate } from './InvoiceTemplate.tsx';
-import { diagnoseServiceAction } from '../services/ai.ts';
+
 
 interface Props {
   formData: ServiceFormData;
@@ -41,7 +41,7 @@ export const ServiceForm: React.FC<Props> = ({
   const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(null);
   const [activeWorkIdx, setActiveWorkIdx] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [isAiDiagnosing, setIsAiDiagnosing] = useState(false);
+
   const [showTechManager, setShowTechManager] = useState(false);
   const [newTechName, setNewTechName] = useState('');
   const [isUpdatingTech, setIsUpdatingTech] = useState(false);
@@ -116,23 +116,7 @@ export const ServiceForm: React.FC<Props> = ({
     });
   };
 
-  const handleAiDiagnose = async () => {
-    if (!formData.content) return showTemporaryStatus("Vui lòng nhập nội dung lỗi");
-    setIsAiDiagnosing(true);
-    try {
-      const suggestions = await diagnoseServiceAction(formData.content);
-      if (suggestions && suggestions.length > 0) {
-        const newItems = suggestions.map((s: any) => ({ ...s, total: s.qty * s.price }));
-        const newRevenue = newItems.reduce((acc: number, cur: any) => acc + cur.total, 0);
-        setFormData(prev => ({
-          ...prev, workItems: newItems, revenue: newRevenue,
-          debt: (prev.status === 'Hoàn thành' || prev.status === 'Đã tất toán') ? 0 : newRevenue
-        }));
-        showTemporaryStatus("AI đã báo giá hoàn tất!");
-      }
-    } catch (e: any) { alert(e.message); } 
-    finally { setIsAiDiagnosing(false); }
-  };
+
 
   const handleCaptureBill = async () => {
     if (!billRef.current) return;
@@ -229,9 +213,7 @@ export const ServiceForm: React.FC<Props> = ({
         <div className="relative group">
           <MessageSquare className="absolute left-3.5 top-3.5 text-slate-400 group-focus-within:text-brand-500 smooth-transition z-10" size={18} />
           <textarea placeholder="Mô tả lỗi hoặc yêu cầu khách hàng..." className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl min-h-[100px] focus:bg-white focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none smooth-transition shadow-sm" value={formData.content || ''} onChange={e => updateField('content', e.target.value)} />
-          <button onClick={handleAiDiagnose} disabled={isAiDiagnosing || !formData.content} className={`absolute right-3 bottom-3 flex items-center gap-2 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all shadow-md ${isAiDiagnosing ? 'bg-slate-200 text-slate-400' : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white'}`}>
-            {isAiDiagnosing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI BÁO GIÁ
-          </button>
+
         </div>
 
         <div className="grid grid-cols-2 gap-3">

@@ -6,7 +6,7 @@ import { ServiceList } from './components/ServiceList.tsx';
 import { ServiceForm } from './components/ServiceForm.tsx';
 import { ConfigModal } from './components/ConfigModal.tsx';
 import { Logo } from './components/Logo.tsx';
-import { AiChat } from './components/AiChat.tsx';
+
 import { QuotationTool } from './components/QuotationTool.tsx';
 import { TelesaleTree } from './components/TelesaleTree.tsx';
 import { callSheetAPI } from './services/api.ts';
@@ -434,7 +434,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <AiChat services={services} onApplyFilter={(aiFilters) => setFilters(prev => ({ ...prev, ...aiFilters }))} />
+
 
       {showConfig && (
         <ConfigModal 
