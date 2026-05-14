@@ -139,7 +139,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
                       </td>
                       <td className="border border-slate-200 p-2 text-center">{item.unit}</td>
                       <td className="border border-slate-200 p-2 text-center">{item.quantity}</td>
-                      <td className="border border-slate-200 p-2 text-right">{formatCurrency(item.price * 1.2)}</td>
+                      <td className="border border-slate-200 p-2 text-right">{formatCurrency(item.price)}</td>
                       <td className="border border-slate-200 p-2 text-right font-bold text-blue-600">{formatCurrency(item.total)}</td>
                       <td className="border border-slate-200 p-2">
                         <div className="space-y-2">

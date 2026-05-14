@@ -96,8 +96,8 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
     if (field === 'price' || field === 'quantity') {
       const val = field === 'price' ? parseCurrency(value) : Number(value);
       item[field] = val as never;
-      // Total is calculated as Selling Price (Cost * 1.2) * quantity
-      item.total = Number(item.quantity) * Number(item.price) * 1.2;
+      // Total is calculated as quantity * price
+      item.total = Number(item.quantity) * Number(item.price);
     } else {
       item[field] = value as never;
     }
@@ -147,7 +147,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
         item.specs,
         item.unit,
         item.quantity.toString(),
-        (item.price * 1.2).toString(),
+        (item.price).toString(),
         item.total.toString(),
         item.note
       ]);
@@ -231,7 +231,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
             specs: row[2] || '',
             unit: row[3] || 'Cái',
             quantity: Number(row[4]) || 1,
-            price: Number(row[5]) / 1.2 || 0, // Restore Cost Price from Selling Price in Excel
+            price: Number(row[5]) || 0,
             total: Number(row[6]) || 0,
             note: row[7] || ''
           });
@@ -554,14 +554,13 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
                       />
                     </div>
                     <div className="md:col-span-4 space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Đơn giá (Giá vốn)</label>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Đơn giá</label>
                       <input 
                         type="text" 
                         value={formatCurrency(item.price)}
                         onChange={e => handleUpdateItem(index, 'price', e.target.value)}
                         className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-bold text-right text-blue-600"
                       />
-                      <div className="text-[9px] text-slate-400 text-right px-1 font-bold">Giá báo khách: {formatCurrency(item.price * 1.2)}đ</div>
                     </div>
                     <div className="md:col-span-4 space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Thành tiền</label>
