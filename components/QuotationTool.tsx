@@ -4,7 +4,7 @@ import {
   Plus, Trash2, Download, FileSpreadsheet, FileText, 
   Upload, RefreshCw, ChevronLeft, ChevronRight, Save, X, 
   Search, Printer, Share2, Clipboard, Loader2, Sparkles,
-  User, Phone, MapPin, Calendar, Info, CheckCircle2, AlertCircle
+  User, Phone, MapPin, Calendar, Info, CheckCircle2, AlertCircle, ClipboardList
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
@@ -42,9 +42,10 @@ const INITIAL_QUOTATION: QuotationData = {
 interface Props {
   currentUser: any;
   initialData?: Partial<QuotationData>;
+  onCreateService?: (data: QuotationData) => void;
 }
 
-export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => {
+export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCreateService }) => {
   const [data, setData] = useState<QuotationData>(() => ({
     ...INITIAL_QUOTATION,
     preparedBy: currentUser?.name || '',
@@ -701,6 +702,15 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData }) => 
               </div>
 
               <div className="grid grid-cols-1 gap-3 pt-4">
+                {onCreateService && (
+                  <button 
+                    onClick={() => onCreateService(data)}
+                    className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-md shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 active:scale-95 smooth-transition"
+                  >
+                    <ClipboardList size={20} />
+                    LƯU VÀO PHIẾU DỊCH VỤ
+                  </button>
+                )}
                 <button 
                   onClick={handleGeneratePdf}
                   disabled={isGenerating}

@@ -412,7 +412,37 @@ const App: React.FC = () => {
               </div>
             </div>
           ) : activeTab === 'quotation' ? (
-            <QuotationTool currentUser={user} initialData={quotationInitialData} />
+            <QuotationTool 
+              currentUser={user} 
+              initialData={quotationInitialData} 
+              onCreateService={(data) => {
+                resetForm();
+                const workItems = data.items.map(item => ({
+                  desc: item.description + (item.specs ? ` (${item.specs})` : ''),
+                  qty: item.quantity || 1,
+                  price: item.price || 0,
+                  total: item.total || 0
+                }));
+                const totalRevenue = workItems.reduce((sum, item) => sum + item.total, 0);
+                
+                setFormData(prev => ({
+                  ...prev,
+                  ticketNumber: generateTicketNumber(),
+                  customerName: data.customerName || '',
+                  phone: data.customerPhone || '',
+                  address: data.customerAddress || '',
+                  content: data.notes || `Báo giá ngày ${data.date}`,
+                  workItems: workItems.length > 0 ? workItems : [{ desc: '', qty: 1, price: '', total: 0 }],
+                  revenue: totalRevenue,
+                  debt: totalRevenue
+                }));
+                setActiveTab('services');
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  if (formScrollRef.current) formScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 100);
+              }}
+            />
           ) : (
             <div className="h-full bg-transparent">
               <TelesaleTree onCreateTicket={(data) => {

@@ -324,7 +324,20 @@ export const ServiceForm: React.FC<Props> = ({
             <button disabled={isSubmitting} onClick={onSave} className="col-span-2 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 uppercase tracking-widest text-[12px] active:scale-95 smooth-transition flex justify-center items-center gap-2">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin" /> ĐANG LƯU...</> : 'LƯU PHIẾU MỚI'}
             </button>
-            <button onClick={() => onGoToQuotation?.({ customerName: formData.customerName, customerPhone: formData.phone, customerAddress: formData.address })} className="col-span-2 bg-slate-100 text-brand-600 font-black py-3 rounded-2xl shadow-sm uppercase tracking-widest text-[11px] active:scale-95 smooth-transition hover:bg-slate-200 flex justify-center items-center gap-2">
+            <button onClick={() => onGoToQuotation?.({ 
+              customerName: formData.customerName, 
+              customerPhone: formData.phone, 
+              customerAddress: formData.address,
+              items: formData.workItems.filter(i => i.desc).map(item => ({
+                description: item.desc,
+                specs: '',
+                unit: 'Cái',
+                quantity: Number(item.qty) || 1,
+                price: Number(item.price) || 0,
+                total: item.total || 0,
+                note: ''
+              }))
+            })} className="col-span-2 bg-slate-100 text-brand-600 font-black py-3 rounded-2xl shadow-sm uppercase tracking-widest text-[11px] active:scale-95 smooth-transition hover:bg-slate-200 flex justify-center items-center gap-2">
               <FileText size={16} /> TẠO BÁO GIÁ TỪ THÔNG TIN NÀY
             </button>
           </>
@@ -337,7 +350,20 @@ export const ServiceForm: React.FC<Props> = ({
             <button onClick={onCloneCustomer} className="col-span-2 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white font-black py-4 rounded-2xl uppercase text-[12px] active:scale-95 smooth-transition shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2">
                <Plus size={18} /> TẠO PHIẾU MỚI CHO KHÁCH NÀY
             </button>
-            <button onClick={() => onGoToQuotation?.({ customerName: formData.customerName, customerPhone: formData.phone, customerAddress: formData.address })} className="col-span-2 bg-slate-100 text-brand-600 font-black py-3 rounded-2xl shadow-sm uppercase tracking-widest text-[11px] active:scale-95 smooth-transition hover:bg-slate-200 flex justify-center items-center gap-2">
+            <button onClick={() => onGoToQuotation?.({ 
+              customerName: formData.customerName, 
+              customerPhone: formData.phone, 
+              customerAddress: formData.address,
+              items: formData.workItems.filter(i => i.desc).map(item => ({
+                description: item.desc,
+                specs: '',
+                unit: 'Cái',
+                quantity: Number(item.qty) || 1,
+                price: Number(item.price) || 0,
+                total: item.total || 0,
+                note: ''
+              }))
+            })} className="col-span-2 bg-slate-100 text-brand-600 font-black py-3 rounded-2xl shadow-sm uppercase tracking-widest text-[11px] active:scale-95 smooth-transition hover:bg-slate-200 flex justify-center items-center gap-2">
               <FileText size={16} /> TẠO BÁO GIÁ CHO KHÁCH NÀY
             </button>
           </>
