@@ -14,6 +14,26 @@ import { formatCurrency, parseCurrency } from '../utils/helpers';
 import { exportNativeFile } from '../utils/fileExport';
 import { QuotationTemplate } from './QuotationTemplate';
 
+const CurrencyInput = ({ value, onChange, className, readOnly }: any) => {
+  const [focused, setFocused] = useState(false);
+  
+  const displayValue = focused 
+    ? (value === 0 || !value ? '' : parseCurrency(value)) 
+    : (value === 0 || !value ? '' : formatCurrency(value));
+
+  return (
+    <input
+      type={focused ? "number" : "text"}
+      className={className}
+      value={displayValue}
+      onChange={e => onChange(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      readOnly={readOnly}
+    />
+  );
+};
+
 const INITIAL_ITEM: QuotationItem = {
   description: '',
   specs: '',
@@ -556,10 +576,9 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
                     </div>
                     <div className="md:col-span-4 space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Đơn giá</label>
-                      <input 
-                        type="text" 
-                        value={formatCurrency(item.price)}
-                        onChange={e => handleUpdateItem(index, 'price', e.target.value)}
+                      <CurrencyInput 
+                        value={item.price}
+                        onChange={(val: string) => handleUpdateItem(index, 'price', val)}
                         className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-bold text-right text-blue-600"
                       />
                     </div>

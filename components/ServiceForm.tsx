@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, CheckCircle2, Copy, Sparkles, Loader2, Camera, Save, ArrowLeft, RefreshCw, FileText
+  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, CheckCircle2, Copy, Sparkles, Loader2, Camera, Save, ArrowLeft, RefreshCw, FileText, ChevronDown
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
@@ -9,7 +9,28 @@ import { STATUS_OPTIONS } from '../constants.ts';
 import { formatCurrency, parseCurrency } from '../utils/helpers.ts';
 import { exportNativeFile } from '../utils/fileExport.ts';
 import { InvoiceTemplate } from './InvoiceTemplate.tsx';
+import { CustomerHistoryModal } from './CustomerHistoryModal.tsx';
+import { History } from 'lucide-react';
 
+const CurrencyInput = ({ value, onChange, className, readOnly }: any) => {
+  const [focused, setFocused] = useState(false);
+  
+  const displayValue = focused 
+    ? (value === 0 || !value ? '' : parseCurrency(value)) 
+    : (value === 0 || !value ? '' : formatCurrency(value));
+
+  return (
+    <input
+      type={focused ? "number" : "text"}
+      className={className}
+      value={displayValue}
+      onChange={e => onChange(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      readOnly={readOnly}
+    />
+  );
+};
 
 interface Props {
   formData: ServiceFormData;
@@ -43,8 +64,15 @@ export const ServiceForm: React.FC<Props> = ({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const [showTechManager, setShowTechManager] = useState(false);
+  const [showTechDropdown, setShowTechDropdown] = useState(false);
   const [newTechName, setNewTechName] = useState('');
   const [isUpdatingTech, setIsUpdatingTech] = useState(false);
+  
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const pastTickets = useMemo(() => {
+    if (!formData.phone || formData.phone.length < 3) return [];
+    return services.filter(s => s.phone === formData.phone && s.id !== selectedId);
+  }, [services, formData.phone, selectedId]);
   
   const billRef = useRef<HTMLDivElement>(null);
 
@@ -192,17 +220,26 @@ export const ServiceForm: React.FC<Props> = ({
       </div>
 
       <div className="space-y-3">
-        <div className="relative group">
-          <Phone className="absolute left-3.5 top-3.5 text-slate-400 group-focus-within:text-brand-500 smooth-transition z-10" size={18} />
-          <input type="tel" placeholder="Số điện thoại" className={inputStyle} value={formData.phone || ''} onChange={e => { updateField('phone', e.target.value); setShowPhoneSuggestions(true); }} onFocus={() => setShowPhoneSuggestions(true)} onBlur={() => setTimeout(() => setShowPhoneSuggestions(false), 200)} />
-          {showPhoneSuggestions && filteredCustomerSuggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-2xl z-[60] max-h-56 overflow-auto rounded-2xl mt-1">
-              {filteredCustomerSuggestions.map((c, i) => (
-                <div key={i} onMouseDown={() => selectCustomer(c)} className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 transition-colors flex justify-between">
-                  <span className="font-black text-blue-600 text-xs">{c.phone}</span>
-                  <span className="font-bold text-slate-800 text-xs">{c.name}</span>
-                </div>
-              ))}
+        <div className="relative group flex flex-col gap-1">
+          <div className="relative">
+            <Phone className="absolute left-3.5 top-3.5 text-slate-400 group-focus-within:text-brand-500 smooth-transition z-10" size={18} />
+            <input type="tel" placeholder="Số điện thoại" className={inputStyle} value={formData.phone || ''} onChange={e => { updateField('phone', e.target.value); setShowPhoneSuggestions(true); }} onFocus={() => setShowPhoneSuggestions(true)} onBlur={() => setTimeout(() => setShowPhoneSuggestions(false), 200)} />
+            {showPhoneSuggestions && filteredCustomerSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-2xl z-[60] max-h-56 overflow-auto rounded-2xl mt-1">
+                {filteredCustomerSuggestions.map((c, i) => (
+                  <div key={i} onMouseDown={() => selectCustomer(c)} className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 transition-colors flex justify-between">
+                    <span className="font-black text-blue-600 text-xs">{c.phone}</span>
+                    <span className="font-bold text-slate-800 text-xs">{c.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {pastTickets.length > 0 && (
+            <div className="flex justify-end">
+              <button onClick={() => setShowHistoryModal(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-brand-600 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-full smooth-transition">
+                <History size={12} /> Khách cũ: {pastTickets.length} phiếu
+              </button>
             </div>
           )}
         </div>
@@ -238,10 +275,66 @@ export const ServiceForm: React.FC<Props> = ({
                 </button>
               )}
             </div>
-            <select className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-700 outline-none disabled:opacity-50" value={formData.technician || ''} onChange={e => updateField('technician', e.target.value)} disabled={!isAdmin}>
-              <option value="">Chọn KTV</option>
-              {technicians.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
+            
+            <div className="relative">
+              <div 
+                className={`flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-slate-100 rounded-xl min-h-[44px] items-center transition-colors ${isAdmin ? 'cursor-pointer hover:bg-slate-100' : 'opacity-70'}`} 
+                onClick={() => isAdmin && setShowTechDropdown(!showTechDropdown)}
+              >
+                {(() => {
+                  const selectedTechs = (formData.technician || '').split(', ').filter(Boolean);
+                  if (selectedTechs.length === 0) return <span className="text-slate-400 font-bold text-[11px] ml-1">Chọn KTV...</span>;
+                  return selectedTechs.map(t => (
+                    <span key={t} className="flex items-center gap-1 px-2.5 py-1 bg-brand-100 text-brand-700 rounded-lg text-[11px] font-bold shadow-sm">
+                      {t}
+                      {isAdmin && (
+                        <X 
+                          size={12} 
+                          className="cursor-pointer hover:text-red-500 opacity-70 hover:opacity-100 transition-opacity ml-0.5" 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            updateField('technician', selectedTechs.filter(x => x !== t).join(', ')); 
+                          }} 
+                        />
+                      )}
+                    </span>
+                  ));
+                })()}
+                {isAdmin && <ChevronDown size={14} className="text-slate-400 ml-auto shrink-0" />}
+              </div>
+              
+              {showTechDropdown && isAdmin && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowTechDropdown(false)}></div>
+                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 shadow-xl rounded-2xl z-50 max-h-48 overflow-y-auto py-1 custom-scrollbar">
+                    {(() => {
+                      const selectedTechs = (formData.technician || '').split(', ').filter(Boolean);
+                      const availableTechs = technicians.filter(t => !selectedTechs.includes(t));
+                      
+                      if (availableTechs.length === 0) {
+                        return <div className="p-4 text-center text-slate-400 text-[11px] font-bold">Đã chọn tất cả KTV</div>;
+                      }
+                      
+                      return availableTechs.map(t => (
+                        <div 
+                          key={t} 
+                          className="flex justify-between items-center px-4 py-2.5 hover:bg-brand-50 cursor-pointer group transition-colors" 
+                          onClick={() => {
+                            updateField('technician', [...selectedTechs, t].join(', '));
+                            // setShowTechDropdown(false); // Optional: keep open to select multiple
+                          }}
+                        >
+                          <span className="text-[12px] font-bold text-slate-700 group-hover:text-brand-700">{t}</span>
+                          <button className="p-1 text-slate-300 group-hover:text-brand-600 group-hover:bg-brand-100 rounded-lg transition-all">
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -278,8 +371,8 @@ export const ServiceForm: React.FC<Props> = ({
                 )}
 
                 <div className="flex gap-2 text-[11px] font-bold">
-                  <div className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg flex items-center gap-1">SL: <input type="number" className="w-full outline-none font-black text-center bg-transparent" value={item.qty || 1} onChange={e => updateWorkItem(idx, 'qty', e.target.value)} /></div>
-                  <div className="flex-[2] bg-white border border-slate-100 p-1.5 rounded-lg px-2 text-right"><input type="text" className="w-full outline-none font-black text-right text-brand-600 bg-transparent" value={formatCurrency(item.price)} onChange={e => updateWorkItem(idx, 'price', e.target.value)} /></div>
+                  <div className="flex-1 bg-white border border-slate-100 p-1.5 rounded-lg flex items-center gap-1">SL: <input type="number" className="w-full outline-none font-black text-center bg-transparent" value={item.qty} onChange={e => updateWorkItem(idx, 'qty', e.target.value)} /></div>
+                  <div className="flex-[2] bg-white border border-slate-100 p-1.5 rounded-lg px-2 text-right"><CurrencyInput className="w-full outline-none font-black text-right text-brand-600 bg-transparent" value={item.price} onChange={(val: string) => updateWorkItem(idx, 'price', val)} /></div>
                   <button onClick={() => {
                     setFormData(prev => {
                       const newItems = prev.workItems.filter((_, i) => i !== idx);
@@ -302,7 +395,7 @@ export const ServiceForm: React.FC<Props> = ({
           <div className="text-center"><span className="text-[9px] font-black text-brand-500 uppercase">Doanh thu</span><input type="text" className={`${moneyInputStyle} text-brand-600`} value={formatCurrency(formData.revenue)} readOnly /></div>
           <div className="text-center">
             <span className="text-[9px] font-black text-orange-500 uppercase">Giá vốn</span>
-            <input type="text" className={`${moneyInputStyle} text-orange-600`} value={formatCurrency(formData.cost)} onChange={e => updateField('cost', parseCurrency(e.target.value))} />
+            <CurrencyInput className={`${moneyInputStyle} text-orange-600`} value={formData.cost} onChange={(val: string) => updateField('cost', parseCurrency(val))} />
             <div className="mt-2 flex justify-center items-center gap-3">
               <label className="flex items-center gap-1 cursor-pointer group">
                 <input type="radio" name="costPayer" value="Công ty" checked={(formData.costPayer || 'Công ty') === 'Công ty'} onChange={e => updateField('costPayer', e.target.value)} className="w-3 h-3 accent-orange-500" />
@@ -314,7 +407,7 @@ export const ServiceForm: React.FC<Props> = ({
               </label>
             </div>
           </div>
-          <div className="text-center"><span className="text-[9px] font-black text-red-500 uppercase">Công nợ</span><input type="text" className={`${moneyInputStyle} text-red-600`} value={formatCurrency(formData.debt)} onChange={e => updateField('debt', parseCurrency(e.target.value))} /></div>
+          <div className="text-center"><span className="text-[9px] font-black text-red-500 uppercase">Công nợ</span><CurrencyInput className={`${moneyInputStyle} text-red-600`} value={formData.debt} onChange={(val: string) => updateField('debt', parseCurrency(val))} /></div>
         </div>
       </div>
 
@@ -499,6 +592,16 @@ export const ServiceForm: React.FC<Props> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Customer History Modal */}
+      {showHistoryModal && (
+        <CustomerHistoryModal 
+          phone={formData.phone}
+          customerName={formData.customerName}
+          services={services}
+          onClose={() => setShowHistoryModal(false)}
+        />
       )}
     </div>
   );

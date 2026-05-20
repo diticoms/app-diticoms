@@ -16,14 +16,16 @@ export const removeVietnameseTones = (str: string) => {
 };
 
 export const formatCurrency = (val: number | string) => {
+  if (val === '' || val === null || val === undefined) return '';
   const num = typeof val === 'number' ? val : parseInt(String(val).replace(/\D/g, ''), 10);
-  if (isNaN(num)) return '0';
-  return num.toLocaleString('vi-VN');
+  if (isNaN(num)) return '';
+  return num === 0 && val !== 0 && val !== '0' ? '' : num.toLocaleString('vi-VN');
 };
 
 export const parseCurrency = (val: string | number) => {
   if (typeof val === 'number') return val;
-  const str = String(val || '0');
+  if (!val) return 0;
+  const str = String(val);
   const num = parseInt(str.replace(/\D/g, ''), 10);
   return isNaN(num) ? 0 : num;
 };

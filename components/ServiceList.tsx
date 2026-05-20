@@ -25,10 +25,6 @@ export const ServiceList: React.FC<Props> = ({
   const isAdmin = currentUser?.role === 'admin';
   const [localSearch, setLocalSearch] = useState(filters.searchTerm);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
-  const [statDate, setStatDate] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
   
   const longPressTimer = useRef<any>(null);
   const isLongPress = useRef(false);
@@ -41,23 +37,6 @@ export const ServiceList: React.FC<Props> = ({
     setLocalSearch(e.target.value);
     debouncedSetSearch(e.target.value);
   };
-
-  const statYear = parseInt(statDate.split('-')[0], 10);
-  const statMonthIndex = parseInt(statDate.split('-')[1], 10) - 1;
-
-  const currentMonthStats = useMemo(() => {
-    if (!rawServices) return { revenue: 0, profit: 0 };
-    return rawServices.filter(s => {
-      const d = new Date(s.created_at || new Date());
-      if (d.getMonth() !== statMonthIndex || d.getFullYear() !== statYear) return false;
-      if (!isAdmin && s.technician !== currentUser?.associatedTech) return false;
-      return true;
-    }).reduce((acc, item) => {
-      acc.revenue += Number(item.revenue || 0);
-      acc.profit += item.status === 'Đã tất toán' ? 0 : (Number(item.revenue || 0) - Number(item.cost || 0));
-      return acc;
-    }, { revenue: 0, profit: 0 });
-  }, [rawServices, isAdmin, currentUser, statMonthIndex, statYear]);
 
   const handleExportExcel = () => {
     if (data.length === 0) return alert("Không có dữ liệu!");
@@ -155,59 +134,6 @@ export const ServiceList: React.FC<Props> = ({
           <CheckCircle2 size={16} /> {copyStatus}
         </div>
       )}
-
-      {/* REVENUE BOARD */}
-      <div className="mb-5 shrink-0 bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl p-5 text-white shadow-lg shadow-brand-500/30 relative overflow-hidden flex items-center justify-between">
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-brand-400 opacity-20 rounded-full blur-xl pointer-events-none"></div>
-        
-        <div className="relative z-10 w-full flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Wallet size={16} className="text-brand-200" />
-              <div className="flex items-center gap-2 bg-black/10 rounded-lg px-2 py-1 hover:bg-black/20 smooth-transition cursor-pointer border border-white/10">
-                <span className="font-bold text-brand-100 text-[11px] uppercase tracking-widest hidden sm:inline-block">
-                  THỐNG KÊ
-                </span>
-                <input 
-                  type="month" 
-                  value={statDate}
-                  onChange={(e) => setStatDate(e.target.value)}
-                  className="bg-transparent text-white font-bold text-[11px] sm:text-xs outline-none cursor-pointer [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
-                />
-              </div>
-            </div>
-            
-            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-6 mt-1">
-              <div>
-                <div className="text-[10px] text-brand-200 font-medium tracking-wide uppercase mb-0.5">Doanh số</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-black text-lg sm:text-2xl tracking-tight">{formatCurrency(currentMonthStats.revenue)}</span>
-                  <span className="font-bold text-brand-200 text-[9px] sm:text-xs">VNĐ</span>
-                </div>
-              </div>
-              
-              <div className="w-px h-8 bg-white/20 shrink-0"></div>
-
-              <div>
-                <div className="text-[10px] text-brand-200 font-medium tracking-wide uppercase mb-0.5">Lợi nhuận</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-black text-lg sm:text-2xl tracking-tight">{formatCurrency(currentMonthStats.profit)}</span>
-                  <span className="font-bold text-brand-200 text-[9px] sm:text-xs">VNĐ</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 text-[10px] text-brand-200/80 font-medium tracking-wide">
-              {isAdmin ? 'Hiển thị tổng của tất cả KTV' : `Hiển thị dữ liệu của ${currentUser?.name}`}
-            </div>
-          </div>
-          
-          <div className="hidden sm:flex h-14 w-14 bg-white/10 backdrop-blur-md rounded-2xl items-center justify-center border border-white/10 shadow-inner shrink-0">
-            <TrendingUp size={28} className="text-white" />
-          </div>
-        </div>
-      </div>
 
       <div className="space-y-3 mb-5 shrink-0">
         <div className="relative group">
