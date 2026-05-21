@@ -284,13 +284,6 @@ const App: React.FC = () => {
                 TỔNG QUAN
               </button>
               <button 
-                onClick={() => setActiveTab('telesale')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'telesale' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
-              >
-                <MonitorCheck size={16} />
-                CHẨN ĐOÁN LỖI
-              </button>
-              <button 
                 onClick={() => setActiveTab('services')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'services' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
               >
@@ -302,7 +295,14 @@ const App: React.FC = () => {
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'quotation' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
               >
                 <FileText size={16} />
-                LÀM BÁO GIÁ
+                BÁO GIÁ
+              </button>
+              <button 
+                onClick={() => setActiveTab('telesale')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'telesale' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
+              >
+                <MonitorCheck size={16} />
+                CHUẨN ĐOÁN LỖI
               </button>
             </nav>
           </div>
@@ -324,13 +324,6 @@ const App: React.FC = () => {
               TỔNG QUAN
             </button>
             <button 
-              onClick={() => setActiveTab('telesale')}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-[12px] font-bold text-[10px] uppercase tracking-wider smooth-transition ${activeTab === 'telesale' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
-            >
-              <MonitorCheck size={18} />
-              CHẨN ĐOÁN
-            </button>
-            <button 
               onClick={() => setActiveTab('services')}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-[12px] font-bold text-[10px] uppercase tracking-wider smooth-transition ${activeTab === 'services' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
             >
@@ -343,6 +336,13 @@ const App: React.FC = () => {
             >
               <FileText size={18} />
               BÁO GIÁ
+            </button>
+            <button 
+              onClick={() => setActiveTab('telesale')}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-[12px] font-bold text-[10px] uppercase tracking-wider smooth-transition ${activeTab === 'telesale' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
+            >
+              <MonitorCheck size={18} />
+              CHUẨN ĐOÁN
             </button>
           </div>
 

@@ -12,7 +12,7 @@ export const DashboardTab: React.FC<Props> = ({ services, currentUser }) => {
   const isAdmin = currentUser.role === 'admin';
   const [statDateFrom, setStatDateFrom] = useState(() => {
     const d = new Date();
-    return `${d.getFullYear()}-01`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
   const [statDateTo, setStatDateTo] = useState(() => {
     const d = new Date();
@@ -63,7 +63,7 @@ export const DashboardTab: React.FC<Props> = ({ services, currentUser }) => {
 
   const technicianStats = useMemo(() => {
     if (!isAdmin) return [];
-    const statsMap: Record<string, { revenue: number, completed: number, debt: number, profit: number }> = {};
+    const statsMap: Record<string, { revenue: number, completed: number, total: number, debt: number, profit: number }> = {};
     
     viewableServices.forEach(s => {
       const createdDate = new Date(s.created_at || new Date());
@@ -84,8 +84,9 @@ export const DashboardTab: React.FC<Props> = ({ services, currentUser }) => {
       const splitDebt = debt / techList.length;
 
       techList.forEach(tech => {
-        if (!statsMap[tech]) statsMap[tech] = { revenue: 0, completed: 0, debt: 0, profit: 0 };
+        if (!statsMap[tech]) statsMap[tech] = { revenue: 0, completed: 0, total: 0, debt: 0, profit: 0 };
         
+        statsMap[tech].total += 1;
         if (isCompleted) {
           statsMap[tech].revenue += splitRevenue;
           statsMap[tech].profit += splitProfit;
@@ -113,21 +114,21 @@ export const DashboardTab: React.FC<Props> = ({ services, currentUser }) => {
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2 bg-white rounded-2xl px-4 py-2 border border-slate-200 shadow-sm">
-            <Calendar size={18} className="text-slate-400" />
-            <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Từ:</span>
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-2 bg-white rounded-2xl px-3 md:px-4 py-2 border border-slate-200 shadow-sm w-full md:w-auto justify-center md:justify-start">
+            <Calendar size={16} className="text-slate-400 hidden md:block" />
+            <span className="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest">Từ:</span>
             <input 
               type="month" 
               value={statDateFrom}
               onChange={(e) => setStatDateFrom(e.target.value)}
-              className="bg-transparent text-slate-800 font-bold text-sm outline-none cursor-pointer w-[120px]"
+              className="bg-transparent text-slate-800 font-bold text-[11px] md:text-sm outline-none cursor-pointer w-[100px] md:w-[120px]"
             />
-            <span className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2">Đến:</span>
+            <span className="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest ml-1 md:ml-2">Đến:</span>
             <input 
               type="month" 
               value={statDateTo}
               onChange={(e) => setStatDateTo(e.target.value)}
-              className="bg-transparent text-slate-800 font-bold text-sm outline-none cursor-pointer w-[120px]"
+              className="bg-transparent text-slate-800 font-bold text-[11px] md:text-sm outline-none cursor-pointer w-[100px] md:w-[120px]"
             />
           </div>
         </div>
@@ -204,7 +205,7 @@ export const DashboardTab: React.FC<Props> = ({ services, currentUser }) => {
                 <thead>
                   <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                     <th className="pb-3 px-2">Kỹ thuật viên</th>
-                    <th className="pb-3 px-2 text-right">Phiếu hoàn thành</th>
+                    <th className="pb-3 px-2 text-right">Xong / Tổng</th>
                     <th className="pb-3 px-2 text-right">Doanh thu</th>
                     <th className="pb-3 px-2 text-right">Lợi nhuận</th>
                     <th className="pb-3 px-2 text-right">Công nợ</th>
@@ -214,7 +215,9 @@ export const DashboardTab: React.FC<Props> = ({ services, currentUser }) => {
                   {technicianStats.map((tech, idx) => (
                     <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                       <td className="py-4 px-2 font-bold text-slate-800">{tech.name}</td>
-                      <td className="py-4 px-2 text-right font-black text-blue-600">{tech.completed}</td>
+                      <td className="py-4 px-2 text-right font-black text-blue-600">
+                        {tech.completed} <span className="text-[10px] text-slate-400 font-bold">/ {tech.total}</span>
+                      </td>
                       <td className="py-4 px-2 text-right font-black text-emerald-600">{formatCurrency(tech.revenue)}</td>
                       <td className="py-4 px-2 text-right font-black text-purple-600">{formatCurrency(tech.profit)}</td>
                       <td className="py-4 px-2 text-right font-black text-red-500">{formatCurrency(tech.debt)}</td>
