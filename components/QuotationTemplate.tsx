@@ -200,6 +200,15 @@ export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
                 )}
               </table>
 
+              {isLastPage && data.notes && (
+                <div className="mt-4 p-4 border border-slate-200 rounded-xl bg-slate-50/50">
+                  <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Ghi chú bổ sung</h4>
+                  <div className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed font-semibold">
+                    {data.notes}
+                  </div>
+                </div>
+              )}
+
               {!isLastPage && (
                 <div className="text-right mt-2 text-[10px] text-slate-400 italic font-bold">
                   (Xem tiếp trang {pageIndex + 2}...)

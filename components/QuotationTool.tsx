@@ -720,6 +720,17 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
                 <p className="text-3xl font-black tracking-tighter">{formatCurrency(data.totalAmount)}đ</p>
               </div>
 
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ghi chú (Thanh toán, giao hàng...)</label>
+                <textarea
+                  value={data.notes || ''}
+                  onChange={e => setData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Ví dụ: Thanh toán 50% trước khi giao hàng, bảo hành 12 tháng..."
+                  rows={3}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 smooth-transition text-xs font-semibold text-slate-700 resize-none shadow-sm"
+                />
+              </div>
+
               <div className="grid grid-cols-1 gap-3 pt-4">
                 {onCreateService && (
                   <button 
