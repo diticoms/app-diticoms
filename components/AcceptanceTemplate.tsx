@@ -1,14 +1,13 @@
 import React from 'react';
-import { QuotationData, QuotationItem } from '../types.ts';
-import { Logo } from './Logo.tsx';
-import { formatCurrency } from '../utils/helpers.ts';
+import { QuotationData, QuotationItem } from '../types';
+import { Logo } from './Logo';
 
 interface Props {
   data: QuotationData;
   isImageMode?: boolean;
 }
 
-export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
+export const AcceptanceTemplate: React.FC<Props> = ({ data, isImageMode }) => {
   // --- Smart Chunking Logic ---
   const chunks: QuotationItem[][] = [];
   let currentChunk: QuotationItem[] = [];
@@ -20,12 +19,12 @@ export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
     for (let i = 0; i < data.items.length; i++) {
       const item = data.items[i];
       let u = 1; // base unit for 1 standard row (~45px)
-      if (item.image) u += 6; // Image is unpredictable, reserve more space
+      if (item.image) u += 6; 
       if (item.specs && item.specs.length > 0) u += Math.ceil(item.specs.length / 70) * 0.5;
       if (item.note && item.note.length > 0) u += Math.ceil(item.note.length / 70) * 0.5;
 
       const isFirstPage = chunks.length === 0;
-      const maxUnits = isFirstPage ? 11 : 16; // Decreased limits to prevent shrinking on A4
+      const maxUnits = isFirstPage ? 10 : 16; 
 
       if (currentUnits + u > maxUnits && currentChunk.length > 0) {
         chunks.push(currentChunk);
@@ -51,7 +50,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
       return sum + u;
     }, 0);
 
-    const maxLastUnits = chunks.length === 1 ? 9 : 13; // Needs space for totals & signatures
+    const maxLastUnits = chunks.length === 1 ? 8 : 13; 
     if (lastChunkUnits > maxLastUnits) {
       chunks.push([]); // Empty chunk just for footer to go to new page
     }
@@ -71,15 +70,15 @@ export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
         </div>
       </div>
       <div className="text-right">
-        <h2 className="text-3xl font-black text-slate-200 uppercase tracking-tighter">BÁO GIÁ</h2>
-        <p className="text-xs font-bold text-slate-400">Số: {data.id || 'BQ-' + Date.now().toString().slice(-6)}</p>
+        <h2 className="text-2xl font-black text-slate-200 uppercase tracking-tighter">NGHIỆM THU</h2>
+        <p className="text-xs font-bold text-slate-400">Số: {data.id || 'NT-' + Date.now().toString().slice(-6)}</p>
         <p className="text-xs font-bold text-slate-400">Ngày: {data.date || new Date().toLocaleDateString('vi-VN')}</p>
       </div>
     </div>
   );
 
   return (
-    <div id="quotation-template" className="flex flex-col gap-4 bg-slate-100 p-4">
+    <div id="acceptance-template" className="flex flex-col gap-4 bg-slate-100 p-4">
       {chunks.map((pageItems, pageIndex) => {
         const isFirstPage = pageIndex === 0;
         const isLastPage = pageIndex === chunks.length - 1;
@@ -96,21 +95,29 @@ export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
             {/* Customer Info ONLY on Page 1 */}
             {isFirstPage && (
               <>
-                <div className="grid grid-cols-2 gap-6 mb-4 shrink-0">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-black uppercase text-slate-900 tracking-wider">BIÊN BẢN NGHIỆM THU</h2>
+                  <p className="text-sm font-bold text-slate-500 mt-1">V/v: Lắp đặt, sửa chữa, bàn giao thiết bị/dịch vụ</p>
+                </div>
+                <div className="grid grid-cols-2 gap-6 mb-4 shrink-0 border border-slate-200 p-4 rounded-xl bg-slate-50">
                   <div className="space-y-1">
-                    <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Thông tin khách hàng</h3>
+                    <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Bên A (Khách hàng)</h3>
                     <p className="text-sm font-bold text-slate-900">{data.customerName || '................................................'}</p>
                     <p className="text-xs text-slate-600">SĐT: {data.customerPhone || '..........................'}</p>
                     <p className="text-xs text-slate-600">Địa chỉ: {data.customerAddress || '................................................'}</p>
                     <p className="text-xs text-slate-600">MST: {data.customerTaxId || '................................................'}</p>
                   </div>
-                  <div className="text-right space-y-1">
-                    <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Hiệu lực báo giá</h3>
-                    <p className="text-xs text-slate-600">Báo giá có giá trị đến ngày: {data.validUntil || '..........................'}</p>
+                  <div className="space-y-1">
+                    <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Bên B (Đơn vị thực hiện)</h3>
+                    <p className="text-sm font-bold text-slate-900">CÔNG TY TNHH ĐẦU TƯ-KỸ THUẬT DITICOMS</p>
+                    <p className="text-xs text-slate-600">Địa chỉ: 145/38/12 Nguyễn Thiện Thuật, Phường Bàn Cờ, TP. HCM</p>
+                    <p className="text-xs text-slate-600">MST: 0314369581</p>
                   </div>
                 </div>
-                <div className="mb-3 italic text-sm text-slate-600 shrink-0">
-                  Kính gửi Quý khách hàng, Diticoms Service xin chân thành cảm ơn Quý khách đã quan tâm đến dịch vụ của chúng tôi. Dưới đây là nội dung báo giá chi tiết:
+                <div className="mb-4 text-sm text-slate-700 leading-relaxed space-y-2 shrink-0">
+                  <p><strong>1. Tài liệu làm căn cứ nghiệm thu:</strong> Hồ sơ báo giá và thoả thuận mua bán được duyệt.</p>
+                  <p><strong>2. Quy chuẩn, tiêu chuẩn được áp dụng:</strong> {data.acceptanceStandards || '..................................................................'}</p>
+                  <p><strong>3. Về số lượng:</strong> Đạt được số lượng theo báo giá đã duyệt. Chi tiết như sau:</p>
                 </div>
               </>
             )}
@@ -120,13 +127,11 @@ export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600">
-                    <th className="border border-slate-200 p-2 text-left w-10">STT</th>
+                    <th className="border border-slate-200 p-2 text-center w-12">STT</th>
                     <th className="border border-slate-200 p-2 text-left">Tên hàng hóa, dịch vụ</th>
-                    <th className="border border-slate-200 p-2 text-center w-12">ĐVT</th>
-                    <th className="border border-slate-200 p-2 text-center w-12">SL</th>
-                    <th className="border border-slate-200 p-2 text-right w-24">Đơn giá</th>
-                    <th className="border border-slate-200 p-2 text-right w-28">Thành tiền</th>
-                    <th className="border border-slate-200 p-2 text-left w-24">Ghi Chú</th>
+                    <th className="border border-slate-200 p-2 text-center w-16">ĐVT</th>
+                    <th className="border border-slate-200 p-2 text-center w-16">SL</th>
+                    <th className="border border-slate-200 p-2 text-left w-32">Ghi Chú</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -138,9 +143,7 @@ export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
                         {item.specs && <div className="text-[10px] text-slate-500 mt-1 leading-relaxed whitespace-pre-wrap">{item.specs}</div>}
                       </td>
                       <td className="border border-slate-200 p-2 text-center">{item.unit}</td>
-                      <td className="border border-slate-200 p-2 text-center">{item.quantity}</td>
-                      <td className="border border-slate-200 p-2 text-right">{formatCurrency(item.price)}</td>
-                      <td className="border border-slate-200 p-2 text-right font-bold text-blue-600">{formatCurrency(item.total)}</td>
+                      <td className="border border-slate-200 p-2 text-center font-bold">{item.quantity}</td>
                       <td className="border border-slate-200 p-2">
                         <div className="space-y-2">
                           {item.note && <p className="text-slate-500 italic leading-tight">{item.note}</p>}
@@ -158,54 +161,18 @@ export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
                   ))}
                   
                   {/* Fill empty rows if only 1 page to make table look nice */}
-                  {isLastPage && chunks.length === 1 && data.items.length < 5 && Array.from({ length: 5 - data.items.length }).map((_, i) => (
+                  {isLastPage && chunks.length === 1 && data.items.length < 3 && Array.from({ length: 3 - data.items.length }).map((_, i) => (
                     <tr key={'empty-' + i} className="h-10 border-b border-slate-50">
                       <td className="border border-slate-200 p-2"></td><td className="border border-slate-200 p-2"></td><td className="border border-slate-200 p-2"></td>
-                      <td className="border border-slate-200 p-2"></td><td className="border border-slate-200 p-2"></td><td className="border border-slate-200 p-2"></td>
-                      <td className="border border-slate-200 p-2"></td>
+                      <td className="border border-slate-200 p-2"></td><td className="border border-slate-200 p-2"></td>
                     </tr>
                   ))}
                 </tbody>
-                
-                {/* Tfoot ONLY on Last Page */}
-                {isLastPage && (
-                  <tfoot>
-                    <tr className="bg-slate-50 font-bold text-xs">
-                      <td colSpan={5} className="border border-slate-200 p-2 text-right uppercase tracking-widest text-slate-400">Cộng tiền hàng:</td>
-                      <td className="border border-slate-200 p-2 text-right">{formatCurrency(data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0))}đ</td>
-                      <td className="border border-slate-200 p-2"></td>
-                    </tr>
-                    {data.vatRate > 0 && (!data.vatType || data.vatType === 'add') && (
-                      <tr className="bg-slate-50 font-bold text-xs">
-                        <td colSpan={5} className="border border-slate-200 p-2 text-right uppercase tracking-widest text-slate-400">Thuế VAT ({data.vatRate}%):</td>
-                        <td className="border border-slate-200 p-2 text-right">{formatCurrency(data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0) * (data.vatRate / 100))}đ</td>
-                        <td className="border border-slate-200 p-2"></td>
-                      </tr>
-                    )}
-                    <tr className="bg-blue-50 font-black">
-                      <td colSpan={5} className="border border-slate-200 p-3 text-right uppercase tracking-widest text-sm text-blue-600">Tổng cộng thanh toán:</td>
-                      <td className="border border-slate-200 p-3 text-right text-xl text-blue-600">{formatCurrency(data.totalAmount)}đ</td>
-                      <td className="border border-slate-200 p-3"></td>
-                    </tr>
-                    {data.vatRate > 0 && (data.vatType === 'included' || data.vatType === 'none') && (
-                      <tr>
-                        <td colSpan={7} className="px-3 pt-3 pb-1 border-x border-b border-slate-200">
-                          <p className="text-xs font-bold text-slate-600 italic">
-                            Ghi chú: {data.vatType === 'included' ? `- ĐÃ BAO GỒM VAT ${data.vatRate}%` : `- Giá trên không bao gồm VAT ${data.vatRate}%`}
-                          </p>
-                        </td>
-                      </tr>
-                    )}
-                  </tfoot>
-                )}
               </table>
 
-              {isLastPage && data.notes && (
-                <div className="mt-4 p-4 border border-slate-200 rounded-xl bg-slate-50/50">
-                  <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Ghi chú bổ sung</h4>
-                  <div className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed font-semibold">
-                    {data.notes}
-                  </div>
+              {isLastPage && (
+                <div className="mt-3 text-sm text-slate-700 leading-relaxed space-y-2 shrink-0">
+                  <p><strong>4. Chất lượng hạng mục:</strong> Toàn bộ các công tác nêu trên đã được duyệt/thoả thuận và các sửa đổi bổ sung cho phù hợp thực tế và phù hợp với các quy trình quy phạm hiện hành.</p>
                 </div>
               )}
 
@@ -219,16 +186,15 @@ export const QuotationTemplate: React.FC<Props> = ({ data, isImageMode }) => {
             {/* Footer Signatures ONLY on Last Page */}
             {isLastPage && (
               <div className="mt-auto pt-4 shrink-0">
-                <div className="grid grid-cols-2 gap-10">
-                  <div className="text-center space-y-12">
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Khách hàng xác nhận</p>
-                    <p className="text-xs text-slate-300">(Ký và ghi rõ họ tên)</p>
+                <div className="grid grid-cols-2 gap-10 mt-6">
+                  <div className="text-center space-y-16">
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-600">Đại diện Bên A</p>
+                    <p className="text-xs text-slate-400">(Ký và ghi rõ họ tên)</p>
                   </div>
-                  <div className="text-center space-y-12">
-                    <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Người lập báo giá</p>
+                  <div className="text-center space-y-16">
+                    <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Đại diện Bên B</p>
                     <div className="space-y-1">
-                      <p className="text-sm font-black text-slate-900 uppercase">{data.preparedBy || 'CÔNG TY TNHH ĐẦU TƯ-KỸ THUẬT DITICOMS'}</p>
-                      <p className="text-[10px] text-slate-400 italic">(Đã ký điện tử)</p>
+                      <p className="text-sm font-black text-slate-900 uppercase">................................................</p>
                     </div>
                   </div>
                 </div>

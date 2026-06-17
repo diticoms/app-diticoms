@@ -84,4 +84,5 @@ export interface QuotationData {
   totalAmount: number;
   notes: string;
   preparedBy: string;
+  acceptanceStandards?: string;
 }

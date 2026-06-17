@@ -13,6 +13,7 @@ import { QuotationData, QuotationItem } from '../types';
 import { formatCurrency, parseCurrency } from '../utils/helpers';
 import { exportNativeFile } from '../utils/fileExport';
 import { QuotationTemplate } from './QuotationTemplate';
+import { AcceptanceTemplate } from './AcceptanceTemplate';
 
 const CurrencyInput = ({ value, onChange, className, readOnly }: any) => {
   const [focused, setFocused] = useState(false);
@@ -75,9 +76,12 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isPreviewingPdf, setIsPreviewingPdf] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [exportPrefix, setExportPrefix] = useState('Bao_Gia');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const templateRef = useRef<HTMLDivElement>(null);
   const templateImageRef = useRef<HTMLDivElement>(null);
+  const acceptanceTemplateRef = useRef<HTMLDivElement>(null);
+  const acceptanceTemplateImageRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<jsPDF | null>(null);
 
   // Lắng nghe thay đổi từ initialData
@@ -294,17 +298,18 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
     reader.readAsBinaryString(file);
   };
 
-  const handleGeneratePdf = async () => {
+  const handleGeneratePdf = async (type: 'quotation' | 'acceptance' = 'quotation') => {
     if (!data.customerName) {
       alert("Vui lòng nhập tên khách hàng!");
       return;
     }
     setIsGenerating(true);
     setTimeout(async () => {
-      if (templateRef.current) {
+      const targetRef = type === 'acceptance' ? acceptanceTemplateRef : templateRef;
+      if (targetRef.current) {
         try {
           const pdf = new jsPDF('p', 'mm', 'a4');
-          const pages = templateRef.current.querySelectorAll('.pdf-page');
+          const pages = targetRef.current.querySelectorAll('.pdf-page');
           
           if (pages.length === 0) throw new Error("No pages found");
 
@@ -336,6 +341,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
           }
           
           pdfRef.current = pdf;
+          setExportPrefix(type === 'acceptance' ? 'Nghiem_Thu' : 'Bao_Gia');
           setIsPreviewingPdf(true);
           
           // Show preview of the first page
@@ -351,16 +357,17 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
     }, 500);
   };
 
-  const handleGenerateImage = async () => {
+  const handleGenerateImage = async (type: 'quotation' | 'acceptance' = 'quotation') => {
     if (!data.customerName) {
       alert("Vui lòng nhập tên khách hàng!");
       return;
     }
     setIsGenerating(true);
     setTimeout(async () => {
-      if (templateImageRef.current) {
+      const targetRef = type === 'acceptance' ? acceptanceTemplateImageRef : templateImageRef;
+      if (targetRef.current) {
         try {
-          const canvas = await html2canvas(templateImageRef.current, {
+          const canvas = await html2canvas(targetRef.current, {
             scale: 1.5,
             useCORS: true,
             backgroundColor: "#f8fafc",
@@ -368,6 +375,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
             windowWidth: 800,
             windowHeight: templateImageRef.current.scrollHeight
           });
+          setExportPrefix(type === 'acceptance' ? 'Nghiem_Thu' : 'Bao_Gia');
           setIsPreviewingPdf(false);
           setPreviewImage(canvas.toDataURL('image/jpeg', 0.9));
         } catch (e) {
@@ -731,6 +739,17 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
                 />
               </div>
 
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quy chuẩn/Tiêu chuẩn (Nghiệm thu)</label>
+                <textarea
+                  value={data.acceptanceStandards || ''}
+                  onChange={e => setData(prev => ({ ...prev, acceptanceStandards: e.target.value }))}
+                  placeholder="Nhập tên tiêu chuẩn, quy chuẩn làm căn cứ nghiệm thu..."
+                  rows={2}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 smooth-transition text-xs font-semibold text-slate-700 resize-none shadow-sm"
+                />
+              </div>
+
               <div className="grid grid-cols-1 gap-3 pt-4">
                 {onCreateService && (
                   <button 
@@ -756,6 +775,14 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
                 >
                   {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
                   XUẤT ẢNH BÁO GIÁ
+                </button>
+                <button 
+                  onClick={() => handleGeneratePdf('acceptance')}
+                  disabled={isGenerating}
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-slate-800 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                >
+                  {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <FileText size={20} />}
+                  XUẤT PDF NGHIỆM THU
                 </button>
                 <button 
                   onClick={handleExportExcel}
@@ -791,6 +818,12 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
           <div ref={templateImageRef}>
             <QuotationTemplate data={data} isImageMode={true} />
           </div>
+          <div ref={acceptanceTemplateRef}>
+            <AcceptanceTemplate data={data} />
+          </div>
+          <div ref={acceptanceTemplateImageRef}>
+            <AcceptanceTemplate data={data} isImageMode={true} />
+          </div>
         </div>
       </div>
 
@@ -817,7 +850,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
                     if (pdfRef.current) {
                       const safeName = (data.customerName || 'Khach_Hang').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, '_');
                       const base64Pdf = pdfRef.current.output('datauristring');
-                      exportNativeFile(`Bao_Gia_${safeName}.pdf`, base64Pdf, 'application/pdf', base64Pdf);
+                      exportNativeFile(`${exportPrefix}_${safeName}.pdf`, base64Pdf, 'application/pdf', base64Pdf);
                     }
                   }} 
                   className="flex-1 bg-slate-900 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:-translate-y-0.5 smooth-transition active:scale-95"
@@ -828,7 +861,7 @@ export const QuotationTool: React.FC<Props> = ({ currentUser, initialData, onCre
                 <button 
                   onClick={() => { 
                     const safeName = (data.customerName || 'Khach_Hang').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, '_');
-                    exportNativeFile(`Bao_Gia_${safeName}.png`, previewImage, 'image/png', previewImage);
+                    exportNativeFile(`${exportPrefix}_${safeName}.png`, previewImage, 'image/png', previewImage);
                   }} 
                   className="flex-1 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 smooth-transition active:scale-95"
                 >
