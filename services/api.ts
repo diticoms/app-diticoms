@@ -68,7 +68,8 @@ export async function callSheetAPI(url: string, action: string, data: any = {}, 
         list = await callGoogleSheet(url, 'read_pricelist', data);
         if (Array.isArray(list) && list.length > 0) {
           for (const item of list) {
-             await setDoc(doc(db, "pricelist", item.name), item);
+             const safeId = String(item.name).replace(/\//g, '-');
+             await setDoc(doc(db, "pricelist", safeId), item);
           }
         }
       }
