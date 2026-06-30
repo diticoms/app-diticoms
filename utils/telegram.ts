@@ -43,10 +43,22 @@ export const sendTelegramMessage = async (chatId: string, text: string) => {
 };
 
 export const notifyNewTicket = async (ticketData: any, isUpdate = false) => {
-  const { customer_name, phone, address, content, technician, ticket_number, status, revenue } = ticketData;
+  const { customer_name, phone, address, content, technician, ticket_number, status, revenue, work_items } = ticketData;
   
   const title = isUpdate ? `📝 CẬP NHẬT PHIẾU DỊCH VỤ` : `🚨 KHÁCH HÀNG MỚI`;
   
+  let workItemsStr = '';
+  if (Array.isArray(work_items) && work_items.length > 0) {
+    const items = work_items.filter(item => item.desc && item.desc.trim() !== '');
+    if (items.length > 0) {
+      workItemsStr = `\n<b>Linh kiện & Dịch vụ:</b>\n` + items.map(item => {
+        const qty = item.qty || 1;
+        const total = item.total ? item.total.toLocaleString('vi-VN') + 'đ' : '0đ';
+        return `- ${item.desc} (x${qty}) : ${total}`;
+      }).join('\n');
+    }
+  }
+
   const message = `
 <b>${title}</b>
 <b>Mã phiếu:</b> ${ticket_number || 'N/A'}
@@ -55,7 +67,7 @@ export const notifyNewTicket = async (ticketData: any, isUpdate = false) => {
 <b>Địa chỉ:</b> ${address || 'N/A'}
 <b>Trạng thái:</b> ${status || 'N/A'}
 <b>Nội dung:</b> ${content || 'N/A'}
-<b>Kỹ thuật viên:</b> ${technician || 'Chưa phân công'}
+<b>Kỹ thuật viên:</b> ${technician || 'Chưa phân công'}${workItemsStr}
 <b>Doanh thu:</b> ${revenue ? revenue.toLocaleString('vi-VN') + ' đ' : '0 đ'}
 `;
 
