@@ -11,6 +11,7 @@ import { QuotationTool } from './components/QuotationTool.tsx';
 import { TelesaleTree } from './components/TelesaleTree.tsx';
 import { DashboardTab } from './components/DashboardTab.tsx';
 import { callSheetAPI } from './services/api.ts';
+import { notifyNewTicket } from './utils/telegram.ts';
 import { User, AppConfig, ServiceTicket, ServiceFormData, PriceItem } from './types.ts';
 import { DEFAULT_CONFIG, STATUS_OPTIONS, SHEET_API_URL } from './constants.ts';
 import { getTodayString } from './utils/helpers.ts';
@@ -235,6 +236,9 @@ const App: React.FC = () => {
         await fetchData(); 
         resetForm(); 
         showToast(action === 'create' ? 'Đã lưu phiếu thành công!' : 'Đã cập nhật thành công!');
+        
+        // Gửi thông báo Telegram
+        notifyNewTicket(payload, action === 'update');
       } else {
         alert(res?.error || "Lỗi thao tác Server");
       }

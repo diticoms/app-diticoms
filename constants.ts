@@ -7,7 +7,7 @@ export const CURRENT_VERSION = "1.0.47";
 export const DOMAIN_URL = "https://service.diticoms.vn";
 
 // API URL kết nối với Google Apps Script
-export const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbydOG7vnrXSXF6o0tLU843G_P2Jl9iOCcyuGAI7gRqhLrgmCvMgGj84HKPcfLFf1ZJL/exec";
+export const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbz-VIDEbNWSIgzsfFeWUa6y3WXj4vaXdShV287PdZSYqNCAkJFASy79YomuYSiHzboY/exec";
 
 export const DEFAULT_CONFIG: AppConfig = {
   sheetUrl: SHEET_API_URL,
