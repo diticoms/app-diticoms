@@ -74,6 +74,20 @@ export async function callSheetAPI(url: string, action: string, data: any = {}, 
         }
       }
       result = list;
+    } else if (action === 'read_devices') {
+      const querySnapshot = await getDocs(collection(db, "devices"));
+      let devices: any[] = [];
+      querySnapshot.forEach((doc) => {
+        devices.push(doc.data());
+      });
+      result = devices;
+    } else if (action === 'create_device' || action === 'update_device') {
+      const docRef = doc(db, "devices", String(data.id));
+      await setDoc(docRef, data, { merge: true });
+      result = { status: 'success', id: data.id };
+    } else if (action === 'delete_device') {
+      await deleteDoc(doc(db, "devices", String(data.id)));
+      result = { status: 'deleted', id: data.id };
     }
 
     // --- DUAL WRITE (GHI NGẦM VÀO GOOGLE SHEET) ---

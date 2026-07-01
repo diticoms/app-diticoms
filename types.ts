@@ -86,3 +86,13 @@ export interface QuotationData {
   preparedBy: string;
   acceptanceStandards?: string;
 }
+
+export interface DeviceProfile {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  specs: string;
+  created_at: string;
+  search_key?: string;
+}
+

@@ -10,6 +10,7 @@ import { Logo } from './components/Logo.tsx';
 import { QuotationTool } from './components/QuotationTool.tsx';
 import { TelesaleTree } from './components/TelesaleTree.tsx';
 import { DashboardTab } from './components/DashboardTab.tsx';
+import { DeviceManagerTab } from './components/DeviceManagerTab.tsx';
 import { callSheetAPI } from './services/api.ts';
 import { notifyNewTicket } from './utils/telegram.ts';
 import { User, AppConfig, ServiceTicket, ServiceFormData, PriceItem } from './types.ts';
@@ -18,7 +19,7 @@ import { getTodayString } from './utils/helpers.ts';
 import { FileText, ClipboardList, CheckCircle2, MonitorCheck, TrendingUp } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'quotation' | 'telesale'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'quotation' | 'telesale' | 'devices'>('dashboard');
   const [user, setUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem('diti_user');
@@ -302,6 +303,13 @@ const App: React.FC = () => {
                 BÁO GIÁ
               </button>
               <button 
+                onClick={() => setActiveTab('devices')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'devices' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
+              >
+                <MonitorCheck size={16} />
+                TRA CỨU MÁY
+              </button>
+              <button 
                 onClick={() => setActiveTab('telesale')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest smooth-transition ${activeTab === 'telesale' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
               >
@@ -347,6 +355,13 @@ const App: React.FC = () => {
             >
               <MonitorCheck size={18} />
               CHUẨN ĐOÁN
+            </button>
+            <button 
+              onClick={() => setActiveTab('devices')}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-[12px] font-bold text-[10px] uppercase tracking-wider smooth-transition ${activeTab === 'devices' ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-500 bg-transparent hover:bg-slate-50'}`}
+            >
+              <FileText size={18} />
+              LỊCH SỬ MÁY
             </button>
           </div>
 
@@ -463,6 +478,27 @@ const App: React.FC = () => {
                   if (formScrollRef.current) formScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 100);
               }}
+            />
+          ) : activeTab === 'devices' ? (
+            <DeviceManagerTab 
+               services={services} 
+               currentUser={user} 
+               onCreateTicket={(device) => {
+                 resetForm();
+                 setFormData(prev => ({
+                   ...prev,
+                   ticketNumber: generateTicketNumber(),
+                   customerName: device.customerName,
+                   phone: device.customerPhone,
+                   content: 'Nhận máy: ' + device.specs,
+                   workItems: [{ desc: '', qty: 1, price: '', total: 0 }]
+                 }));
+                 setActiveTab('services');
+                 setTimeout(() => {
+                   window.scrollTo({ top: 0, behavior: 'smooth' });
+                   if (formScrollRef.current) formScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                 }, 100);
+               }} 
             />
           ) : (
             <div className="h-full bg-transparent">
