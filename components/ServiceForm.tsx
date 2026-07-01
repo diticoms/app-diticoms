@@ -242,9 +242,6 @@ export const ServiceForm: React.FC<Props> = ({
                 <History size={12} /> Khách cũ: {pastTickets.length} phiếu
               </button>
             )}
-            <button onClick={() => onJumpToDeviceManager?.(formData.phone || '')} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full smooth-transition shadow-sm">
-              <QrCode size={12} /> TẠO / GẮN MÃ QR MÁY
-            </button>
           </div>
         </div>
         
@@ -472,6 +469,13 @@ export const ServiceForm: React.FC<Props> = ({
           <ReceiptText size={20}/> XUẤT HÓA ĐƠN
         </button>
       )}
+
+      <button 
+        onClick={() => onJumpToDeviceManager?.(formData.phone || '')} 
+        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl uppercase shadow-md flex items-center justify-center gap-3 text-[12px] transition-all"
+      >
+        <QrCode size={20} /> QUẢN LÝ THIẾT BỊ / MÃ QR
+      </button>
 
       {showBill && (
         <div className="fixed inset-0 z-[10000] bg-black/90 flex flex-col p-4 animate-in fade-in">
