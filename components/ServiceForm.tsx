@@ -236,20 +236,16 @@ export const ServiceForm: React.FC<Props> = ({
               </div>
             )}
           </div>
-          {(pastTickets.length > 0 || (formData.phone && formData.phone.length > 5)) && (
-            <div className="flex justify-end gap-2">
-              {pastTickets.length > 0 && (
-                <button onClick={() => setShowHistoryModal(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-brand-600 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-full smooth-transition">
-                  <History size={12} /> Khách cũ: {pastTickets.length} phiếu
-                </button>
-              )}
-              {formData.phone && formData.phone.length > 5 && (
-                <button onClick={() => onJumpToDeviceManager?.(formData.phone)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full smooth-transition">
-                  <QrCode size={12} /> TẠO / GẮN MÃ QR
-                </button>
-              )}
-            </div>
-          )}
+          <div className="flex justify-end gap-2">
+            {pastTickets.length > 0 && (
+              <button onClick={() => setShowHistoryModal(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-brand-600 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-full smooth-transition">
+                <History size={12} /> Khách cũ: {pastTickets.length} phiếu
+              </button>
+            )}
+            <button onClick={() => onJumpToDeviceManager?.(formData.phone || '')} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full smooth-transition shadow-sm">
+              <QrCode size={12} /> TẠO / GẮN MÃ QR MÁY
+            </button>
+          </div>
         </div>
         
         <div className="relative group"><User className="absolute left-3.5 top-3.5 text-slate-400 group-focus-within:text-brand-500 smooth-transition z-10" size={18} /><input type="text" placeholder="Tên khách hàng" className={inputStyle} value={formData.customerName || ''} onChange={e => updateField('customerName', e.target.value)} /></div>
