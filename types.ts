@@ -26,6 +26,7 @@ export interface WorkItem {
 
 export interface ServiceFormData {
   ticketNumber?: string;
+  deviceId?: string;
   customerName: string;
   phone: string;
   address: string;

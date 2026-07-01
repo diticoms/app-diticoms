@@ -142,6 +142,7 @@ const App: React.FC = () => {
           return {
             id: String(r.id),
             ticketNumber: r.ticket_number || r.ticketNumber || '',
+            deviceId: r.device_id || r.deviceId || '',
             created_at: r.created_at || r.date || new Date().toISOString(),
             customerName: r.customer_name || r.customerName || '',
             phone: String(r.phone || '').replace(/^'/, ''),
@@ -200,7 +201,7 @@ const App: React.FC = () => {
   const resetForm = useCallback((u = user) => {
     setSelectedId(null);
     setFormData({ 
-      ticketNumber: '', customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
+      ticketNumber: '', deviceId: '', customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
       technician: u?.associatedTech || u?.name || '', content: '', 
       workItems: [{ desc: '', qty: 1, price: '', total: 0 }], 
       revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0 
@@ -215,7 +216,7 @@ const App: React.FC = () => {
       const payload = { 
         id: action === 'create' ? Date.now().toString() : selectedId,
         ticket_number: action === 'create' ? (formData.ticketNumber || generateTicketNumber()) : (originalService?.ticketNumber || ''),
-        // GIỮ NGUYÊN NGÀY NHẬP GỐC KHI CẬP NHẬT
+        device_id: formData.deviceId || originalService?.deviceId || '',
         created_at: action === 'create' ? new Date().toISOString() : (originalService?.created_at || new Date().toISOString()),
         customer_name: formData.customerName,
         phone: formData.phone, 
@@ -223,7 +224,6 @@ const App: React.FC = () => {
         status: formData.status,
         technician: formData.technician,
         content: formData.content,
-        // CHUẨN HÓA DỮ LIỆU MẢNG ĐỂ TRÁNH DOUBLE ESCAPING TRÊN SHEET
         work_items: Array.isArray(formData.workItems) ? formData.workItems : [],
         revenue: Number(formData.revenue),
         cost: Number(formData.cost),
@@ -419,6 +419,7 @@ const App: React.FC = () => {
                     setSelectedId(item.id);
                     setFormData({
                       ticketNumber: item.ticketNumber || '',
+                      deviceId: item.deviceId || '',
                       customerName: item.customerName || '',
                       phone: item.phone || '',
                       address: item.address || '',
