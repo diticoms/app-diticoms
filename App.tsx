@@ -59,6 +59,7 @@ const App: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const formScrollRef = useRef<HTMLDivElement>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [initialDeviceSearch, setInitialDeviceSearch] = useState<string>('');
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -408,6 +409,10 @@ const App: React.FC = () => {
                       setQuotationInitialData(data);
                       setActiveTab('quotation');
                     }}
+                    onJumpToDeviceManager={(term) => {
+                      setInitialDeviceSearch(term);
+                      setActiveTab('devices');
+                    }}
                   />
                 </div>
               </div>
@@ -484,6 +489,7 @@ const App: React.FC = () => {
             <DeviceManagerTab 
                services={services} 
                currentUser={user} 
+               initialSearchTerm={initialDeviceSearch}
                onCreateTicket={(device) => {
                  resetForm();
                  setFormData(prev => ({

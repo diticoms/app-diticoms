@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, CheckCircle2, Copy, Sparkles, Loader2, Camera, Save, ArrowLeft, RefreshCw, FileText, ChevronDown
+  Plus, Trash2, Activity, User, Phone, MapPin, ReceiptText, X, Share2, MessageSquare, Download, CheckCircle2, Copy, Sparkles, Loader2, Camera, Save, ArrowLeft, RefreshCw, FileText, ChevronDown, QrCode
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { ServiceFormData, PriceItem, ServiceTicket } from '../types.ts';
@@ -49,11 +49,12 @@ interface Props {
   services: ServiceTicket[];
   bankInfo?: any;
   onGoToQuotation?: (data: any) => void;
+  onJumpToDeviceManager?: (term: string) => void;
 }
 
 export const ServiceForm: React.FC<Props> = ({
   formData, setFormData, technicians, priceList, selectedId, isSubmitting, 
-  currentUser, onSave, onUpdate, onDelete, onClear, onCloneCustomer, onUpdateTechnicians, services, bankInfo, onGoToQuotation
+  currentUser, onSave, onUpdate, onDelete, onClear, onCloneCustomer, onUpdateTechnicians, services, bankInfo, onGoToQuotation, onJumpToDeviceManager
 }) => {
   const isAdmin = currentUser?.role === 'admin';
   const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
@@ -235,11 +236,18 @@ export const ServiceForm: React.FC<Props> = ({
               </div>
             )}
           </div>
-          {pastTickets.length > 0 && (
-            <div className="flex justify-end">
-              <button onClick={() => setShowHistoryModal(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-brand-600 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-full smooth-transition">
-                <History size={12} /> Khách cũ: {pastTickets.length} phiếu
-              </button>
+          {(pastTickets.length > 0 || (formData.phone && formData.phone.length > 5)) && (
+            <div className="flex justify-end gap-2">
+              {pastTickets.length > 0 && (
+                <button onClick={() => setShowHistoryModal(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-brand-600 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-full smooth-transition">
+                  <History size={12} /> Khách cũ: {pastTickets.length} phiếu
+                </button>
+              )}
+              {formData.phone && formData.phone.length > 5 && (
+                <button onClick={() => onJumpToDeviceManager?.(formData.phone)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full smooth-transition">
+                  <QrCode size={12} /> TẠO / GẮN MÃ QR
+                </button>
+              )}
             </div>
           )}
         </div>

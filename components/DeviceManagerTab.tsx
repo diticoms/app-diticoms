@@ -9,10 +9,11 @@ import { QRCodeSVG } from 'qrcode.react';
 interface DeviceManagerTabProps {
   services: ServiceTicket[];
   currentUser: User | null;
+  initialSearchTerm?: string;
   onCreateTicket: (device: DeviceProfile) => void;
 }
 
-export const DeviceManagerTab: React.FC<DeviceManagerTabProps> = ({ services, currentUser, onCreateTicket }) => {
+export const DeviceManagerTab: React.FC<DeviceManagerTabProps> = ({ services, currentUser, initialSearchTerm, onCreateTicket }) => {
   const [devices, setDevices] = useState<DeviceProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'search' | 'scan' | 'customer_profile' | 'device_profile' | 'add'>('search');
@@ -48,9 +49,10 @@ export const DeviceManagerTab: React.FC<DeviceManagerTabProps> = ({ services, cu
     return `DITI-${new Date().getTime().toString().slice(-6)}-${random}`;
   };
 
-  const handleSearch = () => {
-    if (!searchTerm.trim()) return;
-    const term = searchTerm.toLowerCase();
+  const handleSearch = (overrideTerm?: string) => {
+    const termToUse = (typeof overrideTerm === 'string' ? overrideTerm : searchTerm);
+    if (!termToUse.trim()) return;
+    const term = termToUse.toLowerCase();
     
     // Tìm khách trong services hoặc devices
     const foundService = services.find(s => 
@@ -66,11 +68,21 @@ export const DeviceManagerTab: React.FC<DeviceManagerTabProps> = ({ services, cu
       setMode('customer_profile');
     } else {
       if (confirm('Không tìm thấy dữ liệu. Tạo hồ sơ máy mới cho khách này?')) {
-        setNewDevice({ customerPhone: searchTerm, customerName: '', specs: '' });
+        setNewDevice({ customerPhone: termToUse, customerName: '', specs: '' });
         setMode('add');
       }
     }
   };
+
+  useEffect(() => {
+    if (initialSearchTerm) {
+      setSearchTerm(initialSearchTerm);
+      // Wait slightly for devices to load if they are loading
+      setTimeout(() => {
+        handleSearch(initialSearchTerm);
+      }, 500);
+    }
+  }, [initialSearchTerm]);
 
   const handleScan = (text: string) => {
     setSearchTerm(text);
