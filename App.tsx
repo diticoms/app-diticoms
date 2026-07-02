@@ -108,7 +108,7 @@ const App: React.FC = () => {
 
   const [formData, setFormData] = useState<ServiceFormData>(() => ({
     ticketNumber: '', customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0],
-    technician: '', content: '',
+    technician: user?.role === 'admin' ? '' : (user?.associatedTech || user?.name || ''), content: '',
     workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
     revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0
   }));
@@ -203,7 +203,7 @@ const App: React.FC = () => {
     setSelectedId(null);
     setFormData({ 
       ticketNumber: '', deviceId: '', customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
-      technician: '', content: '', 
+      technician: u?.role === 'admin' ? '' : (u?.associatedTech || u?.name || ''), content: '', 
       workItems: [{ desc: '', qty: 1, price: '', total: 0 }], 
       revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0 
     });
@@ -382,7 +382,7 @@ const App: React.FC = () => {
                       setFormData(prev => ({
                         ...prev,
                         ticketNumber: generateTicketNumber(),
-                        technician: '',
+                        technician: user?.role === 'admin' ? '' : (user?.associatedTech || user?.name || ''),
                         status: STATUS_OPTIONS[0],
                         content: '',
                         workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
