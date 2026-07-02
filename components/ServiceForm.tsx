@@ -213,7 +213,9 @@ export const ServiceForm: React.FC<Props> = ({
           <Activity size={18} className="text-brand-500"/> {selectedId ? 'Cập nhật phiếu' : 'Tiếp nhận mới'}
         </h2>
         <div className="flex gap-1">
-          {selectedId && <button onClick={onClear} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full"><RefreshCw size={18}/></button>}
+          <button onClick={onClear} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full group transition-all" title="Xóa trắng Form (Làm mới)">
+            <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-300" />
+          </button>
           {selectedId && isAdmin && (
             <button onClick={onDelete} disabled={isSubmitting} className="text-red-400 p-2 hover:bg-red-50 rounded-full transition-colors"><Trash2 size={20}/></button>
           )}
