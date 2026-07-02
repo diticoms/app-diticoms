@@ -12,7 +12,7 @@ import { TelesaleTree } from './components/TelesaleTree.tsx';
 import { DashboardTab } from './components/DashboardTab.tsx';
 import { DeviceManagerTab } from './components/DeviceManagerTab.tsx';
 import { callSheetAPI } from './services/api.ts';
-import { notifyNewTicket } from './utils/telegram.ts';
+import { notifyNewTicket, notifyDeletedTicket } from './utils/telegram.ts';
 import { User, AppConfig, ServiceTicket, ServiceFormData, PriceItem } from './types.ts';
 import { DEFAULT_CONFIG, STATUS_OPTIONS, SHEET_API_URL } from './constants.ts';
 import { getTodayString } from './utils/helpers.ts';
@@ -400,7 +400,11 @@ const App: React.FC = () => {
                        if(!selectedId || !confirm('Xóa phiếu này?')) return;
                        setIsSubmitting(true);
                        try {
+                         const ticketToDelete = services.find(s => s.id === selectedId);
                          await callSheetAPI(config.sheetUrl, 'delete', { id: selectedId, role: user?.role });
+                         if (ticketToDelete) {
+                           await notifyDeletedTicket(ticketToDelete, user?.name || 'Admin');
+                         }
                          await fetchData(); resetForm();
                          showToast('Đã xóa phiếu thành công!');
                        } catch (e) { alert("Lỗi xóa"); } finally { setIsSubmitting(false); }

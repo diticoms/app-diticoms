@@ -85,3 +85,17 @@ export const notifyNewTicket = async (ticketData: any, isUpdate = false) => {
     }
   }
 };
+
+export const notifyDeletedTicket = async (ticketData: any, deletedBy: string = 'Admin') => {
+  const { customerName, phone, ticketNumber } = ticketData;
+  
+  const message = `
+🗑 <b>ĐÃ XÓA PHIẾU DỊCH VỤ</b>
+<b>Mã phiếu:</b> ${ticketNumber || 'N/A'}
+<b>Khách hàng:</b> ${customerName || 'N/A'}
+<b>SĐT:</b> ${phone || 'N/A'}
+<b>Người xóa:</b> ${deletedBy}
+`;
+
+  await sendTelegramMessage(TELEGRAM_GROUP_ID, message);
+};
