@@ -159,45 +159,70 @@ export const DeviceManagerTab: React.FC<DeviceManagerTabProps> = ({ services, cu
   };
 
   const printQR = (device: DeviceProfile) => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      const svgEl = document.getElementById(`qr-svg-${device.id}`)?.innerHTML || '';
-      const html = `
-        <html>
-        <head>
-          <title>In Tem QR</title>
-          <style>
-            @page { margin: 0; size: 50mm 30mm; }
-            body { 
-              margin: 0; padding: 0; width: 50mm; height: 30mm; 
-              display: flex; flex-direction: row; align-items: center; justify-content: center;
-              font-family: sans-serif; box-sizing: border-box; overflow: hidden;
-            }
-            .qr-container { width: 25mm; height: 25mm; display: flex; align-items: center; justify-content: center; position: relative;}
-            .qr-container svg { width: 100%; height: 100%; }
-            .info { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-left: 2mm; }
-            .name { font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 22mm;}
-            .phone { font-size: 7px; margin-top: 1px;}
-            .id { font-size: 6px; margin-top: 2px; }
-            .logo { width: 15px; position: absolute; top: 50%; left: 12.5mm; transform: translate(-50%, -50%); background: white; padding: 1px; border-radius: 2px;}
-          </style>
-        </head>
-        <body>
-          <div class="qr-container">
-            ${svgEl}
-            <img class="logo" src="${window.location.origin}/logo.png" />
-          </div>
-          <div class="info">
-            <div class="name">${device.customerName}</div>
-            <div class="phone">${device.customerPhone}</div>
-            <div class="id">${device.id}</div>
-          </div>
-          <script>setTimeout(() => { window.print(); window.close(); }, 500);</script>
-        </body>
-        </html>
-      `;
-      printWindow.document.write(html);
-      printWindow.document.close();
+    // Sử dụng iframe để in thay vì window.open để tránh ghi đè DOM của Webview/Capacitor
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const svgEl = document.getElementById(`qr-svg-${device.id}`)?.innerHTML || '';
+    const html = `
+      <html>
+      <head>
+        <title>In Tem QR</title>
+        <style>
+          @page { margin: 0; size: 50mm 30mm; }
+          body { 
+            margin: 0; padding: 0; width: 50mm; height: 30mm; 
+            display: flex; flex-direction: row; align-items: center; justify-content: center;
+            font-family: sans-serif; box-sizing: border-box; overflow: hidden; background: white;
+          }
+          .qr-container { width: 25mm; height: 25mm; display: flex; align-items: center; justify-content: center; position: relative;}
+          .qr-container svg { width: 100%; height: 100%; }
+          .info { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-left: 2mm; }
+          .name { font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 22mm; color: black;}
+          .phone { font-size: 7px; margin-top: 1px; color: black;}
+          .id { font-size: 6px; margin-top: 2px; color: black;}
+          .logo { width: 15px; position: absolute; top: 50%; left: 12.5mm; transform: translate(-50%, -50%); background: white; padding: 1px; border-radius: 2px;}
+        </style>
+      </head>
+      <body>
+        <div class="qr-container">
+          ${svgEl}
+          <img class="logo" src="${window.location.origin}/logo.png" />
+        </div>
+        <div class="info">
+          <div class="name">${device.customerName}</div>
+          <div class="phone">${device.customerPhone}</div>
+          <div class="id">${device.id}</div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(html);
+      doc.close();
+      
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          console.error("Lỗi in:", e);
+        }
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 1000);
+      }, 500);
     }
   };
 
