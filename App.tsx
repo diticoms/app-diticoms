@@ -172,6 +172,71 @@ const App: React.FC = () => {
 
   useEffect(() => { if (user) fetchData(); }, [user, fetchData]);
 
+  // Handle Hardware Back Button
+  useEffect(() => {
+    import('@capacitor/app').then(({ App: CapApp }) => {
+      const backListener = CapApp.addListener('backButton', () => {
+        // Find any open modal close button
+        const closeBtns = document.querySelectorAll('.diti-back-btn');
+        if (closeBtns.length > 0) {
+          (closeBtns[closeBtns.length - 1] as HTMLElement).click();
+          return;
+        }
+        
+        // If no modal, check if we can go to dashboard
+        if (activeTab !== 'dashboard') {
+          setActiveTab('dashboard');
+          return;
+        }
+
+        // Exit app
+        CapApp.exitApp();
+      });
+      return () => { backListener.then(l => l.remove()); };
+    }).catch(() => {});
+  }, [activeTab]);
+
+  // Pull to refresh logic
+  useEffect(() => {
+    let startY = 0;
+    let currentY = 0;
+    const threshold = 150;
+    
+    const handleTouchStart = (e: TouchEvent) => {
+      if (window.scrollY <= 0) {
+        startY = e.touches[0].clientY;
+      }
+    };
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      if (startY > 0) {
+        currentY = e.touches[0].clientY;
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      if (startY > 0 && currentY - startY > threshold) {
+        // Trigger refresh
+        if (user) {
+          setLoading(true);
+          fetchData().finally(() => setLoading(false));
+          showToast("Đã làm mới dữ liệu!");
+        }
+      }
+      startY = 0;
+      currentY = 0;
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [fetchData, user, showToast]);
+
   const filteredServices = useMemo(() => {
     let result = [...services];
     if (user?.role !== 'admin') {

@@ -481,7 +481,7 @@ export const ServiceForm: React.FC<Props> = ({
         <div className="fixed inset-0 z-[10000] bg-black/90 flex flex-col p-4 animate-in fade-in">
           <div className="max-w-md w-full mx-auto flex flex-col h-full">
             <div className="flex justify-between items-center mb-6">
-              <button onClick={() => setShowBill(false)} className="flex items-center gap-2 text-white/70 font-bold uppercase text-[10px] tracking-widest hover:text-white transition-colors"><ArrowLeft size={16}/> Quay lại</button>
+              <button onClick={() => setShowBill(false)} className="diti-back-btn flex items-center gap-2 text-white/70 font-bold uppercase text-[10px] tracking-widest hover:text-white transition-colors"><ArrowLeft size={16}/> Quay lại</button>
               <h3 className="text-white font-black uppercase tracking-[0.2em] text-xs">Hóa đơn điện tử</h3>
               <div className="w-10"></div>
             </div>

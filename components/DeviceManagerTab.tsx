@@ -222,7 +222,7 @@ export const DeviceManagerTab: React.FC<DeviceManagerTabProps> = ({ services, cu
           TRA CỨU MÁY & LỊCH SỬ
         </h2>
         {mode !== 'search' && (
-          <button onClick={() => { setMode('search'); setSelectedDevice(null); }} className="px-4 py-2 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200 uppercase tracking-wider flex items-center gap-2">
+          <button onClick={() => { setMode('search'); setSelectedDevice(null); }} className="diti-back-btn px-4 py-2 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200 uppercase tracking-wider flex items-center gap-2">
             <ChevronLeft size={16} /> Quay lại
           </button>
         )}

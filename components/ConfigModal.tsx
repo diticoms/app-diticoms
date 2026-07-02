@@ -20,7 +20,7 @@ export const ConfigModal: React.FC<Props> = ({ config, onSave, onClose, isAdmin,
       <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6">
         <div className="flex justify-between items-center">
           <h3 className="font-black text-slate-900 uppercase tracking-tight">Cấu hình hệ thống</h3>
-          <button onClick={onClose} className="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600"><X size={20}/></button>
+          <button onClick={onClose} className="diti-back-btn p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600"><X size={20}/></button>
         </div>
 
         <div className="space-y-4">

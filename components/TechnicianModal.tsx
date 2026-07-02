@@ -54,7 +54,7 @@ export const TechnicianModal: React.FC<Props> = ({ technicians, setTechnicians, 
       <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-6">
         <div className="flex justify-between items-center">
           <h3 className="font-black text-slate-900 uppercase tracking-tight flex items-center gap-2"><Users size={18} /> Quản lý KTV</h3>
-          <button onClick={onClose} className="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600"><X size={20}/></button>
+          <button onClick={onClose} className="diti-back-btn p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600"><X size={20}/></button>
         </div>
 
         <div className="flex gap-2">

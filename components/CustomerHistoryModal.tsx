@@ -37,7 +37,7 @@ export const CustomerHistoryModal: React.FC<Props> = ({ phone, customerName, ser
             <h3 className="font-black text-slate-900 uppercase tracking-tight text-lg">Lịch sử Khách hàng</h3>
             <p className="text-[12px] text-brand-600 font-bold uppercase tracking-widest">{customerName || 'Khách hàng'} - {phone}</p>
           </div>
-          <button onClick={onClose} className="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} className="diti-back-btn p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
             <X size={20} />
           </button>
         </div>
