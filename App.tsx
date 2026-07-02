@@ -108,7 +108,7 @@ const App: React.FC = () => {
 
   const [formData, setFormData] = useState<ServiceFormData>(() => ({
     ticketNumber: '', customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0],
-    technician: user?.role === 'admin' ? '' : (user?.associatedTech || user?.name || ''), content: '',
+    technician: user?.role === 'admin' ? '' : (user?.name || ''), content: '',
     workItems: [{ desc: '', qty: 1, price: '', total: 0 }],
     revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0
   }));
@@ -175,7 +175,7 @@ const App: React.FC = () => {
   const filteredServices = useMemo(() => {
     let result = [...services];
     if (user?.role !== 'admin') {
-      const allowedTech = (user?.associatedTech || user?.name || '').trim();
+      const allowedTech = (user?.name || '').trim();
       result = result.filter(s => (s.technician || '').split(',').map(t=>t.trim()).filter(Boolean).includes(allowedTech));
     } else if (filters.searchTech) {
       const search = filters.searchTech.trim();
@@ -205,7 +205,7 @@ const App: React.FC = () => {
     setSelectedId(null);
     setFormData({ 
       ticketNumber: '', deviceId: '', customerName: '', phone: '', address: '', status: STATUS_OPTIONS[0], 
-      technician: u?.role === 'admin' ? '' : (u?.associatedTech || u?.name || ''), content: '', 
+      technician: u?.role === 'admin' ? '' : (u?.name || ''), content: '', 
       workItems: [{ desc: '', qty: 1, price: '', total: 0 }], 
       revenue: 0, cost: 0, costPayer: 'Công ty', debt: 0 
     });
@@ -384,7 +384,7 @@ const App: React.FC = () => {
                       setFormData(prev => ({
                         ...prev,
                         ticketNumber: generateTicketNumber(),
-                        technician: user?.role === 'admin' ? '' : (user?.associatedTech || user?.name || ''),
+                        technician: user?.role === 'admin' ? '' : (user?.name || ''),
                         status: STATUS_OPTIONS[0],
                         content: '',
                         workItems: [{ desc: '', qty: 1, price: '', total: 0 }],

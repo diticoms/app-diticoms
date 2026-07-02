@@ -24,7 +24,7 @@ export const DashboardTab: React.FC<Props> = ({ services, currentUser }) => {
     if (isAdmin) return services;
     return services.filter(s => {
       const techList = (s.technician || '').split(',').map(t=>t.trim()).filter(Boolean);
-      const allowedTech = (currentUser.associatedTech || currentUser.name || '').trim();
+      const allowedTech = (currentUser.name || '').trim();
       return techList.includes(allowedTech);
     });
   }, [services, isAdmin, currentUser]);

@@ -165,7 +165,7 @@ export const ServiceList: React.FC<Props> = ({
             <Users size={12} className="text-slate-400" />
             <select 
               className="bg-transparent font-bold text-slate-600 outline-none text-[10px] border-none focus:ring-0 pr-6"
-              value={isAdmin ? filters.searchTech : (currentUser?.associatedTech || '')}
+              value={isAdmin ? filters.searchTech : (currentUser?.name || '')}
               onChange={e => isAdmin && setFilters.setSearchTech(e.target.value)}
               disabled={!isAdmin}
             >
