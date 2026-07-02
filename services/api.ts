@@ -88,11 +88,15 @@ export async function callSheetAPI(url: string, action: string, data: any = {}, 
     } else if (action === 'delete_device') {
       await deleteDoc(doc(db, "devices", String(data.id)));
       result = { status: 'deleted', id: data.id };
+    } else if (action === 'create_user') {
+      const docRef = doc(db, "users", String(data.username));
+      await setDoc(docRef, data);
+      result = { status: 'success', username: data.username };
     }
 
     // --- DUAL WRITE (GHI NGẦM VÀO GOOGLE SHEET) ---
     // Chỉ đồng bộ các thao tác thay đổi dữ liệu
-    if (['create', 'update', 'delete', 'save_settings'].includes(action)) {
+    if (['create', 'update', 'delete', 'save_settings', 'create_user'].includes(action)) {
       // Gọi fetch API chạy ngầm không cần await để không block giao diện
       fetch(url, {
         method: 'POST',

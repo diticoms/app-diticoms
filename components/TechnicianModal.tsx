@@ -14,14 +14,35 @@ export const TechnicianModal: React.FC<Props> = ({ technicians, setTechnicians, 
   const [isLoading, setIsLoading] = useState(false);
   const [localList, setLocalList] = useState([...technicians]);
 
+  const generateUsername = (name: string) => {
+    return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").toLowerCase();
+  };
+
   const handleSave = async () => {
     setIsLoading(true);
     try {
+      const newTechs = localList.filter(t => !technicians.includes(t));
+      for (const techName of newTechs) {
+        const username = generateUsername(techName);
+        const password = username + "@1234";
+        await callSheetAPI(sheetUrl, 'create_user', {
+          username: username,
+          password: password,
+          name: techName,
+          role: 'user',
+          associatedTech: techName
+        });
+      }
+
       const response = await callSheetAPI(sheetUrl, 'save_settings', { technicians: localList });
       if (response.status === 'success') {
         setTechnicians(localList);
         localStorage.setItem('diti_techs', JSON.stringify(localList));
-        alert("Đã lưu danh sách KTV!");
+        if (newTechs.length > 0) {
+          alert(`Đã lưu KTV và tạo ${newTechs.length} tài khoản mới!\n\nTài khoản: [tên không dấu]\nMật khẩu: [tài khoản]@1234`);
+        } else {
+          alert("Đã lưu danh sách KTV!");
+        }
         onClose();
       }
     } catch (e) { alert("Lỗi khi lưu!"); }
