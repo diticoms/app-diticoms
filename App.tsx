@@ -174,10 +174,12 @@ const App: React.FC = () => {
 
   const filteredServices = useMemo(() => {
     let result = [...services];
-    if (user?.role !== 'admin' && user?.associatedTech) {
-      result = result.filter(s => (s.technician || '').split(', ').filter(Boolean).includes(user.associatedTech));
+    if (user?.role !== 'admin') {
+      const allowedTech = (user?.associatedTech || user?.name || '').trim();
+      result = result.filter(s => (s.technician || '').split(',').map(t=>t.trim()).filter(Boolean).includes(allowedTech));
     } else if (filters.searchTech) {
-      result = result.filter(s => (s.technician || '').split(', ').filter(Boolean).includes(filters.searchTech));
+      const search = filters.searchTech.trim();
+      result = result.filter(s => (s.technician || '').split(',').map(t=>t.trim()).filter(Boolean).includes(search));
     }
 
     if (!filters.viewAll) {

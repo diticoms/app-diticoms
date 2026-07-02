@@ -23,8 +23,9 @@ export const DashboardTab: React.FC<Props> = ({ services, currentUser }) => {
   const viewableServices = useMemo(() => {
     if (isAdmin) return services;
     return services.filter(s => {
-      const techList = (s.technician || '').split(', ').filter(Boolean);
-      return techList.includes(currentUser.associatedTech || currentUser.name);
+      const techList = (s.technician || '').split(',').map(t=>t.trim()).filter(Boolean);
+      const allowedTech = (currentUser.associatedTech || currentUser.name || '').trim();
+      return techList.includes(allowedTech);
     });
   }, [services, isAdmin, currentUser]);
 
