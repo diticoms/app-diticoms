@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { QrCode, Search, Printer, PlusCircle, MonitorCheck, ChevronLeft, Wrench, X, Laptop } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { QrCode, Search, Printer, PlusCircle, MonitorCheck, ChevronLeft, Wrench, X, Laptop, Camera, Share2, Loader2, Download } from 'lucide-react';
 import { callSheetAPI } from '../services/api.ts';
 import { SHEET_API_URL } from '../constants.ts';
 import { DeviceProfile, ServiceTicket, User } from '../types.ts';
 import { QRScanner } from './QRScanner.tsx';
 import { QRCodeSVG } from 'qrcode.react';
+import html2canvas from 'html2canvas';
+import { exportNativeFile } from '../utils/fileExport.ts';
 
 interface DeviceManagerTabProps {
   services: ServiceTicket[];
@@ -31,6 +33,11 @@ export const DeviceManagerTab: React.FC<DeviceManagerTabProps> = ({ services, cu
     customerPhone: '',
     specs: ''
   });
+
+  const [qrPrintDevice, setQrPrintDevice] = useState<DeviceProfile | null>(null);
+  const [isCapturingQR, setIsCapturingQR] = useState(false);
+  const [capturedQRImage, setCapturedQRImage] = useState<string | null>(null);
+  const qrPrintRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadDevices();
@@ -158,72 +165,29 @@ export const DeviceManagerTab: React.FC<DeviceManagerTabProps> = ({ services, cu
     }
   };
 
-  const printQR = (device: DeviceProfile) => {
-    // Sử dụng iframe để in thay vì window.open để tránh ghi đè DOM của Webview/Capacitor
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
-
-    const svgEl = document.getElementById(`qr-svg-${device.id}`)?.innerHTML || '';
-    const html = `
-      <html>
-      <head>
-        <title>In Tem QR</title>
-        <style>
-          @page { margin: 0; size: 50mm 30mm; }
-          body { 
-            margin: 0; padding: 0; width: 50mm; height: 30mm; 
-            display: flex; flex-direction: row; align-items: center; justify-content: center;
-            font-family: sans-serif; box-sizing: border-box; overflow: hidden; background: white;
-          }
-          .qr-container { width: 25mm; height: 25mm; display: flex; align-items: center; justify-content: center; position: relative;}
-          .qr-container svg { width: 100%; height: 100%; }
-          .info { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-left: 2mm; }
-          .name { font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 22mm; color: black;}
-          .phone { font-size: 7px; margin-top: 1px; color: black;}
-          .id { font-size: 6px; margin-top: 2px; color: black;}
-          .logo { width: 15px; position: absolute; top: 50%; left: 12.5mm; transform: translate(-50%, -50%); background: white; padding: 1px; border-radius: 2px;}
-        </style>
-      </head>
-      <body>
-        <div class="qr-container">
-          ${svgEl}
-          <img class="logo" src="${window.location.origin}/logo.png" />
-        </div>
-        <div class="info">
-          <div class="name">${device.customerName}</div>
-          <div class="phone">${device.customerPhone}</div>
-          <div class="id">${device.id}</div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const doc = iframe.contentWindow?.document;
-    if (doc) {
-      doc.open();
-      doc.write(html);
-      doc.close();
-      
-      setTimeout(() => {
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-        } catch (e) {
-          console.error("Lỗi in:", e);
-        }
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-        }, 1000);
-      }, 500);
+  const handleCaptureQR = async () => {
+    if (!qrPrintRef.current || !qrPrintDevice) return;
+    setIsCapturingQR(true);
+    try {
+      await new Promise(r => setTimeout(r, 500));
+      const canvas = await html2canvas(qrPrintRef.current, {
+        scale: 4,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+      setCapturedQRImage(canvas.toDataURL('image/png'));
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi khi tạo ảnh QR.");
+    } finally {
+      setIsCapturingQR(false);
     }
+  };
+
+  const printQR = (device: DeviceProfile) => {
+    setQrPrintDevice(device);
+    setCapturedQRImage(null);
   };
 
   // Tính toán dữ liệu cho Customer Profile
@@ -481,6 +445,58 @@ export const DeviceManagerTab: React.FC<DeviceManagerTabProps> = ({ services, cu
           </div>
         )}
       </div>
+      {qrPrintDevice && (
+        <div className="fixed inset-0 z-[10000] bg-black/90 flex flex-col p-4 animate-in fade-in">
+          <div className="max-w-md w-full mx-auto flex flex-col h-full">
+            <div className="flex justify-between items-center mb-6">
+              <button onClick={() => setQrPrintDevice(null)} className="diti-back-btn flex items-center gap-2 text-white/70 font-bold uppercase text-[10px] tracking-widest hover:text-white transition-colors">
+                <ChevronLeft size={16}/> Quay lại
+              </button>
+              <h3 className="text-white font-black uppercase tracking-[0.2em] text-xs">IN TEM QR</h3>
+              <div className="w-10"></div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-100 rounded-[40px] p-4 shadow-2xl flex flex-col items-center">
+              {!capturedQRImage ? (
+                <>
+                  <div className="bg-white shadow-sm p-4 rounded-xl flex items-center justify-center">
+                    <div ref={qrPrintRef} className="flex flex-row items-center justify-center bg-white" style={{ width: '50mm', height: '30mm', boxSizing: 'border-box', overflow: 'hidden' }}>
+                      <div className="relative flex items-center justify-center" style={{ width: '25mm', height: '25mm' }}>
+                        <QRCodeSVG value={qrPrintDevice.id} size={90} level={"M"} />
+                        <img src="/logo.png" style={{ position: 'absolute', width: '15px', background: 'white', padding: '1px', borderRadius: '2px' }} alt="Logo" />
+                      </div>
+                      <div className="flex flex-col justify-center" style={{ flex: 1, paddingLeft: '2mm' }}>
+                        <div style={{ fontSize: '8px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '22mm', color: 'black' }}>{qrPrintDevice.customerName}</div>
+                        <div style={{ fontSize: '7px', marginTop: '1px', color: 'black' }}>{qrPrintDevice.customerPhone}</div>
+                        <div style={{ fontSize: '6px', marginTop: '2px', color: 'black' }}>{qrPrintDevice.id}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-full mt-8 px-4">
+                    <button onClick={handleCaptureQR} disabled={isCapturingQR} className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest flex items-center justify-center gap-4 shadow-2xl active:scale-95 transition-all">
+                      {isCapturingQR ? <Loader2 size={24} className="animate-spin" /> : <Camera size={24} />} TẠO ẢNH ĐỂ IN/CHIA SẺ
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="animate-in zoom-in duration-300 w-full flex flex-col items-center px-2">
+                   <img src={capturedQRImage} alt="QR Label" className="w-full max-w-[250px] rounded-2xl shadow-xl border border-white/50 mb-8" />
+                   <div className="w-full space-y-3 pb-8">
+                      <button onClick={async () => {
+                        exportNativeFile(`QR_${qrPrintDevice.customerName}.png`, capturedQRImage, 'image/png', capturedQRImage);
+                      }} className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all">
+                        <Share2 size={20} /> CHIA SẺ / TẢI VỀ
+                      </button>
+                      <button onClick={() => setCapturedQRImage(null)} className="w-full text-slate-400 font-bold py-3 uppercase text-[10px] tracking-widest">
+                        QUAY LẠI
+                      </button>
+                   </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
